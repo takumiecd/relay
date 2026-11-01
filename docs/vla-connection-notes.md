@@ -6,8 +6,10 @@
 ## forkは必須ではない
 
 GitHubに派生repoを作るforkと、手元にsourceを置くcloneは別である。
-現在は上流をcloneし、ローカルの`codex/vla-integration`ブランチを用意した。
-remoteは`upstream`。GitHub上のfork・公開・pushは行っていない。
+調査開始時は上流をcloneし、ローカルの`codex/vla-integration`ブランチを用意した。
+当時のremoteは`upstream`のみで、GitHub上のfork・公開・pushは行っていなかった。
+その後、ユーザーの指示で[takumiecd/cap-x](https://github.com/takumiecd/cap-x)をforkした。
+現在の接続先と開発branchは[vla-osc.md](vla-osc.md)を参照。
 
 CaP-Xの`capx.integrations.base_api.register_api(name, factory)`に外部APIを登録できる。
 設定の`_target_`も外部packageをimportできるため、追加packageのtaskクラスで

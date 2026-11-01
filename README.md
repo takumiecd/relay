@@ -3,7 +3,9 @@
 
 # CaP-X
 
-Local integration branch: [VLA adapters over LIBERO OSC (Japanese)](docs/vla-osc.md).
+This fork extends [capgym/cap-x](https://github.com/capgym/cap-x) with
+[VLA adapters over LIBERO OSC (Japanese)](docs/vla-osc.md).
+Development branch: `codex/vla-integration`.
 Goal: [collect aligned VLA / code / human trajectories](docs/dataset-design.md).
 This extension is under development and is separate from the upstream benchmark results.
 
