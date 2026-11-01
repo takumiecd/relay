@@ -1,0 +1,74 @@
+{
+  "live_job_id": "l4job-c983b387de814725a64072508c180133",
+  "worker_source_snapshot_sha256": "e70342b66e6af93f52978d3fff685d50493813fa47671b45af4c2ae6a9759346",
+  "verified_worker_bundle_sha256": "4186cbcaada9b889024afcdf9ff69ebb5c741e1c2bfaf6e3c53d14184a64b3b8",
+  "live_applied_actions": 30,
+  "live_eef_distance_m": 0.26903836567562556,
+  "live_task_completed": false,
+  "live_wall_seconds_after_ready": 28.38645266694948,
+  "model": {
+    "model": "openvla/openvla-7b-finetuned-libero-spatial",
+    "revision": "962318cec55ac10993ff0f5f43eda9a270b4c873",
+    "code_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+    "adapter": "openvla",
+    "unnorm_key": "libero_spatial",
+    "action_contract": "libero.osc_pose.relative.fixed.7.v1",
+    "device": "NVIDIA L4",
+    "torch": "2.2.2+cu121",
+    "center_crop_area": 0.9,
+    "attention": "sdpa",
+    "quantized": false,
+    "seed": 7,
+    "required_views": [
+      "agentview"
+    ],
+    "uses_robot_state": false,
+    "protocol_version": 1
+  },
+  "test_input": false,
+  "human_actions": 0,
+  "original_full_state_available": false,
+  "first_numeric_replay": {
+    "verified": true,
+    "training_admitted": false,
+    "original_full_state_available": false,
+    "task_success_claim": false,
+    "applied_actions": 30,
+    "max_eef_error_m": 0.0,
+    "max_physics_state_error": null,
+    "exports": {
+      "steps": 30,
+      "training_admitted": false,
+      "semantic_policy": false
+    }
+  },
+  "full_state_replay": {
+    "verified": true,
+    "training_admitted": false,
+    "original_full_state_available": true,
+    "task_success_claim": false,
+    "applied_actions": 30,
+    "max_eef_error_m": 0.0,
+    "max_physics_state_error": 0.0,
+    "exports": {
+      "steps": 30,
+      "training_admitted": false,
+      "semantic_policy": false
+    }
+  },
+  "reconstructed_image_parity": {
+    "views_compared": 62,
+    "identical_views": 62,
+    "max_channel_difference": 0,
+    "original_live_observations_available": false,
+    "training_admitted": false
+  },
+  "raw_artifact_sha256": {
+    "output/vla-live-02/report.json": "95ce4cded29fbd221ba4117ade0738e50dd55cc52a2b9d2c263370a14bbb7134",
+    "output/vla-live-02/actions.json": "97be302218cf9d5303c5d98ca89dca930d5b2ee74b305faea8a5a80f2d8bfde5",
+    "output/vla-live-02/osc-vla.mp4": "a4432dbdd07617ffaf9d9434f48a2f30e912ba4df48c123ef64f76fc5cfc049f",
+    "output/vla-live-02/gpu-receipt/artifacts/worker/predictions.json": "9a5c3549fc241540d89c12d5e2bcfdba1a1c919802dd5ca52e1667abc1936d52",
+    "output/vla-live-02/gpu-receipt/artifacts/policy-freeze.txt": "d22e72c4b7c50ffcacd19ca5d4938806b02e211d4d550b482fce122c31363be3"
+  },
+  "training_admitted": false
+}

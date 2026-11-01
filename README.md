@@ -3,6 +3,10 @@
 
 # CaP-X
 
+Local integration branch: [VLA adapters over LIBERO OSC (Japanese)](docs/vla-osc.md).
+Goal: [collect aligned VLA / code / human trajectories](docs/dataset-design.md).
+This extension is under development and is separate from the upstream benchmark results.
+
 ### A Framework for Benchmarking and Improving Coding Agents for Robot Manipulation
 
 [Project Page](https://capgym.github.io/) &ensp;|&ensp; [Paper](https://arxiv.org/abs/2603.22435) 
