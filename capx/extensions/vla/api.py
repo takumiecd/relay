@@ -13,6 +13,10 @@ class VlaApi(ApiBase):
         super().__init__(env)
         self.predictor = predictor
 
+    def _lease(self, source):
+        control = getattr(self._env, "control", None)
+        return control.begin(source) if control is not None else None
+
     def functions(self):
         return {"run_vla": self.run_vla, "get_robot_state": self.get_robot_state,
                 "move_to_pose": self.move_to_pose, "open_gripper": self.open_gripper,
@@ -38,6 +42,8 @@ class VlaApi(ApiBase):
             raise ValueError("A bounded, non-empty instruction is required")
         if type(max_actions) is not int or not 1 <= max_actions <= 100:
             raise ValueError("max_actions must be an integer in [1,100]")
+        source = "TEST_VLA" if getattr(self.predictor, "is_test", False) else "VLA"
+        lease = self._lease(source)
         epoch = self._env.context()["epoch"]
         start = self._env.applied_steps
         reason = "action_budget"
@@ -66,7 +72,7 @@ class VlaApi(ApiBase):
                 if (current["epoch"] != epoch or current != context or self._env.paused):
                     reason, interrupted = "cancelled", True
                     break
-                self._env.apply_native(action.tolist(), context=current, source=source,
+                self._env.apply_native(action.tolist(), context=current, source=source, lease=lease,
                                        provenance={"primitive": "run_vla", "instruction": instruction.strip(),
                                                    "request_id": reply.get("request_id"),
                                                    "chunk_index": chunk_index, "chunk_size": len(chunk)})
@@ -83,6 +89,7 @@ class VlaApi(ApiBase):
         Mechanical replay only. No semantic interpretation or task success is implied.
         Sources remain CODE_REPLAY with original provenance, never fresh human input.
         """
+        lease = self._lease("CODE_REPLAY")
         if action_contract != self._env.context()["action_contract"]:
             raise ValueError("Replay action contract mismatch")
         chunk = self._env.validate_chunk(actions)
@@ -99,7 +106,7 @@ class VlaApi(ApiBase):
             if self._env.paused or self._env.ended or self._env.context()["epoch"] != epoch:
                 break
             self._env.apply_native(action.tolist(), context=self._env.context(),
-                                   source="CODE_REPLAY", provenance={"original_source": origin})
+                                   source="CODE_REPLAY", lease=lease, provenance={"original_source": origin})
             applied += 1
         return {"applied_actions": applied, "task_completed": self._env.task_completed()}
 
@@ -111,6 +118,7 @@ class VlaApi(ApiBase):
         max_actions: Integer [1,100]. Returns reached=False if the budget is exhausted.
         No collision-free path or specific joint configuration is promised.
         """
+        lease = self._lease("CODE")
         if type(max_actions) is not int or not 1 <= max_actions <= 100:
             raise ValueError("Invalid move budget")
         target = np.asarray(position_m, dtype=float)
@@ -140,10 +148,11 @@ class VlaApi(ApiBase):
             if not np.allclose(c.action_output_transform, 0):
                 raise ValueError("Nonzero controller action offset is unsupported")
             native = np.r_[delta / c.action_scale, self._env.gripper]
-            self._env.apply_native(native, context=self._env.context(), source="CODE")
+            self._env.apply_native(native, context=self._env.context(), source="CODE", lease=lease)
         return {"reached": False, "stop_reason": "action_budget"}
 
     def _grip(self, command, steps):
+        lease = self._lease("CODE")
         if type(steps) is not int or not 1 <= steps <= 40:
             raise ValueError("Gripper steps must be in [1,40]")
         epoch = self._env.context()["epoch"]
@@ -151,7 +160,7 @@ class VlaApi(ApiBase):
         for _ in range(steps):
             if self._env.ended or self._env.paused or self._env.context()["epoch"] != epoch:
                 break
-            self._env.apply_native([0]*6 + [command], context=self._env.context(), source="CODE")
+            self._env.apply_native([0]*6 + [command], context=self._env.context(), source="CODE", lease=lease)
             applied += 1
         return {"applied_actions": applied}
 

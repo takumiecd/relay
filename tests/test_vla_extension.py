@@ -47,7 +47,7 @@ class Env(BaseEnv):
         return self.get_observation(), {}
     def step(self, action):
         raise AssertionError("The VLA must use the validated application entry point")
-    def apply_native(self, action, *, context, source, provenance=None):
+    def apply_native(self, action, *, context, source, provenance=None, lease=None):
         assert context == self.context()
         self.applied_steps += 1
         self.actions.append((action, source))

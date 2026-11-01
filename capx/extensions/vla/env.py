@@ -84,6 +84,8 @@ class OscLiberoEnv(BaseEnv):
         self.gripper = -1.0
         self.trace = []
         self.recorder = None
+        self.control = None
+        self.after_step = None
         self.video_frames = []
         self.record_video = False
         import_mujoco()
@@ -222,7 +224,7 @@ class OscLiberoEnv(BaseEnv):
         recorder.start(self)
         self.recorder = recorder
 
-    def apply_native(self, action, *, context, source, provenance=None):
+    def apply_native(self, action, *, context, source, provenance=None, lease=None):
         """Only physical action entry point. Check context again after inference."""
         self._owner()
         native = np.asarray(action, dtype=np.float64)
@@ -236,6 +238,11 @@ class OscLiberoEnv(BaseEnv):
                 raise RuntimeError("Stale action context")
             if self.paused or self.ended or self.applied_steps >= self.max_steps:
                 raise RuntimeError("Motion is paused or the episode has ended")
+            if self.control is not None:
+                self.control.authorize(lease, source)
+                provenance = dict(self.control.program_metadata, **(provenance or {}))
+            if self.recorder is not None:
+                self.recorder.before_step(self)
             before, _ = self._pose()
             self._activate_context()
             _, reward, done, info = self.handle.step(native.tolist())
@@ -257,8 +264,11 @@ class OscLiberoEnv(BaseEnv):
                 self.recorder.record_step(self, self.trace[-1])
             if self.record_video:
                 self.video_frames.append(self.raw_obs["agentview_image"][::-1, ::-1].copy())
-            return self.get_observation(), float(reward), bool(done or success), bool(
-                self.applied_steps >= self.max_steps), dict(info, task_completed=success)
+            result = (self.get_observation(), float(reward), bool(done or success), bool(
+                self.applied_steps >= self.max_steps), dict(info, task_completed=success))
+        if self.after_step is not None:
+            self.after_step()
+        return result
 
     @staticmethod
     def validate_chunk(actions):

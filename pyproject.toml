@@ -197,6 +197,7 @@ extend-exclude = [
 
 
 [tool.setuptools.package-data]
+"capx.extensions.hybrid" = ["*.html"]
 "capx.extensions.vla" = ["*.txt"]
 "capx.envs" = [
   "assets/ur5_pick_place/*.xml",

@@ -26,12 +26,14 @@ class TrajectoryRecorder:
 
     def _observation(self, env):
         index = env.context()['observation_id']
-        relative = f'observations/{index:06d}'
+        relative = f"observations/{env.context()['epoch']:04d}-{index:06d}"
+        if (self.root / f'{relative}.json').exists():
+            return f'{relative}.json'
         observation = env.policy_observation()
         paths = {}
         for camera, pixels in observation['images'].items():
             name = f'{relative}-{camera}.png'
-            Image.fromarray(pixels).save(self.root / name)
+            Image.fromarray(pixels).save(self.root / name, compress_level=1)
             paths[camera] = name
         physics = f'{relative}-physics.npy'
         np.save(self.root / physics, env.physics_state(), allow_pickle=False)
@@ -52,6 +54,17 @@ class TrajectoryRecorder:
             'initial_observation': self.initial_observation,
             'training_admitted': False, 'quality_review_required': True,
         })
+
+    def before_step(self, env):
+        # A mode change creates a new epoch even when physics has not advanced.
+        self.initial_observation = self._observation(env)
+
+    def record_event(self, env, event):
+        event = dict(event)
+        if event['context'] == env.context():
+            event['observation'] = self._observation(env)
+        with (self.root/'events.jsonl').open('a') as stream:
+            stream.write(json.dumps(event, ensure_ascii=False)+'\n')
 
     def record_step(self, env, event):
         next_observation = self._observation(env)
@@ -78,6 +91,7 @@ def export_views(directory):
     rows = [json.loads(line) for line in (root / 'steps.jsonl').read_text().splitlines()]
     if not rows:
         raise ValueError('Cannot export an empty trajectory')
+    policy = json.loads((root/"policy.json").read_text()) if (root/"policy.json").exists() else episode["metadata"].get("model")
     vla = []
     for row in rows:
         obs = json.loads((root / row['observation']).read_text())
@@ -87,6 +101,7 @@ def export_views(directory):
                     'observation': row['observation'], 'next_observation': row['next_observation'],
                     'observation_origin': episode['metadata'].get('observation_origin', 'direct_capture'),
                     'action_contract': row['context']['action_contract'], 'source': row['source'],
+                    'policy': policy if row['source'] in {'VLA','TEST_VLA'} else None,
                     'provenance': row.get('provenance', {}),
                     'reward': row.get('reward'), 'terminated': row.get('terminated'),
                     'truncated': row.get('truncated'), 'training_admitted': False})
@@ -94,15 +109,35 @@ def export_views(directory):
         for row in vla:
             stream.write(json.dumps(row, ensure_ascii=False, allow_nan=False)+'\n')
     initial = json.loads((root / episode['initial_observation']).read_text())
-    state = np.load(root / initial['physics_state'], allow_pickle=False).tolist()
-    code = replay_code([r['native_action'] for r in rows],
-                       initial['context']['action_contract'], state,
-                       origin=','.join(sorted({r['source'] for r in rows})))
-    (root / 'replay.py').write_text(code)
+    # Longer recordings become a sequence of bounded replay calls.
+    programs = []
+    for offset in range(0, len(rows), 100):
+        block = rows[offset:offset+100]
+        obs = json.loads((root / block[0]['observation']).read_text())
+        state = np.load(root / obs['physics_state'], allow_pickle=False).tolist()
+        programs.append(replay_code([r['native_action'] for r in block],
+                                    initial['context']['action_contract'], state,
+                                    origin=','.join(sorted({r['source'] for r in block}))))
+    (root / 'replay.py').write_text('\n'.join(programs))
     write_json(root / 'code-candidate.json', {
         'instruction': episode['instruction'], 'observation': episode['initial_observation'],
         'code': 'replay.py', 'target_kind': 'numerical_replay', 'semantic_policy': False,
         'training_admitted': False, 'executed_steps': len(rows),
         'steps_sha256': hashlib.sha256((root / 'steps.jsonl').read_bytes()).hexdigest(),
     })
+    # Actual executed programs are separate from mechanically generated replay code.
+    with (root/'vlm-code-candidates.jsonl').open('w') as stream:
+        for metadata_path in sorted((root/'programs').glob('*/metadata.json')):
+            program_id = metadata_path.parent.name
+            steps = [r['timestep'] for r in rows if r.get('provenance',{}).get('program_id')==program_id]
+            if not steps or not (metadata_path.parent/'result.json').exists():
+                continue
+            metadata = json.loads(metadata_path.read_text())
+            result = json.loads((metadata_path.parent/'result.json').read_text())
+            candidate = dict(program_id=program_id, instruction=episode['instruction'],
+                             observation=metadata['observation'],
+                             code=f'programs/{program_id}/code.py', target_kind='executed_program',
+                             first_step=steps[0], last_step=steps[-1], generator=metadata['generator'],
+                             result=result['reason'], training_admitted=False)
+            stream.write(json.dumps(candidate,ensure_ascii=False)+'\n')
     return {'steps': len(rows), 'training_admitted': False, 'semantic_policy': False}

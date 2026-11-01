@@ -1,0 +1,32 @@
+{
+  "test_only": true,
+  "real_llm_inference": false,
+  "real_vla_inference_this_run": false,
+  "real_gamepad_test": false,
+  "human_demonstrations": 0,
+  "training_admitted": false,
+  "source_counts": {
+    "CODE": 7,
+    "TEST_OPERATOR": 40,
+    "TEST_VLA": 55
+  },
+  "browser_manual_median_interval_ms_before": 130.56588172912598,
+  "browser_manual_median_interval_ms_after": 57.355642318725586,
+  "replay": {
+    "verified": true,
+    "training_admitted": false,
+    "original_full_state_available": true,
+    "task_success_claim": false,
+    "applied_actions": 102,
+    "max_eef_error_m": 0.0,
+    "max_physics_state_error": 0.0,
+    "exports": {
+      "steps": 102,
+      "training_admitted": false,
+      "semantic_policy": false
+    }
+  },
+  "raw_steps_sha256": "4abf19725a8a552638fc10a186031e6f5b254c0cd88f2a55144c2f6cba01f901",
+  "tests": "32 passed (real simulator enabled)",
+  "upstream_base": "53e9966d7a8e2fa7494676772bccc35280f5c0ed"
+}

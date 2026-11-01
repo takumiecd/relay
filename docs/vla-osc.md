@@ -19,7 +19,8 @@ CaP-X CodeExecutionEnvBase.step(Python文字列)
 シミュレータは一つだけ。生成コードの操作APIとVLAは同じ物理状態を使う。
 HTTP threadやGPU workerは物理を進めず、作成threadだけがstep/観測/終了を扱う。
 `pause()`はepochを更新するので、停止前に要求した推論が後から届いても適用しない。
-人の入力UI・三者の切替UIはこの段階ではまだ追加していない。
+三者の切替UIは[hybrid-console.md](hybrid-console.md)で追加した。
+このページの有限デモは切替を使わない単独経路である。
 
 実測結果は[verification/vla-osc-20261102.md](verification/vla-osc-20261102.md)を参照。
 
@@ -221,6 +222,7 @@ CAPX_LIBERO_SOURCE=capx/third_party/LIBERO-PRO \
 
 `move_to_pose`は近傍の手先目標へOSCで近づける処理で、衝突回避plannerではない。
 関節軌道APIは公開せず、特定の関節姿勢やnull-spaceの再現を約束しない。
-三者のUI、採用済みデータの学習formatへの変換、物体認識API、MCP/skill、LLM自身の推論接続は次段階。
+三者のUIとLLMのHTTP接続口は[hybrid-console.md](hybrid-console.md)を参照。
+採用済みデータの学習formatへの変換、物体認識API、MCP/skillは次段階。
 CaP-X上流のPython executorは任意importと低レベルenvへのアクセスを許す。今回の停止は
 追加した操作APIを通す処理で有効であり、任意のPythonを強制停止できるsandboxではない。

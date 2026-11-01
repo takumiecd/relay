@@ -28,10 +28,11 @@ def run(source, output, libero_source, trajectory=False):
         rows = json.loads(source.read_text())
         profile = json.loads((source.parent / 'report.json').read_text())['controller']
         expected_states = None
-    if not rows or len(rows) > 100:
-        raise ValueError('Expected a finite 1..100 step trace')
+    if not rows or len(rows) > 10000:
+        raise ValueError('Expected a finite 1..10000 step trace')
     env = OscLiberoEnv(suite_name=profile['suite'], task_id=profile['task_id'],
-                       control_freq=profile['control_freq'])
+                       control_freq=profile['control_freq'],
+                       max_steps=max(profile.get('max_steps',1000),len(rows)+1))
     report = {'verified': False, 'training_admitted': False,
               'original_full_state_available': trajectory, 'task_success_claim': False}
     try:
@@ -45,14 +46,19 @@ def run(source, output, libero_source, trajectory=False):
                     'original_sources': sorted({r['source'] for r in rows})}
         env.attach_recorder(TrajectoryRecorder(output / 'trajectory', metadata))
         env.enable_video_capture()
-        code = replay_code([r['native_action'] for r in rows],
-                           rows[0]['context']['action_contract'], initial.tolist(),
-                           origin=','.join(metadata['original_sources']))
-        (output / 'executed-code.py').write_text(code)
         task = VlaCodeEnv(env, None)  # Numerical replay has no policy inference.
-        _, _, _, _, info = task.step(code)
-        if info['sandbox_rc'] != 0:
-            raise RuntimeError(info['stderr'])
+        programs = []
+        for offset in range(0,len(rows),100):
+            block = rows[offset:offset+100]
+            expected = expected_states[offset] if expected_states is not None else env.physics_state()
+            code = replay_code([r['native_action'] for r in block],
+                               rows[0]['context']['action_contract'], expected.tolist(),
+                               origin=','.join(metadata['original_sources']))
+            programs.append(code)
+            (output/'executed-code.py').write_text('\n'.join(programs))
+            _, _, _, _, info = task.step(code)
+            if info['sandbox_rc'] != 0:
+                raise RuntimeError(info['stderr'])
         if env.applied_steps != len(rows):
             raise AssertionError('Replay did not apply every recorded action')
         maximum = 0.

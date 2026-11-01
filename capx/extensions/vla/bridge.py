@@ -12,6 +12,10 @@ from .contracts import LIBERO_OSC
 from .codec import encode_observation, digest
 
 
+class InferenceCancelled(RuntimeError):
+    pass
+
+
 class PolicyBridge:
     def __init__(self, host="127.0.0.1", port=8896, timeout=120, action_contract=LIBERO_OSC):
         self.token = secrets.token_urlsafe(32)
@@ -115,13 +119,22 @@ class PolicyBridge:
             self.pending, self.result = request, None
             self.condition.notify_all()
             try:
-                if not self.condition.wait_for(lambda: self.result or self.error or self.closed, self.timeout):
+                if not self.condition.wait_for(lambda: self.result or self.error or self.closed or self.pending is not request, self.timeout):
                     raise TimeoutError("VLA response deadline exceeded")
                 if self.error or self.closed:
                     raise RuntimeError(self.error or "Bridge closed")
+                if self.pending is not request:
+                    raise InferenceCancelled("Inference superseded by control change")
                 return self.result
             finally:
+                if self.pending is request:
+                    self.pending, self.result = None, None
+
+    def cancel_pending(self, context=None):
+        with self.condition:
+            if self.pending is not None and (context is None or self.pending["context"] == context):
                 self.pending, self.result = None, None
+                self.condition.notify_all()
 
     def request_close(self):
         with self.condition:
