@@ -43,6 +43,7 @@ export class KeyboardController {
   constructor({ context, stop, mode, claim, change, hint, key }) {
     Object.assign(this, { context, stop, mode, claim, change, hint, key });
     this.held = new Set();
+    this.gripperKey = null;
     this.focused = true;
   }
   prevent(event) {
@@ -85,6 +86,7 @@ export class KeyboardController {
     if (MOVEMENT_KEYS.has(code) && this.context().mode === "HUMAN") {
       this.prevent(event);
       this.held.add(code);
+      if (code === "KeyC" || code === "KeyV") this.gripperKey = code;
       this.key(code.replace("Key", ""));
       this.change();
     }

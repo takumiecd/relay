@@ -101,3 +101,19 @@ test("Legacy printable key values normalize to physical motion keys", () => {
   keyboard.down(event("", { key: "r" }));
   assert.ok(keyboard.held.has("KeyR"));
 });
+
+test("C/V select a persistent gripper intent before Space, and last selection wins", () => {
+  const { keyboard } = fixture("HUMAN");
+  keyboard.down(event("KeyC"));
+  keyboard.up(event("KeyC"));
+  assert.equal(keyboard.gripperKey, "KeyC");
+  assert.equal(keyboard.held.has("KeyC"), false);
+  keyboard.down(event("Space"));
+  assert.equal(keyboard.gripperKey, "KeyC");
+  keyboard.down(event("KeyV"));
+  keyboard.up(event("KeyV"));
+  assert.equal(keyboard.gripperKey, "KeyV");
+  keyboard.up(event("Space"));
+  assert.equal(keyboard.held.size, 0);
+  assert.equal(keyboard.gripperKey, "KeyV");
+});

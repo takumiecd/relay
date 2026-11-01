@@ -357,3 +357,59 @@ def test_stop_during_committed_step_does_not_leave_running_status(mode,tmp_path)
         assert env.applied_steps==1 and runner.control.mode=='STOPPED'
         assert runner.message=='停止中' and not runner.chunk
     finally:runner.close()
+
+
+def test_space_advances_stationary_physics_and_grip_selection_is_latched():
+    env=FakeEnv();clock=[10.]
+    control=ControlSession(env,clock=lambda:clock[0],test_operator=True)
+    control.switch('HUMAN',client_id='test')
+    def packet(sequence,keys,deadman):
+        assert control.submit_input(client_id='test',sequence=sequence,epoch=env.epoch,
+                                    keys=keys,speed=.25,deadman=deadman)
+    # A C tap selects close without moving; Space later supplies the deadman.
+    packet(1,['KeyC'],False)
+    assert control.human_action() is None and env.gripper==-1
+    packet(2,['Space'],True)
+    for _ in range(3):
+        action,_,_=control.human_action()
+        assert action==[0.]*6+[1.]
+        env.gripper=1. # Same target on subsequent ticks must still produce an action.
+    packet(3,['KeyV'],False)
+    assert control.human_action() is None
+    packet(4,['Space'],True)
+    assert control.human_action()[0]==[0.]*6+[-1.]
+    packet(5,[],False)
+    assert control.human_action() is None
+    packet(6,['Space'],True)
+    clock[0]=10.5
+    assert control.human_action() is None and control.mode=='HUMAN'
+
+
+def test_real_gripper_closes_and_opens_with_only_space_after_selection(real_hybrid_env,tmp_path):
+    env=real_hybrid_env;env.reset(seed=0)
+    runner=HybridRunner(env,tmp_path,test_operator=True,realtime=False)
+    try:
+        runner.control.switch('HUMAN',client_id='test')
+        initial=float(np.abs(env.get_observation()['gripper_qpos']).sum())
+        sequence=0
+        def packet(keys,enabled):
+            nonlocal sequence
+            sequence+=1
+            assert runner.control.submit_input(client_id='test',sequence=sequence,epoch=env.epoch,
+                                               keys=keys,speed=.25,deadman=enabled)
+        packet(['KeyC'],False);runner.tick()
+        assert env.applied_steps==0
+        for _ in range(25):
+            packet(['Space'],True);runner.tick()
+        closed=float(np.abs(env.get_observation()['gripper_qpos']).sum())
+        assert env.applied_steps==25 and closed < initial-.02
+        packet(['KeyV'],False);runner.tick()
+        assert env.applied_steps==25
+        for _ in range(25):
+            packet(['Space'],True);runner.tick()
+        opened=float(np.abs(env.get_observation()['gripper_qpos']).sum())
+        assert env.applied_steps==50 and opened>closed+.02
+        assert all(row['native_action'][:6]==[0.]*6 for row in env.trace)
+        packet([],False);runner.tick()
+        assert env.applied_steps==50
+    finally:runner.close()

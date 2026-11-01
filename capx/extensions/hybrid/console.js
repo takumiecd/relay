@@ -58,7 +58,10 @@ function mergeStatus(next) {
 async function command(path, body, { preserveKeys = false, message } = {}) {
   const stop = path === "/api/mode" && body.mode === "STOPPED";
   if (pendingCommand !== null && !stop) return;
-  if (!preserveKeys) keyboard.release();
+  if (!preserveKeys) {
+    keyboard.gripperKey = null;
+    keyboard.release();
+  }
   padArmed = false;
   const id = ++commandSequence;
   pendingCommand = id;
@@ -229,12 +232,13 @@ function padInput() {
       deadzone(pad.axes[3]),
       -deadzone(pad.axes[2]),
     ],
-    keys: [...(pressed(4) ? ["KeyC"] : []), ...(pressed(0) ? ["KeyV"] : [])],
+    keys: [...(pressed(4) ? ["KeyV"] : []), ...(pressed(0) ? ["KeyC"] : [])],
     enabled: pressed(5) && padArmed,
   };
 }
 async function sendInput(forceRelease = false) {
   const pad = padInput();
+  if (pad.keys.length) keyboard.gripperKey = pad.keys[0];
   if (
     !owned() ||
     (pendingCommand !== null && !forceRelease) ||
@@ -248,6 +252,13 @@ async function sendInput(forceRelease = false) {
     !isEditing(document.activeElement) &&
     (keyboard.held.has("Space") || pad.enabled) &&
     !state.ended;
+  const selecting =
+    !forceRelease &&
+    keyboard.focused &&
+    !document.hidden &&
+    !isEditing(document.activeElement);
+  const gripKeys =
+    selecting && keyboard.gripperKey ? [keyboard.gripperKey] : [];
   const sequence = ++inputSequence;
   inputRequests++;
   try {
@@ -258,14 +269,13 @@ async function sendInput(forceRelease = false) {
         sequence,
         epoch: state.epoch,
         keys: enabled
-          ? [
-              ...new Set(
-                [...keyboard.held]
-                  .filter((key) => MOVEMENT_KEYS.has(key))
-                  .concat(pad.keys),
-              ),
-            ]
-          : [],
+          ? [...keyboard.held]
+              .filter(
+                (key) =>
+                  MOVEMENT_KEYS.has(key) && !["KeyC", "KeyV"].includes(key),
+              )
+              .concat(gripKeys)
+          : gripKeys,
         axes: enabled ? pad.axes : [0, 0, 0, 0, 0, 0],
         speed: Number($("speed").value) / 100,
         deadman: enabled,
@@ -393,6 +403,7 @@ async function update() {
     connected = true;
     if (next.epoch >= state.epoch && pendingCommand === null) {
       if (next.epoch !== state.epoch) {
+        keyboard.gripperKey = null;
         keyboard.release();
         padArmed = false;
       }

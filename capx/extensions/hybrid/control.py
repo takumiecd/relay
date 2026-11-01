@@ -51,6 +51,7 @@ class ControlSession:
         self.last_reason = "attached"
         self.client_id = None
         self.command_sequences = {}
+        self.gripper_target = float(env.gripper)
         self.program_id = None
         self.program_metadata = {}
         self.events = deque()
@@ -85,6 +86,7 @@ class ControlSession:
             self.mode = mode
             self.last_reason = reason
             self.client_id = client_id if mode == "HUMAN" else None
+            self.gripper_target = float(self.env.gripper)
             self.program_id = None
             self.program_metadata = {}
             self.input = None
@@ -182,6 +184,11 @@ class ControlSession:
             ):
                 return False
             self.last_sequence = sequence
+            # Selecting a target does not move physics until the deadman is held.
+            if "KeyC" in keys:
+                self.gripper_target = 1.0
+            elif "KeyV" in keys:
+                self.gripper_target = -1.0
             self.input = dict(
                 keys=set(keys),
                 speed=float(speed),
@@ -213,9 +220,8 @@ class ControlSession:
             ]
             axes = [max(-1.0, min(1.0, a + b)) for a, b in zip(axes, item["axes"])]
             gain = item["speed"] * (0.2 if {"ShiftLeft", "ShiftRight"} & k else 1.0)
-            gripper = -1.0 if "KeyC" in k else 1.0 if "KeyV" in k else self.env.gripper
-            if not any(axes) and gripper == self.env.gripper:
-                return None
+            # The actuator needs repeated physics steps even for the same target.
+            gripper = self.gripper_target
             source = "TEST_OPERATOR" if self.test_operator else "HUMAN"
             return (
                 [a * gain for a in axes] + [gripper],

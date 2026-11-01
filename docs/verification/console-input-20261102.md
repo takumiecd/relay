@@ -48,3 +48,21 @@ CAPX_LIBERO_SOURCE=capx/third_party/LIBERO-PRO \
 ```
 
 JavaScript 7件、Python 37件がpass。初期化／記録／物理動作は実LIBERO-PROを含む。
+
+## C/Vと静止時の連続step（追加修正）
+
+C=閉じる、V=開くへ変更した。従来は同じgripper指令・移動ゼロの場合に
+stepを省いており、指の開閉が完了する前に物理が止まっていた。
+Space中は移動ゼロでも繰り返しstepし、キーを離した後も選択した開閉目標を保持する。
+C/Vだけでは物理を進めず、Space release・通信期限切れ・Escの停止は維持する。
+ゲームパッドのL1=開く、✕=閉じるは維持した。
+
+実シミュレータのテストで閉じ25 step→開き25 stepを確認。
+ブラウザではCをtap後にSpaceだけで24 step閉じ、Vをtap後にSpaceだけで開き、
+さらにSpaceだけを押して合計61 stepへ進むことを確認した。
+全stepの手先への変位指令6要素は0。指joint位置の絶対値合計は
+0.0774583 m→0.0015403 m→0.0791288 mになった（指先間距離の実測ではない）。
+確認値は`output/hybrid-gripper-01/check.json`に保持した。
+更新前の230 stepは`output/hybrid-layout-ready-01/actions.json`に保存した。
+
+追加後のテストはPython39件、JavaScript8件がpass。
