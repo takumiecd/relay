@@ -39,7 +39,7 @@
         <div id="episode-banner" class="episode-banner" hidden>
           <div>
             <strong id="episode-title">この試行は終了しました</strong>
-            <p>記録を残して、新しい試行へ進めます。</p>
+            <p>バーで途中へ戻るか、記録を残して新しい試行へ進めます。</p>
           </div>
           <button id="next-trial" class="button primary">
             新しい試行を始める
@@ -72,9 +72,27 @@
             </div>
           </article>
         </div>
+        <section class="timeline" aria-label="記録の巻き戻し">
+          <div class="timeline-heading">
+            <label for="history-branch">記録のタイムライン</label>
+            <select id="history-branch" aria-label="記録の経路"></select>
+            <span id="history-status">記録を準備しています</span>
+          </div>
+          <div class="timeline-controls">
+            <button id="step-back" class="button" title="1step戻る" aria-label="1step戻る">‹</button>
+            <input id="history-step" type="range" min="0" max="0" value="0" step="1" aria-label="記録ステップを選択" />
+            <button id="step-forward" class="button" title="1step進む" aria-label="1step進む">›</button>
+            <input id="step-number" type="number" min="0" max="0" value="0" step="1" aria-label="移動先のstep" />
+            <button id="history-head" class="button subtle">末尾へ</button>
+          </div>
+          <div class="timeline-caption">
+            <span id="history-hint">バーを離すとその状態へ移動・停止します。</span>
+            <button id="resume-here">ここから手動再開 ↗</button>
+          </div>
+        </section>
         <div class="workspace-footer">
           <div class="metric">
-            <span>記録ステップ</span><strong id="steps">0</strong>
+            <span>現在 / 経路のstep</span><strong id="steps">0 / 0</strong>
           </div>
           <div class="metric position">
             <span>手先の位置 <small>m</small></span

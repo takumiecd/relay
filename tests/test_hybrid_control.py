@@ -413,3 +413,181 @@ def test_real_gripper_closes_and_opens_with_only_space_after_selection(real_hybr
         packet([],False);runner.tick()
         assert env.applied_steps==50
     finally:runner.close()
+
+
+def test_timeline_restores_physics_gripper_and_both_views_then_forks_without_overwriting(real_hybrid_env, tmp_path):
+    import hashlib
+    from capx.extensions.vla.recording import TrajectoryRecorder
+    from capx.extensions.vla.recording import read_lineage
+    env = real_hybrid_env
+    env.reset(seed=0)
+    env.attach_recorder(TrajectoryRecorder(tmp_path/'trajectory', {'test_only': True}))
+    runner = HybridRunner(env, tmp_path, test_operator=True, realtime=False)
+    try:
+        runner.control.switch('HUMAN', client_id='operator')
+        snapshots = [env.capture_checkpoint()]
+        for i in range(12):
+            runner.control.submit_input(client_id='operator', sequence=i, epoch=env.epoch,
+                                        keys=['KeyC', 'KeyR'], speed=.2, deadman=True)
+            runner.tick()
+            snapshots.append(env.capture_checkpoint())
+        old_epoch = env.epoch
+        old_lease = runner.control.begin('TEST_OPERATOR')
+        original_steps = tmp_path/'trajectory/steps.jsonl'
+        original_hash = hashlib.sha256(original_steps.read_bytes()).hexdigest()
+        manifest = runner.timeline.status()
+        assert manifest['cursor'] == manifest['head'] == 12
+        # HTTP callers only queue a restore; they cannot touch physics/rendering.
+        response = runner.request_seek('0001', 4, client_id='page', sequence=1, expected_epoch=old_epoch)
+        assert response['accepted'] and response['seeking']
+        assert env.applied_steps == 12 and runner.control.mode == 'STOPPED'
+        assert not runner.control.valid(old_lease)
+        assert not runner.control.submit_input(client_id='operator', sequence=200, epoch=old_epoch,
+                                              keys=['KeyW'], speed=.5, deadman=True)
+        runner.tick()
+        assert env.applied_steps == 4 and env.paused and not runner.seeking
+        assert env.recorder is None
+        restored = env.capture_checkpoint()
+        np.testing.assert_array_equal(restored['physical'], snapshots[4]['physical'])
+        np.testing.assert_array_equal(restored['gripper_action'], snapshots[4]['gripper_action'])
+        # Force new renders instead of accepting cached pixels as evidence.
+        env._activate_context()
+        for camera, raw in [('agentview', 'agentview_image'),
+                            ('robot0_eye_in_hand', 'robot0_eye_in_hand_image')]:
+            rendered = env.handle.env.sim.render(height=96, width=96, camera_name=camera)
+            np.testing.assert_array_equal(rendered, snapshots[4]['raw_obs'][raw])
+        assert env.context()['epoch'] > old_epoch
+        with pytest.raises(RuntimeError, match='Stale'):
+            env.apply_native([0]*6+[-1], context=snapshots[4].get('context', dict(session_id='old')),
+                             source='TEST_OPERATOR', lease=old_lease)
+        # Identical continuation from a mid-close checkpoint must be exact, not just visually close.
+        runner.control.switch('HUMAN', client_id='operator')
+        runner.control.submit_input(client_id='operator', sequence=0, epoch=env.epoch,
+                                    keys=['KeyC', 'KeyR'], speed=.2, deadman=True)
+        runner.tick()
+        assert runner.timeline.status()['branch'] == '0002'
+        assert runner.timeline.status()['head'] == 5
+        np.testing.assert_array_equal(env.capture_checkpoint()['physical'], snapshots[5]['physical'])
+        assert env.recorder.count == 1
+        assert hashlib.sha256(original_steps.read_bytes()).hexdigest() == original_hash
+        branch_episode = json.loads((env.recorder.root/'episode.json').read_text())
+        assert branch_episode['metadata']['parent_step'] == 4
+        assert branch_episode['metadata']['parent_trajectory'] == '../../../trajectory'
+        assert not branch_episode['training_admitted']
+        route = read_lineage(env.recorder.root)
+        assert len(route) == 5
+        assert [root for root, _ in route[:4]] == [(tmp_path/'trajectory').resolve()]*4
+        assert route[-1][0] == env.recorder.root.resolve()
+        # Forward navigation restores the original future; stepping there appends to that future only.
+        response = runner.request_seek('0001', 12, client_id='page', sequence=2, expected_epoch=env.epoch)
+        assert response['accepted']
+        runner.tick()
+        np.testing.assert_array_equal(env.capture_checkpoint()['physical'], snapshots[12]['physical'])
+        assert runner.timeline.status()['head'] == 12
+        assert hashlib.sha256(original_steps.read_bytes()).hexdigest() == original_hash
+        # Model-reset boundaries cannot silently accept an old live snapshot.
+        bad = dict(snapshots[4], model_generation='another reset')
+        with pytest.raises(ValueError, match='different simulator'):
+            env.restore_checkpoint(bad)
+        runner.save_trial('test_complete')
+        assert (tmp_path/'branches/0002/trajectory/vla-candidates.jsonl').exists()
+        assert len((tmp_path/'history/0001-points.jsonl').read_text().splitlines()) == 13
+        assert len((tmp_path/'history/0002-points.jsonl').read_text().splitlines()) == 2
+        # Invalid seek targets leave the authority epoch and physical state unchanged.
+        current_epoch = env.epoch
+        with pytest.raises(ValueError):
+            runner.request_seek('0001', 999, client_id='page', sequence=3, expected_epoch=current_epoch)
+        assert env.epoch == current_epoch
+        assert not runner.request_seek('0001', 0, client_id='page', sequence=1,
+                                       expected_epoch=current_epoch)['accepted']
+    finally:
+        runner.close()
+
+
+def test_seek_discards_delayed_vla_and_code_can_resume_in_a_new_branch(real_hybrid_env, tmp_path):
+    from capx.extensions.vla.recording import TrajectoryRecorder, read_lineage
+    entered, release = threading.Event(), threading.Event()
+    class Slow(TestVla):
+        def predict(self, *args):
+            entered.set()
+            release.wait(3)
+            return super().predict(*args)
+    env = real_hybrid_env
+    env.reset(seed=0)
+    env.attach_recorder(TrajectoryRecorder(tmp_path/'trajectory', {'test_only': True}))
+    runner = HybridRunner(env, tmp_path, predictor=Slow(), test_operator=True, realtime=False)
+    try:
+        runner.control.switch('HUMAN', client_id='test')
+        for i in range(5):
+            runner.control.submit_input(client_id='test', sequence=i, epoch=env.epoch,
+                                        keys=['KeyR'], speed=.25, deadman=True)
+            runner.tick()
+        runner.control.switch('VLA')
+        runner.tick()
+        assert entered.wait(1)
+        stale_job = runner.vla_job
+        assert runner.request_seek('0001', 2, client_id='page', sequence=1,
+                                   expected_epoch=env.epoch)['accepted']
+        runner.tick()
+        release.set()
+        assert stale_job.done.wait(2)
+        runner.tick()
+        assert env.applied_steps == 2 and runner.control.mode == 'STOPPED'
+        assert not runner.chunk
+        assert not any(row['source'] == 'TEST_VLA' for row in env.trace)
+        # Generated/external code must be saved with the new branch, never in its old future.
+        runner.submit_code('s = get_robot_state()\np = s["robot_cartesian_pos"][:3]\nRESULT = move_to_pose([p[0], p[1], p[2]+0.01], max_actions=8)', 'page')
+        deadline = time.monotonic()+15
+        while runner.control.mode != 'STOPPED' and time.monotonic() < deadline:
+            runner.tick()
+            time.sleep(.01)
+        assert runner.control.mode == 'STOPPED'
+        assert env.applied_steps > 2
+        assert runner.timeline.status()['branch'] == '0002'
+        assert all(row['source'] == 'CODE' for _, row in read_lineage(env.recorder.root)[2:])
+        assert list((tmp_path/'branches/0002/trajectory/programs').glob('*/result.json'))
+        assert not list((tmp_path/'trajectory/programs').glob('*/code.py'))
+        # Starting a fresh trial from a historical cursor preserves all old branch exports.
+        assert runner.request_seek('0001', 1, client_id='page', sequence=2,
+                                   expected_epoch=env.epoch)['accepted']
+        runner.tick()
+        assert runner.request_trial(client_id='page', sequence=3, expected_epoch=env.epoch)['accepted']
+        runner.tick()
+        assert runner.trial_index == 2 and env.applied_steps == 0
+        assert runner.timeline.status()['branches'] == [dict(id='0001',head=0,parent=None,parent_step=None)]
+        assert (tmp_path/'trajectory/vla-candidates.jsonl').exists()
+        assert (tmp_path/'branches/0002/trajectory/vlm-code-candidates.jsonl').exists()
+    finally:
+        release.set()
+        runner.close()
+
+
+def test_finished_episode_can_seek_before_end_and_resume_vla(real_hybrid_env, tmp_path):
+    from capx.extensions.vla.recording import TrajectoryRecorder
+    env = real_hybrid_env
+    env.reset(seed=0)
+    previous_limit = env.max_steps
+    env.max_steps = 4
+    env.attach_recorder(TrajectoryRecorder(tmp_path/'trajectory', {'test_only': True}))
+    runner = HybridRunner(env, tmp_path, predictor=TestVla(), test_operator=True, realtime=False)
+    try:
+        runner.control.switch('HUMAN', client_id='test')
+        for i in range(4):
+            runner.control.submit_input(client_id='test', sequence=i, epoch=env.epoch,
+                                        keys=['KeyR'], speed=.1, deadman=True)
+            runner.tick()
+        assert env.ended
+        assert runner.request_seek('0001', 1, client_id='page', sequence=1,
+                                   expected_epoch=env.epoch)['accepted']
+        runner.tick()
+        assert not env.ended and runner.control.mode == 'STOPPED'
+        runner.control.switch('VLA')
+        runner.tick()
+        assert runner.vla_job.done.wait(2)
+        runner.tick()
+        assert env.applied_steps == 2 and env.trace[-1]['source'] == 'TEST_VLA'
+        assert runner.timeline.status()['branch'] == '0002'
+        assert runner.timeline.branches['0001']['recorder'].count == 4
+    finally:
+        runner.close()
+        env.max_steps = previous_limit

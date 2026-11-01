@@ -141,3 +141,24 @@ def export_views(directory):
                              result=result['reason'], training_admitted=False)
             stream.write(json.dumps(candidate,ensure_ascii=False)+'\n')
     return {'steps': len(rows), 'training_admitted': False, 'semantic_policy': False}
+
+
+def read_lineage(directory, _seen=None):
+    """Resolve a branch's inherited prefix without duplicating original raw records."""
+    root = Path(directory).resolve()
+    seen = set() if _seen is None else set(_seen)
+    if root in seen:
+        raise ValueError('Trajectory lineage contains a cycle')
+    seen.add(root)
+    episode = json.loads((root/'episode.json').read_text())
+    metadata = episode.get('metadata', {})
+    rows_path = root/'steps.jsonl'
+    local = [(root, json.loads(line)) for line in rows_path.read_text().splitlines()] if rows_path.exists() else []
+    prefix = []
+    if 'parent_trajectory' in metadata:
+        parent = read_lineage(root/metadata['parent_trajectory'], seen)
+        cut = metadata['parent_step']
+        if type(cut) is not int or not 0 <= cut <= len(parent):
+            raise ValueError('Invalid parent trajectory step')
+        prefix = parent[:cut]
+    return prefix + local

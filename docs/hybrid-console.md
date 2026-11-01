@@ -103,7 +103,42 @@ headerの「新しい試行」で、今の記録を保存・exportして初期�
 
 最初の記録は`output/trajectory/`、次からは`output/trials/0002/trajectory/`等へ分ける。
 各試行のaction・summary・コードも個別に残し、過去のraw記録は上書きしない。
-これは新しい独立した試行であり、任意時点への巻き戻しや採用branchの機能ではない。
+任意時点へ戻る場合は、下記のタイムラインを使う。
+
+## stepを選んで巻き戻す・進める
+
+カメラの下のシークバーで記録済みのstepを選ぶ。バーを離すと操作を停止し、その物理状態へ復元する。
+左右のボタンは記録の1step戻る／進む。「末尾へ」で選択中の経路の最後へ戻る。
+数字欄にstepを入力してEnterでも移動できる。操作速度のスライダーとは独立している。
+
+「ここから手動再開」またはH → Spaceで再開する。PでVLA、LでLLMへも再開できる。
+途中から新たに操作すると新しい分岐を作り、巻き戻す前の未来は上書きしない。
+経路の選択欄で「元の経路」「分岐2」等を切り替えられる。
+終わったエピソードでも、終了前のstepへ戻れば再開できる。自動再開はしない。
+
+`history/manifest.json`に分岐と現在位置、`history/*-points.jsonl`にcheckpointの参照を記録する。
+最初の経路のraw記録は`trajectory/`、分岐の新規区間は`branches/0002/trajectory/`等へ保存する。
+分岐の`episode.json`のmetadataには`parent_trajectory`と絶対stepの`parent_step`を残す。
+`read_lineage()`と`vla.replay --trajectory`は親の先頭区間と分岐の実行区間をつなげて読める。
+UIで経路を表示しただけでは教師として採用しない。採用の判断・区間指定は次段階。
+
+checkpointはMuJoCoのintegration state（warmstart・ctrlを含む）、OSCの目標・内部状態、
+グリッパー開閉の蓄積値、robot buffer、観測cache、乱数状態、終了flagを保存する。
+復元はsimulatorのowner threadとGL contextで行い、epoch更新で古い推論・入力を無効化する。
+現在は**同じ稼働中のsimulatorモデル／reset内**の状態復元に対応する。
+checkpointはpickleを含まないNPZ/JSON。各stepで画像・checkpointを保存するためディスク使用量は増える。
+
+サーバーを再起動して一つの経路を再構築する場合は、別の出力先を指定する。
+保存済みactionを先頭から実行し、全stepの物理状態が完全一致した場合だけ画面を開く。
+元の記録は残し、再構築した操作のsourceは`CODE_REPLAY`、元のsourceはprovenanceに残す。
+以前の全分岐をUIへ一括復旧する機能ではなく、指定した経路の復旧である。
+
+```bash
+.local/openvla-sim/bin/python -m capx.extensions.hybrid.server \
+  --test-vla --test-llm --test-operator \
+  --restore-trajectory output/previous/branches/0002/trajectory \
+  --output output/resumed
+```
 
 ## コードの実行
 
@@ -151,7 +186,7 @@ VLA推論・LLM生成は別threadで待つ。遅延結果はepoch/contextと権�
 
 ## 今後
 
-切替とその記録は実装した。巻き戻し・branch採用・人が確認した説明や成功判定、
+切替・巻き戻し・分岐記録は実装した。branch採用・人が確認した説明や成功判定、
 意味のあるコードへの要約・学習用format変換・学習そのものはまだ実装していない。
 本番の人の修正デモと、実VLA＋GPU上の実LLMを同時に接続した試験は次の検証になる。
 

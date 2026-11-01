@@ -1,0 +1,71 @@
+{
+  "schema": "capx.timeline-verification.v1",
+  "date": "2026-11-02",
+  "test_counts": {
+    "python": 42,
+    "javascript": 8
+  },
+  "environment": {
+    "mujoco": "2.3.7",
+    "controller": "OSC_POSE",
+    "test_vla": true,
+    "test_llm": true,
+    "test_operator": true
+  },
+  "live_ui": {
+    "original_steps": 113,
+    "seek_steps": [
+      50,
+      51
+    ],
+    "fork_step": 51,
+    "new_steps": 12,
+    "branch_head": 63,
+    "original_future_preserved": true,
+    "forward_navigation_to_original": true
+  },
+  "reconstruction": {
+    "input": "output/hybrid-gripper-01/trajectory",
+    "steps": 113,
+    "every_recorded_physics_state_exact": true,
+    "recorded_source": "CODE_REPLAY"
+  },
+  "branch_replay": {
+    "verified": true,
+    "training_admitted": false,
+    "original_full_state_available": true,
+    "task_success_claim": false,
+    "applied_actions": 63,
+    "max_eef_error_m": 0.0,
+    "max_physics_state_error": 0.0,
+    "exports": {
+      "steps": 63,
+      "training_admitted": false,
+      "semantic_policy": false
+    }
+  },
+  "checkpoint_validation": {
+    "integration_state_including_ctrl_and_warmstart": true,
+    "mid_gripper_continuation_bitwise_equal": true,
+    "both_fresh_camera_renders_bitwise_equal": true,
+    "stale_inference_discarded": true,
+    "code_saved_to_new_branch": true,
+    "terminal_seek_then_vla_resume": true,
+    "raw_original_steps_hash_unchanged": true
+  },
+  "limitations": [
+    "same live model/reset checkpoint scope",
+    "branch adoption is not implemented",
+    "actual VLA and actual LLM are not connected in this console session"
+  ],
+  "training_admitted": false,
+  "latest_console_check": {
+    "output": "output/hybrid-timeline-ready-01",
+    "numeric_seek": 80,
+    "fork_step": 80,
+    "new_steps": 12,
+    "branch_head": 92,
+    "final_original_cursor": 113,
+    "final_mode": "STOPPED"
+  }
+}

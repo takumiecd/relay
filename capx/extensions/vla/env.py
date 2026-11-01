@@ -6,6 +6,7 @@ import ctypes
 import ctypes.util
 import json
 import os
+import random
 from pathlib import Path
 import sys
 import threading
@@ -86,6 +87,7 @@ class OscLiberoEnv(BaseEnv):
         self.recorder = None
         self.control = None
         self.after_step = None
+        self.before_action = None
         self.video_frames = []
         self.record_video = False
         import_mujoco()
@@ -141,6 +143,7 @@ class OscLiberoEnv(BaseEnv):
         with self.lock:
             self.epoch += 1
             self.recorder = None
+            self.model_generation = uuid.uuid4().hex
             self._activate_context()
             self.handle.env.seed(0 if seed is None else seed)
             self.handle.env.reset()
@@ -217,9 +220,70 @@ class OscLiberoEnv(BaseEnv):
         self._owner()
         return self.handle.env.sim.get_state().flatten().copy()
 
-    def attach_recorder(self, recorder):
+    def capture_checkpoint(self):
+        """Same-model snapshot including integration, OSC and gripper memory."""
         self._owner()
-        if self.applied_steps or self.recorder is not None:
+        with self.lock:
+            if self.controller.interpolator_pos is not None or self.controller.interpolator_ori is not None:
+                raise ValueError("Checkpointing controller interpolators is unsupported")
+            mj = import_mujoco()
+            base = self.handle.env.env
+            mask = mj.mjtState.mjSTATE_INTEGRATION
+            physical = np.empty(mj.mj_stateSize(base.sim.model._model, mask))
+            mj.mj_getState(base.sim.model._model, base.sim.data._data, physical, mask)
+            return copy.deepcopy(dict(
+                schema="capx.osc-checkpoint.v1", model_generation=self.model_generation,
+                physical=physical, controller={k: v for k, v in vars(self.controller).items() if k != "sim"},
+                gripper_action=self.robot.gripper.current_action,
+                robot_torques=self.robot.torques,
+                robot_buffers={k: vars(v) for k, v in vars(self.robot).items() if k.startswith("recent_") and v is not None},
+                observables={name: {k: v for k, v in vars(obs).items() if not callable(v)}
+                             for name, obs in base._observables.items()},
+                env_fields={k: getattr(base, k) for k in ("timestep", "cur_time", "done")},
+                obs_cache=base._obs_cache, raw_obs=self.raw_obs,
+                numpy_rng=np.random.get_state(), python_rng=random.getstate(),
+                applied_steps=self.applied_steps, observation_id=self.observation_id,
+                ended=self.ended, gripper=self.gripper,
+            ))
+
+    def restore_checkpoint(self, snapshot):
+        """Restore on the owner thread, invalidating all old command contexts."""
+        self._owner()
+        if snapshot["schema"] != "capx.osc-checkpoint.v1" or snapshot["model_generation"] != self.model_generation:
+            raise ValueError("Checkpoint belongs to a different simulator model/reset")
+        with self.lock:
+            mj = import_mujoco()
+            base = self.handle.env.env
+            self._activate_context()
+            mask = mj.mjtState.mjSTATE_INTEGRATION
+            mj.mj_setState(base.sim.model._model, base.sim.data._data, snapshot["physical"], mask)
+            base.sim.forward()
+            for k, v in snapshot["env_fields"].items():
+                setattr(base, k, copy.deepcopy(v))
+            for k, v in snapshot["controller"].items():
+                setattr(self.controller, k, copy.deepcopy(v))
+            self.robot.gripper.current_action = snapshot["gripper_action"].copy()
+            self.robot.torques = copy.deepcopy(snapshot["robot_torques"])
+            for k, fields in snapshot["robot_buffers"].items():
+                vars(getattr(self.robot, k)).update(copy.deepcopy(fields))
+            for name, fields in snapshot["observables"].items():
+                vars(base._observables[name]).update(copy.deepcopy(fields))
+            base._obs_cache = copy.deepcopy(snapshot["obs_cache"])
+            # forward() changes warmstart/derived caches; reinstate integration state afterwards.
+            mj.mj_setState(base.sim.model._model, base.sim.data._data, snapshot["physical"], mask)
+            np.random.set_state(snapshot["numpy_rng"])
+            random.setstate(snapshot["python_rng"])
+            self.raw_obs = copy.deepcopy(snapshot["raw_obs"])
+            self.applied_steps = snapshot["applied_steps"]
+            self.observation_id = snapshot["observation_id"]
+            self.ended = snapshot["ended"]
+            self.gripper = snapshot["gripper"]
+            self.epoch += 1
+            self.paused = True
+
+    def attach_recorder(self, recorder, *, at_checkpoint=False):
+        self._owner()
+        if (self.applied_steps and not at_checkpoint) or self.recorder is not None:
             raise RuntimeError("Attach the recorder before the first action")
         recorder.start(self)
         self.recorder = recorder
@@ -241,6 +305,8 @@ class OscLiberoEnv(BaseEnv):
             if self.control is not None:
                 self.control.authorize(lease, source)
                 provenance = dict(self.control.program_metadata, **(provenance or {}))
+            if self.before_action is not None:
+                self.before_action()
             if self.recorder is not None:
                 self.recorder.before_step(self)
             before, _ = self._pose()

@@ -22,6 +22,7 @@ let flashMessage = null,
   lastFrameKey = null,
   connected = false;
 const frameURLs = {};
+let seekPreview = null, draggingHistory = false;
 const owned = () => state.mode === "HUMAN" && state.client_id === client;
 function focusWorkspace() {
   document.body.focus({ preventScroll: true });
@@ -112,7 +113,7 @@ const keyboard = new KeyboardController({
   context: () => ({
     mode: state.mode,
     owned: owned(),
-    pending: pendingCommand !== null,
+    pending: pendingCommand !== null || state.seeking,
   }),
   stop: () => mode("STOPPED", { message: "Escで停止しました" }),
   mode: (value) => mode(value),
@@ -185,6 +186,74 @@ $("run-code").onclick = () => {
   focusWorkspace();
   command("/api/code", { code });
 };
+async function seek(step, branch = state.timeline?.branch) {
+  if (!state.timeline || state.seeking || state.resetting) return;
+  const head = state.timeline.branches.find((item) => item.id === branch)?.head;
+  if (!Number.isInteger(step) || step < 0 || step > head) {
+    flash("記録されているstepを選んでください");
+    return;
+  }
+  focusWorkspace();
+  seekPreview = step;
+  await command("/api/seek", { branch, step });
+}
+$("history-step").onpointerdown = () => { draggingHistory = true; };
+$("history-step").oninput = () => {
+  seekPreview = Number($("history-step").value);
+  $("step-number").value = seekPreview;
+  $("history-status").textContent = `移動先 step ${seekPreview}`;
+};
+$("history-step").onchange = () => {
+  draggingHistory = false;
+  seek(Number($("history-step").value));
+};
+$("history-step").onpointerup = () => { draggingHistory = false; };
+$("history-step").onpointercancel = () => { draggingHistory = false; seekPreview = null; };
+$("step-back").onclick = () => seek(state.timeline.cursor - 1);
+$("step-forward").onclick = () => seek(state.timeline.cursor + 1);
+$("history-head").onclick = () => seek(state.timeline.head);
+$("step-number").onchange = () => seek(Number($("step-number").value));
+$("step-number").onkeydown = (event) => {
+  if (event.key === "Enter") { event.preventDefault(); seek(Number(event.target.value)); }
+};
+$("history-branch").onchange = () => {
+  const branch = state.timeline.branches.find((item) => item.id === $("history-branch").value);
+  seek(Math.min(state.timeline.cursor, branch.head), branch.id);
+};
+$("resume-here").onclick = () => { focusWorkspace(); mode("HUMAN"); };
+function renderHistory(busy) {
+  const history = state.timeline;
+  const unavailable = !history || busy;
+  for (const id of ["history-step", "step-number", "history-branch", "history-head"])
+    $(id).disabled = unavailable;
+  $("step-back").disabled = unavailable || history.cursor <= 0;
+  $("step-forward").disabled = unavailable || history.cursor >= history.head;
+  $("resume-here").disabled = unavailable || state.ended || state.epoch < 0;
+  if (!history) return;
+  const optionsKey = JSON.stringify(history.branches);
+  if ($("history-branch").dataset.options !== optionsKey) {
+    $("history-branch").replaceChildren(...history.branches.map((branch) => {
+      const option = document.createElement("option");
+      option.value = branch.id;
+      option.textContent = (branch.parent ? `分岐 ${Number(branch.id)}` : "元の経路") + ` · ${branch.head} steps`;
+      return option;
+    }));
+    $("history-branch").dataset.options = optionsKey;
+  }
+  $("history-branch").value = history.branch;
+  $("history-step").max = $("step-number").max = history.head;
+  if (!draggingHistory && seekPreview === null) {
+    $("history-step").value = history.cursor;
+    if (document.activeElement !== $("step-number")) $("step-number").value = history.cursor;
+  }
+  $("history-status").textContent = state.seeking
+    ? "状態を復元しています…"
+    : seekPreview !== null ? `移動先 step ${seekPreview}`
+    : `step ${history.cursor} / ${history.head}`;
+  $("history-hint").textContent = history.cursor < history.head
+    ? "ここから動かすと新しい分岐になります。元の経路も残ります。"
+    : "バーを離すとその状態へ移動・停止します。P / Lで自動操作も再開できます。";
+}
 let speed = Number(localStorage.getItem("capx.speed") || 25);
 $("speed").value = Number.isFinite(speed)
   ? Math.max(2, Math.min(100, speed))
@@ -241,7 +310,7 @@ async function sendInput(forceRelease = false) {
   if (pad.keys.length) keyboard.gripperKey = pad.keys[0];
   if (
     !owned() ||
-    (pendingCommand !== null && !forceRelease) ||
+    ((pendingCommand !== null || state.seeking) && !forceRelease) ||
     (inputRequests > 0 && !forceRelease)
   )
     return;
@@ -291,7 +360,7 @@ async function sendInput(forceRelease = false) {
 }
 setInterval(() => sendInput(), 50);
 function render() {
-  const busy = pendingCommand !== null || state.resetting;
+  const busy = pendingCommand !== null || state.resetting || state.seeking;
   const localHeld = keyboard?.held.has("Space") || padArmed;
   const receiving = owned() && localHeld && state.input_fresh && state.deadman;
   $("connection").lastChild.textContent = connected
@@ -301,8 +370,9 @@ function render() {
   $("instruction").textContent = state.instruction || "環境を読み込んでいます";
   $("trial").textContent =
     "· TRIAL " + String(state.trial_index || 1).padStart(2, "0");
-  $("steps").textContent = state.applied_steps || 0;
-  $("mode-chip").textContent = state.resetting
+  renderHistory(busy);
+  $("steps").textContent = `${state.timeline?.cursor ?? state.applied_steps ?? 0} / ${state.timeline?.head ?? state.applied_steps ?? 0}`;
+  $("mode-chip").textContent = state.seeking ? "移動中" : state.resetting
     ? "準備中"
     : state.ended
       ? "試行終了"
@@ -340,7 +410,7 @@ function render() {
   }
   $("new-trial").disabled = $("next-trial").disabled = busy || state.epoch < 0;
   $("run-code").disabled = busy || !!state.ended;
-  $("control-focus").disabled = !!state.ended || !!state.resetting;
+  $("control-focus").disabled = !!state.ended || busy;
   $("stop").disabled = false;
   $("vla-provider").textContent = state.test_vla
     ? "試験入力"
@@ -408,6 +478,7 @@ async function update() {
         padArmed = false;
       }
       mergeStatus(next);
+      if (!next.seeking && !draggingHistory) seekPreview = null;
     }
     render();
   } catch (error) {

@@ -14,6 +14,7 @@ from capx.extensions.vla.recording import TrajectoryRecorder, export_views, writ
 from .code_worker import CodeProcess, TOOLS
 from .control import AuthorityLost, ControlSession
 from .llm import extract_code
+from .history import Timeline
 
 
 class Job:
@@ -110,6 +111,10 @@ class HybridRunner:
         self.closed = False
         self.pending_code = None
         self.pending_reset = False
+        self.pending_seek = None
+        self.seeking = False
+        self.timeline = Timeline(env, self.output) if env.recorder is not None and hasattr(env, "capture_checkpoint") else None
+        self.env.before_action = self._before_action
         self.trial_index = 1
         self.trial_root = self.output
         self.pending_lock = threading.Lock()
@@ -127,7 +132,7 @@ class HybridRunner:
 
     def request_mode(self, mode, *, client_id, sequence, expected_epoch):
         with self.pending_lock:
-            if self.pending_reset and mode != "STOPPED":
+            if (self.pending_reset or self.seeking) and mode != "STOPPED":
                 raise ValueError("新しい試行を準備中です")
             return self.control.command(
                 mode, client_id=client_id, sequence=sequence, expected_epoch=expected_epoch
@@ -143,26 +148,63 @@ class HybridRunner:
                 )
             if result["accepted"]:
                 self.pending_reset = True
+                self.pending_seek = None
+                self.seeking = False
                 self.pending_code = None
             return dict(result, resetting=self.pending_reset)
 
-    def save_trial(self, reason):
-        if self.env.recorder is None:
+    def request_seek(self, branch, step, *, client_id, sequence, expected_epoch):
+        with self.pending_lock, self.control.lock:
+            if self.timeline is None or self.pending_reset or self.seeking:
+                raise ValueError("履歴を準備中です")
+            self.timeline.validate_target(branch, step)
+            if expected_epoch != self.env.epoch:
+                return dict(self.control.status(), accepted=False)
+            result = self.control.command("STOPPED", client_id=client_id, sequence=sequence,
+                                          expected_epoch=expected_epoch)
+            if result["accepted"]:
+                self.pending_code = None
+                self.pending_seek = (branch, step)
+                self.seeking = True
+            return dict(result, seeking=self.seeking)
+
+    def _seek(self):
+        with self.pending_lock:
+            target, self.pending_seek = self.pending_seek, None
+        if target is None:
             return
-        write_json(self.trial_root / "actions.json", self.env.trace)
-        if self.env.applied_steps:
+        try:
+            self._finish_program("timeline_seek")
+            self.timeline.seek(*target)
+            # Reset deadman/gripper targets to the selected physical state.
+            self.control.switch("STOPPED", reason="timeline_seek")
+            self.program_root = self.timeline.current["recorder"].root / "programs"
+            self.program_root.mkdir(exist_ok=True)
+            self.next_tick = time.monotonic()
+            self.service()
+            self.message = f"step {target[1]} に移動しました。操作モードを選ぶと再開できます"
+        finally:
+            with self.pending_lock:
+                self.seeking = False
+
+    def _before_action(self):
+        if self.timeline:
+            self.timeline.before_action()
+            self.program_root = self.env.recorder.root / "programs"
+            self.program_root.mkdir(exist_ok=True)
+
+    def save_trial(self, reason):
+        if self.timeline:
+            self.timeline.save_all()
+        elif self.env.recorder is not None and self.env.recorder.count:
             export_views(self.env.recorder.root)
-        write_json(
-            self.trial_root / "trial-summary.json",
-            {
-                "trial_index": self.trial_index,
-                "steps": self.env.applied_steps,
-                "task_completed": self.env.task_completed(),
-                "reason": reason,
-                "context": self.env.context(),
-                "training_admitted": False,
-            },
-        )
+        write_json(self.trial_root / "actions.json", self.env.trace)
+        write_json(self.trial_root / "trial-summary.json", {
+            "trial_index": self.trial_index, "steps": self.env.applied_steps,
+            "task_completed": self.env.task_completed(), "reason": reason,
+            "context": self.env.context(), "timeline": self.timeline.status() if self.timeline else None,
+            "training_admitted": False,
+        })
 
     def _new_trial(self):
         try:
@@ -176,13 +218,16 @@ class HybridRunner:
     def _prepare_new_trial(self):
         self._finish_program("new_trial")
         self.save_trial("new_trial")
-        metadata = dict(self.env.recorder.metadata) if self.env.recorder is not None else {}
+        metadata = dict(self.timeline.current["recorder"].metadata) if self.timeline else (dict(self.env.recorder.metadata) if self.env.recorder is not None else {})
+        for key in ("parent_trajectory", "parent_step", "branch_id"):
+            metadata.pop(key, None)
         self.trial_index += 1
         self.trial_root = self.output / "trials" / f"{self.trial_index:04d}"
         self.trial_root.mkdir(parents=True, exist_ok=False)
         self.env.reset(seed=0)
         self.control.switch("STOPPED", reason="new_trial")
         self.env.attach_recorder(TrajectoryRecorder(self.trial_root / "trajectory", metadata))
+        self.timeline = Timeline(self.env, self.trial_root)
         self.program_root = self.env.recorder.root / "programs"
         self.program_root.mkdir()
         self.policy_metadata = None
@@ -192,7 +237,7 @@ class HybridRunner:
     def submit_code(self, code, client_id, sequence=None, expected_epoch=None):
         code = extract_code(code)
         with self.pending_lock:
-            if self.pending_reset:
+            if self.pending_reset or self.seeking:
                 raise ValueError("新しい試行を準備中です")
             status = (
                 self.control.switch("LLM", reason="operator_code")
@@ -260,6 +305,8 @@ class HybridRunner:
             self.on_service()
 
     def _after_step(self):
+        if self.timeline:
+            self.timeline.record_step()
         self.service()
         if self.program:
             self.program.steps += 1
@@ -276,6 +323,9 @@ class HybridRunner:
                 self.next_tick = time.monotonic()
 
     def _start_program(self, code, context, metadata, generation=None):
+        # Fork before program metadata is written, even if its first tool is read-only.
+        with self.control.lock:
+            self._before_action()
         lease = self.control.start_program(context, metadata)
         directory = self.program_root / lease.program_id
         directory.mkdir()
@@ -363,6 +413,9 @@ class HybridRunner:
         self._poll_program()
         if self.pending_reset:
             self._new_trial()
+            return
+        if self.seeking:
+            self._seek()
             return
         if self.llm_job and self.llm_job.done.is_set():
             job, self.llm_job = self.llm_job, None
@@ -474,6 +527,8 @@ class HybridRunner:
             error=self.error,
             trial_index=self.trial_index,
             resetting=self.pending_reset,
+            seeking=self.seeking,
+            timeline=self.timeline.status() if self.timeline else None,
             applied_steps=self.env.applied_steps,
             ended=self.env.ended,
             task_completed=self.env.task_completed(),
@@ -495,3 +550,4 @@ class HybridRunner:
                 self._cancel_job(job)
         self.service()
         self.env.after_step = None
+        self.env.before_action = None

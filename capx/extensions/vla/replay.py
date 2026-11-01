@@ -10,7 +10,7 @@ import numpy as np
 
 from .api import VlaCodeEnv
 from .env import OscLiberoEnv, configure_libero
-from .recording import TrajectoryRecorder, export_views, replay_code, write_json
+from .recording import TrajectoryRecorder, export_views, replay_code, write_json, read_lineage
 
 
 def run(source, output, libero_source, trajectory=False):
@@ -19,11 +19,12 @@ def run(source, output, libero_source, trajectory=False):
     configure_libero(libero_source, str(output / 'libero-config'))
     if trajectory:
         episode = json.loads((source / 'episode.json').read_text())
-        rows = [json.loads(line) for line in (source / 'steps.jsonl').read_text().splitlines()]
+        lineage = read_lineage(source)
+        rows = [row for _, row in lineage]
         profile = episode['environment']
-        expected_observations = [rows[0]['observation']] + [r['next_observation'] for r in rows]
-        expected_states = [np.load(source / json.loads((source / p).read_text())['physics_state'],
-                                   allow_pickle=False) for p in expected_observations]
+        expected_observations = [(lineage[0][0], rows[0]['observation'])] + [(root, r['next_observation']) for root, r in lineage] if rows else []
+        expected_states = [np.load(root / json.loads((root / p).read_text())['physics_state'],
+                                   allow_pickle=False) for root, p in expected_observations]
     else:
         rows = json.loads(source.read_text())
         profile = json.loads((source.parent / 'report.json').read_text())['controller']
