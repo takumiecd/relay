@@ -369,11 +369,16 @@ def register_exec_env(name: str, factory: Callable[[], CodeExecutionEnvBase]) ->
 
 def get_exec_env(name: str) -> Callable[[], CodeExecutionEnvBase]:
     if name not in _EXEC_ENV_FACTORIES:
+        from importlib import import_module
+        import_module("capx.envs.tasks._builtins")
+    if name not in _EXEC_ENV_FACTORIES:
         raise KeyError(f"Execution Environment '{name}' not registered")
     return _EXEC_ENV_FACTORIES[name]
 
 
 def list_exec_envs() -> list[str]:
+    from importlib import import_module
+    import_module("capx.envs.tasks._builtins")
     return list(_EXEC_ENV_FACTORIES.keys())
 
 
@@ -386,11 +391,16 @@ def register_config(name: str, factory: CodeExecEnvConfig) -> None:
 
 def get_config(name: str) -> CodeExecEnvConfig:
     if name not in _CONFIG_FACTORIES:
+        from importlib import import_module
+        import_module("capx.envs.tasks._builtins")
+    if name not in _CONFIG_FACTORIES:
         raise KeyError(f"Configuration '{name}' not registered")
     return _CONFIG_FACTORIES[name]
 
 
 def list_configs() -> list[str]:
+    from importlib import import_module
+    import_module("capx.envs.tasks._builtins")
     return list(_CONFIG_FACTORIES.keys())
 
 

@@ -126,14 +126,21 @@ _API_FACTORIES: dict[str, Callable[[], ApiBase]] = {}
 
 def register_api(name: str, factory: Callable[[], ApiBase]) -> None:
     _API_FACTORIES[name] = factory
+    # External task factories may rebind an API to another policy connection.
+    get_api.cache_clear()
 
 
 @lru_cache(maxsize=256)
 def get_api(name: str) -> Callable[[BaseEnv], ApiBase]:
+    if name not in _API_FACTORIES:
+        from importlib import import_module
+        import_module("capx.integrations._builtins")
     if name not in _API_FACTORIES:
         raise KeyError(f"API '{name}' not registered")
     return _API_FACTORIES[name]
 
 
 def list_apis() -> list[str]:
+    from importlib import import_module
+    import_module("capx.integrations._builtins")
     return list(_API_FACTORIES.keys())
