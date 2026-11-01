@@ -17,7 +17,7 @@ from PIL import Image
 
 from capx.extensions.vla.bridge import PolicyBridge
 from capx.extensions.vla.env import ACTION_CONTRACT, OscLiberoEnv, configure_libero
-from capx.extensions.vla.recording import TrajectoryRecorder, export_views, write_json
+from capx.extensions.vla.recording import TrajectoryRecorder, write_json
 from .control import AuthorityLost
 from .llm import HttpCodeGenerator
 from .runner import HybridRunner
@@ -57,13 +57,11 @@ class Console:
         self.images = {}
         self.last_snapshot = 0.0
         owner = self
-        html = (
-            Path(__file__)
-            .with_name("web.html")
-            .read_text()
-            .replace("__TOKEN__", self.token)
-            .encode()
-        )
+        assets = {
+            "/assets/console.css": ("console.css", "text/css"),
+            "/assets/console.js": ("console.js", "text/javascript"),
+            "/assets/keyboard.mjs": ("keyboard.mjs", "text/javascript"),
+        }
 
         class Handler(BaseHTTPRequestHandler):
             def log_message(self, *args):
@@ -94,10 +92,20 @@ class Console:
                 )
 
             def do_GET(self):
-                if not self.trusted(authenticated=self.path != "/"):
+                if not self.trusted(authenticated=self.path != "/" and self.path not in assets):
                     return self.reply(403, {"error": "forbidden"})
                 if self.path == "/":
+                    html = (
+                        Path(__file__)
+                        .with_name("web.html")
+                        .read_text()
+                        .replace("__TOKEN__", owner.token)
+                        .encode()
+                    )
                     return self.reply(200, html, "text/html; charset=utf-8")
+                if self.path in assets:
+                    filename, mime = assets[self.path]
+                    return self.reply(200, Path(__file__).with_name(filename).read_bytes(), mime)
                 with owner.lock:
                     if self.path == "/api/state":
                         return self.reply(200, owner.state)
@@ -120,17 +128,19 @@ class Console:
                         raise ValueError("Invalid payload length")
                     body = json.loads(self.rfile.read(length))
                     if self.path == "/api/mode":
-                        result = runner.control.switch(
-                            body["mode"], client_id=body.get("client_id")
-                        )
+                        result = runner.request_mode(**body)
                     elif self.path == "/api/input":
                         result = {"accepted": runner.control.submit_input(**body)}
                     elif self.path == "/api/code":
-                        result = runner.submit_code(body["code"], body["client_id"])
+                        if "sequence" not in body or "expected_epoch" not in body:
+                            raise ValueError("Missing command ordering")
+                        result = runner.submit_code(**body)
+                    elif self.path == "/api/trial":
+                        result = runner.request_trial(**body)
                     else:
                         return self.reply(404, {"error": "not found"})
                     self.reply(200, result)
-                except (ValueError, TypeError, KeyError) as error:
+                except (ValueError, TypeError, KeyError, SyntaxError) as error:
                     self.reply(400, {"error": str(error)[:500]})
 
         self.http = ThreadingHTTPServer(("127.0.0.1", port), Handler)
@@ -161,6 +171,9 @@ class Console:
             instruction=env.instruction,
             cameras=["wrist", "agentview"],
             context=env.context(),
+            eef_position_m=obs["robot_cartesian_pos"][:3].tolist()
+            if "robot_cartesian_pos" in obs
+            else None,
         )
         with self.lock:
             self.state, self.images = state, images
@@ -268,9 +281,10 @@ def main():
         (args.output / "connection.json").unlink(missing_ok=True)
         if env:
             try:
-                write_json(args.output / "actions.json", env.trace)
-                if env.applied_steps:
-                    export_views(args.output / "trajectory")
+                if runner:
+                    runner.save_trial("session_closed")
+                else:
+                    write_json(args.output / "actions.json", env.trace)
             finally:
                 env.close()
 

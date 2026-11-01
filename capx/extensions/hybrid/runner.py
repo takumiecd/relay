@@ -10,7 +10,7 @@ import threading
 import time
 
 from capx.extensions.vla.api import VlaApi
-from capx.extensions.vla.recording import write_json
+from capx.extensions.vla.recording import TrajectoryRecorder, export_views, write_json
 from .code_worker import CodeProcess, TOOLS
 from .control import AuthorityLost, ControlSession
 from .llm import extract_code
@@ -109,6 +109,9 @@ class HybridRunner:
         self.message = "停止中"
         self.closed = False
         self.pending_code = None
+        self.pending_reset = False
+        self.trial_index = 1
+        self.trial_root = self.output
         self.pending_lock = threading.Lock()
         self.env.after_step = self._after_step
         self.service()
@@ -122,10 +125,84 @@ class HybridRunner:
             for name in sorted(TOOLS)
         )
 
-    def submit_code(self, code, client_id):
+    def request_mode(self, mode, *, client_id, sequence, expected_epoch):
+        with self.pending_lock:
+            if self.pending_reset and mode != "STOPPED":
+                raise ValueError("新しい試行を準備中です")
+            return self.control.command(
+                mode, client_id=client_id, sequence=sequence, expected_epoch=expected_epoch
+            )
+
+    def request_trial(self, *, client_id, sequence, expected_epoch):
+        with self.pending_lock:
+            with self.control.lock:
+                if expected_epoch != self.env.epoch:
+                    return dict(self.control.status(), accepted=False, resetting=self.pending_reset)
+                result = self.control.command(
+                    "STOPPED", client_id=client_id, sequence=sequence, expected_epoch=expected_epoch
+                )
+            if result["accepted"]:
+                self.pending_reset = True
+                self.pending_code = None
+            return dict(result, resetting=self.pending_reset)
+
+    def save_trial(self, reason):
+        if self.env.recorder is None:
+            return
+        write_json(self.trial_root / "actions.json", self.env.trace)
+        if self.env.applied_steps:
+            export_views(self.env.recorder.root)
+        write_json(
+            self.trial_root / "trial-summary.json",
+            {
+                "trial_index": self.trial_index,
+                "steps": self.env.applied_steps,
+                "task_completed": self.env.task_completed(),
+                "reason": reason,
+                "context": self.env.context(),
+                "training_admitted": False,
+            },
+        )
+
+    def _new_trial(self):
+        try:
+            self._prepare_new_trial()
+        finally:
+            with self.pending_lock:
+                self.pending_reset = False
+        self.service()
+        self.message = "新しい試行を開始できます"
+
+    def _prepare_new_trial(self):
+        self._finish_program("new_trial")
+        self.save_trial("new_trial")
+        metadata = dict(self.env.recorder.metadata) if self.env.recorder is not None else {}
+        self.trial_index += 1
+        self.trial_root = self.output / "trials" / f"{self.trial_index:04d}"
+        self.trial_root.mkdir(parents=True, exist_ok=False)
+        self.env.reset(seed=0)
+        self.control.switch("STOPPED", reason="new_trial")
+        self.env.attach_recorder(TrajectoryRecorder(self.trial_root / "trajectory", metadata))
+        self.program_root = self.env.recorder.root / "programs"
+        self.program_root.mkdir()
+        self.policy_metadata = None
+        self.error = None
+        self.next_tick = time.monotonic()
+
+    def submit_code(self, code, client_id, sequence=None, expected_epoch=None):
         code = extract_code(code)
         with self.pending_lock:
-            status = self.control.switch("LLM", reason="operator_code")
+            if self.pending_reset:
+                raise ValueError("新しい試行を準備中です")
+            status = (
+                self.control.switch("LLM", reason="operator_code")
+                if sequence is None
+                else self.control.command(
+                    "LLM", client_id=client_id, sequence=sequence, expected_epoch=expected_epoch
+                )
+            )
+            if status.get("accepted") is False:
+                return status
             self.pending_code = (
                 code,
                 self.env.context(),
@@ -284,6 +361,9 @@ class HybridRunner:
         if self.env.ended and self.control.mode != "STOPPED":
             self.control.switch("STOPPED", reason="episode_ended")
         self._poll_program()
+        if self.pending_reset:
+            self._new_trial()
+            return
         if self.llm_job and self.llm_job.done.is_set():
             job, self.llm_job = self.llm_job, None
             if self.control.valid(job.lease):
@@ -313,7 +393,8 @@ class HybridRunner:
                     lease=lease,
                     provenance=provenance,
                 )
-                self.message = "操作を受付中"
+                if self.control.valid(lease):
+                    self.message = "操作を受付中"
             else:
                 self.message = "Spaceを押しながら操作"
         elif mode == "VLA":
@@ -357,8 +438,9 @@ class HybridRunner:
                         lease=self.chunk_lease,
                         provenance=provenance,
                     )
-                    self.chunk_context = self.env.context()
-                    self.message = "VLAが操作中"
+                    if self.control.valid(self.chunk_lease):
+                        self.chunk_context = self.env.context()
+                        self.message = "VLAが操作中"
             elif (
                 self.vla_job is None
                 and self.predictor is not None
@@ -390,6 +472,8 @@ class HybridRunner:
             self.control.status(),
             message=self.message,
             error=self.error,
+            trial_index=self.trial_index,
+            resetting=self.pending_reset,
             applied_steps=self.env.applied_steps,
             ended=self.env.ended,
             task_completed=self.env.task_completed(),

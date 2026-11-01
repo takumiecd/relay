@@ -1,693 +1,194 @@
 <!doctype html>
 <html lang="ja">
-  <meta charset="utf-8" /><meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
-  />
-  <title>CaP-X · Relay console</title>
-  <style>
-    :root {
-      font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Noto Sans JP",
-        sans-serif;
-      color: #182738;
-      background: #f3f5f7;
-      font-size: 14px;
-    }
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-    }
-    button,
-    input,
-    textarea {
-      font: inherit;
-    }
-    button {
-      cursor: pointer;
-      border: 1px solid #d4dce4;
-      background: white;
-      color: #24394b;
-      border-radius: 9px;
-      padding: 10px 14px;
-    }
-    button:hover {
-      background: #edf3fa;
-    }
-    button:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
-    header {
-      padding: 22px 32px;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #dde3e9;
-    }
-    .brand {
-      font-size: 19px;
-      font-weight: 750;
-    }
-    .brand span {
-      color: #7d8c99;
-      font-weight: 400;
-      margin-left: 12px;
-    }
-    .badge {
-      font-size: 12px;
-      padding: 7px 12px;
-      background: #ecf1f6;
-      border-radius: 30px;
-    }
-    main {
-      padding: 24px 32px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
-      gap: 22px;
-      max-width: 1600px;
-      margin: auto;
-    }
-    .task {
-      grid-column: 1/-1;
-      background: white;
-      border: 1px solid #e0e6eb;
-      border-radius: 12px;
-      padding: 18px 22px;
-      display: flex;
-      gap: 20px;
-      align-items: center;
-    }
-    .label {
-      font-size: 10px;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
-      color: #81909d;
-    }
-    .task p {
-      margin: 6px 0 0;
-      line-height: 1.5;
-    }
-    .workspace {
-      min-width: 0;
-    }
-    .cameras {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 14px;
-      align-items: start;
-    }
-    .camera {
-      background: #fff;
-      border: 1px solid #dde4ea;
-      border-radius: 12px;
-      overflow: hidden;
-      min-width: 0;
-    }
-    .camera img {
-      display: block;
-      width: 100%;
-      aspect-ratio: 1;
-      object-fit: contain;
-      background: #18232d;
-    }
-    .camera-head {
-      display: flex;
-      justify-content: space-between;
-      padding: 12px 14px;
-      align-items: center;
-      font-size: 13px;
-      font-weight: 650;
-    }
-    .camera-head button {
-      font-size: 11px;
-      padding: 5px 8px;
-    }
-    .hint {
-      font-size: 12px;
-      color: #738492;
-      line-height: 1.8;
-      margin: 14px 3px;
-    }
-    .card {
-      background: #fff;
-      border: 1px solid #dde4ea;
-      border-radius: 12px;
-      padding: 19px;
-      margin-bottom: 16px;
-    }
-    .card h2 {
-      font-size: 14px;
-      margin: 0 0 15px;
-    }
-    .modes {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 7px;
-    }
-    .modes button {
-      padding: 12px 5px;
-      font-size: 13px;
-    }
-    .modes button.active {
-      border-color: #4478b5;
-      background: #eaf2fc;
-      color: #214f84;
-      box-shadow: 0 0 0 1px #4478b5;
-    }
-    .stop {
-      width: 100%;
-      margin-top: 9px;
-      color: #ad3744;
-      border-color: #edcdd2;
-      background: #fff7f8;
-    }
-    .status {
-      font-size: 13px;
-      line-height: 1.7;
-      margin: 16px 0 7px;
-      min-height: 45px;
-    }
-    .live-dot {
-      display: inline-block;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #80919e;
-      margin-right: 6px;
-    }
-    .stats {
-      display: flex;
-      gap: 22px;
-      border-top: 1px solid #edf0f3;
-      padding-top: 13px;
-      margin-top: 12px;
-    }
-    .stats strong {
-      font-size: 21px;
-      display: block;
-      font-weight: 650;
-    }
-    .stats span {
-      font-size: 11px;
-      color: #7c8e9b;
-    }
-    .speed {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    input[type="range"] {
-      width: 100%;
-      accent-color: #4076b4;
-    }
-    .key-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 7px;
-      margin: 16px 0;
-    }
-    kbd {
-      font-family: inherit;
-      background: #f0f3f6;
-      border: 1px solid #dce4eb;
-      border-bottom-width: 2px;
-      border-radius: 5px;
-      padding: 2px 6px;
-      font-size: 11px;
-    }
-    .key-grid div {
-      font-size: 11px;
-      line-height: 2;
-      color: #64798a;
-    }
-    .deadman {
-      padding: 11px;
-      background: #f1f5f9;
-      border-radius: 8px;
-      font-size: 12px;
-      text-align: center;
-    }
-    .deadman.on {
-      background: #e4f4ed;
-      color: #277354;
-    }
-    .code {
-      width: 100%;
-      height: 156px;
-      resize: vertical;
-      font:
-        12px/1.65 ui-monospace,
-        SFMono-Regular,
-        monospace;
-      border: 1px solid #dae2e9;
-      border-radius: 8px;
-      padding: 12px;
-      color: #32475a;
-      background: #fafcfe;
-    }
-    .code-run {
-      width: 100%;
-      margin-top: 9px;
-      background: #243c57;
-      color: white;
-      border-color: #243c57;
-    }
-    details summary {
-      cursor: pointer;
-      font-size: 13px;
-      margin-bottom: 12px;
-    }
-    .error {
-      color: #ab3845;
-      white-space: pre-wrap;
-    }
-    .test {
-      background: #fff0d5;
-      color: #936521;
-    }
-    .small {
-      font-size: 11px;
-      color: #7d8f9c;
-      line-height: 1.8;
-    }
-    .notice {
-      min-height: 20px;
-      font-size: 12px;
-    }
-    .toolbar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .camera.dragging {
-      opacity: 0.5;
-    }
-    @media (max-width: 1050px) {
-      main {
-        grid-template-columns: minmax(0, 1fr) 285px;
-        padding: 16px;
-      }
-      .task {
-        grid-column: 1/-1;
-      }
-      aside {
-        display: block;
-      }
-      .card {
-        margin-bottom: 14px;
-      }
-      .cameras {
-        grid-template-columns: 2fr 1fr;
-      }
-    }
-    @media (max-width: 780px) {
-      main {
-        grid-template-columns: 1fr;
-      }
-      header {
-        padding: 16px;
-      }
-      .brand span {
-        display: none;
-      }
-      aside {
-        display: block;
-      }
-      .card {
-        margin-bottom: 15px;
-      }
-      .cameras {
-        grid-template-columns: 1fr;
-      }
-      .task {
-        display: block;
-      }
-    }
-  </style>
-  <header>
-    <div class="brand">CaP-X <span>Relay console</span></div>
-    <div class="toolbar">
-      <span id="test" class="badge test" hidden>試験入力</span
-      ><span id="connection" class="badge">接続中…</span>
-    </div>
-  </header>
-  <main>
-    <section class="task">
-      <div class="label">Current task</div>
-      <p id="instruction">環境を読み込んでいます</p>
-    </section>
-    <section class="workspace">
-      <div id="cameras" class="cameras">
-        <article class="camera" draggable="true" data-camera="wrist">
-          <div class="camera-head">
-            手首カメラ<button data-primary="wrist">主表示</button>
-          </div>
-          <img id="wrist" alt="手首カメラの映像" />
-        </article>
-        <article class="camera" draggable="true" data-camera="agentview">
-          <div class="camera-head">
-            全体カメラ<button data-primary="agentview">主表示</button>
-          </div>
-          <img id="agentview" alt="全体カメラの映像" />
-        </article>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="capx-token" content="__TOKEN__" />
+    <title>CaP-X · Relay console</title>
+    <link rel="stylesheet" href="/assets/console.css" />
+    <script type="module" src="/assets/console.js"></script>
+  </head>
+  <body tabindex="-1" aria-label="ロボット操作画面">
+    <header class="topbar">
+      <div class="identity">
+        <div class="brand-mark">C<span>↗</span></div>
+        <div>
+          <strong>CaP-X <span>Relay</span></strong>
+          <div class="eyebrow">ROBOT CONTROL WORKSPACE</div>
+        </div>
       </div>
-      <p class="hint">
-        カメラはドラッグ、または「主表示」で並び替えできます。<br />世界座標：W/S
-        = ±X、A/D = ±Y、R/F = ±Z。視点を切り替えても操作の座標系は同じです。
-      </p>
-      <div id="notice" class="notice error" role="status"></div>
-    </section>
-    <aside>
-      <section class="card">
-        <h2>操作を引き継ぐ</h2>
-        <div class="modes">
-          <button data-mode="VLA">VLA <kbd>P</kbd></button
-          ><button data-mode="LLM">LLM <kbd>L</kbd></button
-          ><button data-mode="HUMAN">手動 <kbd>H</kbd></button>
-        </div>
-        <button class="stop" data-mode="STOPPED">停止 <kbd>Esc</kbd></button>
-        <div class="status">
-          <span class="live-dot"></span><span id="message">停止中</span>
-        </div>
-        <div class="stats">
-          <div><strong id="steps">0</strong><span>実行済み step</span></div>
+      <div class="top-actions">
+        <span id="connection" class="connection"><i></i>接続中</span
+        ><span id="test" class="test-tag" hidden>動作確認モード</span
+        ><button id="new-trial" class="button subtle">
+          新しい試行 <span>↗</span></button
+        ><button id="stop" class="button stop">■ 停止 <kbd>Esc</kbd></button>
+      </div>
+    </header>
+    <main>
+      <section class="workspace">
+        <div class="task-line">
           <div>
-            <strong id="mode">STOPPED</strong><span>現在の操作主体</span>
+            <div class="eyebrow">
+              CURRENT TASK <span id="trial">· TRIAL 01</span>
+            </div>
+            <h1 id="instruction">環境を読み込んでいます</h1>
+          </div>
+          <span id="mode-chip" class="mode-chip">停止中</span>
+        </div>
+        <div id="episode-banner" class="episode-banner" hidden>
+          <div>
+            <strong id="episode-title">この試行は終了しました</strong>
+            <p>記録を残して、新しい試行へ進めます。</p>
+          </div>
+          <button id="next-trial" class="button primary">
+            新しい試行を始める
+          </button>
+        </div>
+        <div id="cameras" class="cameras">
+          <article class="camera" draggable="true" data-camera="wrist">
+            <div class="camera-head">
+              <span
+                ><i class="camera-dot"></i>手首カメラ <small>WRIST</small></span
+              ><button data-primary="wrist" title="主表示にする">
+                主表示 ↗
+              </button>
+            </div>
+            <div class="viewport">
+              <img id="wrist" alt="手首カメラの映像" />
+            </div>
+          </article>
+          <article class="camera" draggable="true" data-camera="agentview">
+            <div class="camera-head">
+              <span
+                ><i class="camera-dot"></i>全体カメラ
+                <small>OVERVIEW</small></span
+              ><button data-primary="agentview" title="主表示にする">
+                主表示 ↗
+              </button>
+            </div>
+            <div class="viewport">
+              <img id="agentview" alt="全体カメラの映像" />
+            </div>
+          </article>
+        </div>
+        <div class="workspace-footer">
+          <div class="metric">
+            <span>記録ステップ</span><strong id="steps">0</strong>
+          </div>
+          <div class="metric position">
+            <span>手先の位置 <small>m</small></span
+            ><strong id="position">— <em>/</em> — <em>/</em> —</strong>
+          </div>
+          <div class="camera-hint">
+            主表示ボタン・ドラッグで<br />カメラの配置を変更できます
           </div>
         </div>
+        <div id="notice" class="notice" role="status" aria-live="polite"></div>
       </section>
-      <section class="card">
-        <h2>手動操作</h2>
-        <label class="speed" for="speed"
-          >速度<span id="speed-value">25%</span></label
-        ><input id="speed" type="range" min="2" max="100" value="25" />
-        <div class="key-grid">
-          <div><kbd>W</kbd><kbd>S</kbd> 前後</div>
-          <div><kbd>A</kbd><kbd>D</kbd> 左右</div>
-          <div><kbd>R</kbd><kbd>F</kbd> 上下</div>
-          <div><kbd>Q</kbd><kbd>E</kbd> 回転</div>
-          <div><kbd>C</kbd> 開く</div>
-          <div><kbd>V</kbd> 閉じる</div>
-        </div>
-        <div id="deadman" class="deadman">Spaceを押している間だけ動きます</div>
-        <p class="small">
-          Shiftで速度を1/5に。入力が途切れた場合は動きだけを止めます。手動モードは継続します。
-        </p>
-        <details>
-          <summary id="gamepad-label">PlayStation系コントローラー</summary>
-          <p class="small">
-            標準mapping対応。R1を押している間だけ操作。左stickで前後左右、L2/R2で上下、右stickで回転。C/L1で開く、V/✕で閉じる。○で手動、△でVLA、□でLLM、Optionsで停止。
-          </p>
-        </details>
-      </section>
-      <section class="card">
-        <details open>
-          <summary>Pythonコード</summary>
-          <textarea id="code" class="code" spellcheck="false">
+      <aside>
+        <section class="panel modes-panel">
+          <div class="panel-title">
+            <h2>操作を引き継ぐ</h2>
+            <span class="eyebrow">CONTROL</span>
+          </div>
+          <div class="modes">
+            <button data-mode="VLA">
+              <span>VLA <kbd>P</kbd></span
+              ><small id="vla-provider">接続待ち</small></button
+            ><button data-mode="LLM">
+              <span>LLM <kbd>L</kbd></span
+              ><small id="llm-provider">未接続</small></button
+            ><button data-mode="HUMAN">
+              <span>手動 <kbd>H</kbd></span
+              ><small>キーボード・パッド</small>
+            </button>
+          </div>
+          <div class="status-line">
+            <i id="status-dot"></i><span id="message">停止中</span>
+          </div>
+        </section>
+        <section class="panel manual-panel">
+          <div class="panel-title">
+            <h2>手動操作</h2>
+            <span id="owner" class="owner">Hで開始</span>
+          </div>
+          <button id="control-focus" class="deadman">
+            <span class="space-key">SPACE</span
+            ><span id="deadman-text">押している間だけ動きます</span>
+          </button>
+          <div class="speed-label">
+            <label for="speed">操作速度</label
+            ><output id="speed-value" for="speed">25<span>%</span></output>
+          </div>
+          <input
+            id="speed"
+            type="range"
+            min="2"
+            max="100"
+            value="25"
+            aria-label="操作速度"
+          />
+          <div class="range-labels"><span>精密</span><span>高速</span></div>
+          <div class="keyboard-guide">
+            <div class="wasd">
+              <div></div>
+              <kbd data-key="KeyW">W</kbd>
+              <div></div>
+              <kbd data-key="KeyA">A</kbd><kbd data-key="KeyS">S</kbd
+              ><kbd data-key="KeyD">D</kbd>
+            </div>
+            <div class="key-pairs">
+              <div>
+                <kbd data-key="KeyR">R</kbd><kbd data-key="KeyF">F</kbd
+                ><span>上下</span>
+              </div>
+              <div>
+                <kbd data-key="KeyQ">Q</kbd><kbd data-key="KeyE">E</kbd
+                ><span>回転</span>
+              </div>
+              <div>
+                <kbd data-key="KeyC">C</kbd><kbd data-key="KeyV">V</kbd
+                ><span>開く / 閉じる</span>
+              </div>
+            </div>
+          </div>
+          <p class="precision"><kbd>Shift</kbd> を押すと速度がさらに1/5</p>
+          <div class="input-state">
+            <span id="input-state">入力を待っています</span
+            ><span id="last-key">キー：—</span>
+          </div>
+        </section>
+        <details class="panel code-panel">
+          <summary>Pythonコード <span>＋</span></summary>
+          <textarea id="code" spellcheck="false" aria-label="Pythonコード">
 s = get_robot_state()
 p = s['robot_cartesian_pos'][:3]
 RESULT = move_to_pose([p[0], p[1], p[2] + 0.02])</textarea
-          ><button id="run-code" class="code-run">このコードを実行</button>
+          ><button id="run-code" class="button primary">
+            このコードを実行
+          </button>
           <p class="small">
-            コードはCaP-Xの実行器で動きます。LLMボタンは設定済みAPIから生成して実行します。入力したコードとLLM生成コードは区別して記録します。
+            入力したコードとLLM生成コードは区別して記録します。
           </p>
         </details>
-      </section>
-    </aside>
-  </main>
-  <script>
-    const TOKEN = "__TOKEN__",
-      client = crypto.randomUUID(),
-      held = new Set(),
-      urls = {};
-    let state = { mode: "STOPPED", epoch: -1 },
-      sequence = 0,
-      modePending = false,
-      lastPadButtons = [],
-      frameBusy = false,
-      padArmed = false;
-    const $ = (id) => document.getElementById(id),
-      editing = () =>
-        ["TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) ||
-        (document.activeElement?.tagName === "INPUT" &&
-          document.activeElement.type !== "range");
-    async function api(path, data) {
-      const r = await fetch(path, {
-        method: data ? "POST" : "GET",
-        headers: {
-          "X-CapX-Token": TOKEN,
-          ...(data ? { "Content-Type": "application/json" } : {}),
-        },
-        body: data ? JSON.stringify(data) : undefined,
-        cache: "no-store",
-      });
-      const body = await r.json();
-      if (!r.ok) throw Error(body.error || "通信に失敗しました");
-      return body;
-    }
-    function error(e) {
-      $("notice").textContent = e.message || String(e);
-    }
-    async function mode(m) {
-      held.clear();
-      padArmed = false;
-      modePending = true;
-      try {
-        const next = await api("/api/mode", { mode: m, client_id: client });
-        state = { ...state, ...next };
-        $("notice").textContent = "";
-      } catch (e) {
-        error(e);
-      } finally {
-        modePending = false;
-      }
-    }
-    for (const b of document.querySelectorAll("[data-mode]"))
-      b.onclick = () => mode(b.dataset.mode);
-    $("run-code").onclick = async () => {
-      held.clear();
-      modePending = true;
-      try {
-        const next = await api("/api/code", {
-          code: $("code").value,
-          client_id: client,
-        });
-        state = { ...state, ...next };
-        $("notice").textContent = "";
-      } catch (e) {
-        error(e);
-      } finally {
-        modePending = false;
-      }
-    };
-    let speed = Number(localStorage.getItem("capx.speed") || 25);
-    $("speed").value = Math.max(2, Math.min(100, speed));
-    function updateSpeed() {
-      localStorage.setItem("capx.speed", $("speed").value);
-      $("speed-value").textContent = $("speed").value + "%";
-    }
-    $("speed").oninput = updateSpeed;
-    updateSpeed();
-    window.addEventListener("keydown", (e) => {
-      if (e.code === "Escape") {
-        e.preventDefault();
-        mode("STOPPED");
-        return;
-      }
-      if (editing() || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (!e.repeat && ["KeyH", "KeyP", "KeyL"].includes(e.code)) {
-        e.preventDefault();
-        mode({ KeyH: "HUMAN", KeyP: "VLA", KeyL: "LLM" }[e.code]);
-        return;
-      }
-      if (state.mode === "HUMAN" && allowed.has(e.code)) {
-        e.preventDefault();
-        held.add(e.code);
-      }
-    });
-    window.addEventListener("keyup", (e) => {
-      held.delete(e.code);
-      if (e.code === "Space") sendInput();
-    });
-    function release() {
-      held.clear();
-      padArmed = false;
-      sendInput(true);
-    }
-    window.addEventListener("blur", release);
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) release();
-    });
-    const allowed = new Set([
-      "KeyW",
-      "KeyS",
-      "KeyA",
-      "KeyD",
-      "KeyR",
-      "KeyF",
-      "KeyQ",
-      "KeyE",
-      "KeyZ",
-      "KeyX",
-      "KeyC",
-      "KeyV",
-      "Space",
-      "ShiftLeft",
-      "ShiftRight",
-    ]);
-    function padInput() {
-      const p = Array.from(navigator.getGamepads?.() || []).find(
-        (p) => p && p.mapping === "standard",
-      );
-      if (!p) return { axes: [0, 0, 0, 0, 0, 0], keys: [], enabled: false };
-      $("gamepad-label").textContent = "接続済み：" + p.id.slice(0, 32);
-      const press = (i) => !!p.buttons[i]?.pressed,
-        dz = (x) => (Math.abs(x || 0) < 0.15 ? 0 : x);
-      for (const [i, m] of [
-        [1, "HUMAN"],
-        [3, "VLA"],
-        [2, "LLM"],
-        [9, "STOPPED"],
-      ])
-        if (press(i) && !lastPadButtons[i] && !editing()) mode(m);
-      if (
-        state.mode !== "HUMAN" ||
-        modePending ||
-        !document.hasFocus() ||
-        !press(5)
-      )
-        padArmed = false;
-      else if (!lastPadButtons[5]) padArmed = true;
-      lastPadButtons = p.buttons.map((b) => b.pressed);
-      return {
-        axes: [
-          -dz(p.axes[1]),
-          -dz(p.axes[0]),
-          (p.buttons[7]?.value || 0) - (p.buttons[6]?.value || 0),
-          0,
-          dz(p.axes[3]),
-          -dz(p.axes[2]),
-        ],
-        keys: [...(press(4) ? ["KeyC"] : []), ...(press(0) ? ["KeyV"] : [])],
-        enabled: press(5) && padArmed,
-      };
-    }
-    async function sendInput(forceRelease = false) {
-      const pad = padInput();
-      if (modePending || state.mode !== "HUMAN") return;
-      const focused = document.hasFocus() && !document.hidden && !editing();
-      const keys = forceRelease ? [] : [...held].filter((k) => allowed.has(k));
-      const enabled =
-        !forceRelease && focused && (held.has("Space") || pad.enabled);
-      try {
-        await api("/api/input", {
-          client_id: client,
-          sequence: ++sequence,
-          epoch: state.epoch,
-          keys: enabled ? [...keys, ...pad.keys] : [],
-          axes: enabled ? pad.axes : [0, 0, 0, 0, 0, 0],
-          speed: Number($("speed").value) / 100,
-          deadman: enabled,
-        });
-      } catch (e) {
-        error(e);
-      }
-    }
-    setInterval(sendInput, 50);
-    async function update() {
-      try {
-        const next = await api("/api/state");
-        if (next.epoch < state.epoch) return;
-        if (!modePending) state = next;
-        $("connection").textContent = "接続済み";
-        $("notice").textContent = next.error || "";
-        $("instruction").textContent = next.instruction;
-        $("steps").textContent = next.applied_steps;
-        $("mode").textContent = next.mode;
-        $("message").textContent = next.ended
-          ? next.task_completed
-            ? "タスク完了。新しい記録で再起動してください"
-            : "エピソード終了。新しい記録で再起動してください"
-          : next.message;
-        $("test").hidden = !(
-          next.test_vla ||
-          next.test_llm ||
-          next.test_operator
-        );
-        for (const b of document.querySelectorAll("[data-mode]")) {
-          b.classList.toggle("active", b.dataset.mode === next.mode);
-          b.disabled =
-            (b.dataset.mode === "VLA" && !next.vla_ready) ||
-            (b.dataset.mode === "LLM" && !next.llm_ready) ||
-            (next.ended && b.dataset.mode !== "STOPPED");
-        }
-        $("deadman").classList.toggle(
-          "on",
-          next.mode === "HUMAN" && next.deadman,
-        );
-        $("deadman").textContent =
-          next.mode === "HUMAN" && next.deadman
-            ? "操作を受付中"
-            : "Spaceを押している間だけ動きます";
-      } catch (e) {
-        $("connection").textContent = "接続を確認中";
-        error(e);
-      }
-    }
-    setInterval(update, 150);
-    update();
-    async function frames() {
-      if (frameBusy) return;
-      frameBusy = true;
-      try {
-        for (const name of ["wrist", "agentview"]) {
-          const r = await fetch("/camera/" + name + ".png", {
-            headers: { "X-CapX-Token": TOKEN },
-            cache: "no-store",
-          });
-          if (!r.ok) continue;
-          const url = URL.createObjectURL(await r.blob());
-          const previous = urls[name];
-          $(name).src = url;
-          urls[name] = url;
-          if (previous) URL.revokeObjectURL(previous);
-        }
-      } catch (e) {
-      } finally {
-        frameBusy = false;
-      }
-    }
-    setInterval(frames, 200);
-    frames();
-    function primary(name) {
-      const panel = document.querySelector('[data-camera="' + name + '"]');
-      $("cameras").prepend(panel);
-      localStorage.setItem("capx.camera", name);
-    }
-    for (const b of document.querySelectorAll("[data-primary]"))
-      b.onclick = () => primary(b.dataset.primary);
-    if (["wrist", "agentview"].includes(localStorage.getItem("capx.camera")))
-      primary(localStorage.getItem("capx.camera"));
-    let dragged = null;
-    for (const p of document.querySelectorAll(".camera")) {
-      p.ondragstart = () => {
-        dragged = p;
-        p.classList.add("dragging");
-      };
-      p.ondragend = () => p.classList.remove("dragging");
-      p.ondragover = (e) => e.preventDefault();
-      p.ondrop = (e) => {
-        e.preventDefault();
-        if (dragged && dragged !== p) primary(dragged.dataset.camera);
-      };
-    }
-  </script>
+        <details class="panel help-panel">
+          <summary>操作ガイド <span>＋</span></summary>
+          <p>
+            Spaceで移動を有効化、Escで停止。入力が途切れても手動モードは維持します。
+          </p>
+          <p>
+            世界座標：W/S ±X、A/D ±Y、R/F
+            ±Z。視点を変えても操作の座標系は同じです。
+          </p>
+          <p id="gamepad-label">
+            PlayStation系：R1を押しながら左stickで移動、L2/R2で上下、右stickで回転。○で手動、△でVLA、□でLLM、Optionsで停止。
+          </p>
+        </details>
+        <div class="recording-note">
+          <i></i>画像・操作・コードを対応付けて記録
+        </div>
+      </aside>
+    </main>
+  </body>
 </html>

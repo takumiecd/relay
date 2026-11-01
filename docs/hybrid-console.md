@@ -66,6 +66,10 @@ slider操作後もキーボード操作へ戻れる。テキスト編集中は�
 同じclient・epochの新しい入力が届けば、そのまま再開できる。
 遅れて到着した古いsequence、別tabのclient、切替前のepochの入力は受け付けない。
 Space release・blur・非表示でも解除を送る。ゲームパッドは引継ぎ後にR1を押し直す。
+Spaceは手動以外でもページscrollやbuttonの押下へ使わない。Pythonの編集欄では通常の空白を入力できる。
+Escは編集欄にfocusがあっても停止を優先し、画面へ停止受付を表示する。
+モード／コードの要求にもsequenceとexpected epochを付け、遅れて届いた開始要求が停止を上書きしない。
+再読み込みした画面はHまたは手動中のSpaceで操作権を引き継げる。
 
 PlayStation系はブラウザの`standard` mappingを使う。
 R1が有効化、左stickが前後左右、L2/R2が上下、右stickが回転。
@@ -87,6 +91,16 @@ flowchart LR
     S --> E[単一のOSC環境]
     E --> R[実行済み記録]
 ```
+
+## 新しい試行
+
+タスク完了・エピソード終了時は終了bannerを表示し、現在の試行では操作を止める。
+headerの「新しい試行」で、今の記録を保存・exportして初期状態から次の試行を始める。
+途中の試行でも同じbuttonで記録を残して切り替えられる。自動で再開せず、次も停止状態で始まる。
+
+最初の記録は`output/trajectory/`、次からは`output/trials/0002/trajectory/`等へ分ける。
+各試行のaction・summary・コードも個別に残し、過去のraw記録は上書きしない。
+これは新しい独立した試行であり、任意時点への巻き戻しや採用branchの機能ではない。
 
 ## コードの実行
 
@@ -139,6 +153,8 @@ VLA推論・LLM生成は別threadで待つ。遅延結果はepoch/contextと権�
 本番の人の修正デモと、実VLA＋GPU上の実LLMを同時に接続した試験は次の検証になる。
 
 テスト：
+
+キー入力の回帰試験は`node --test tests/web/hybrid-keyboard.test.mjs`。
 
 ```bash
 CAPX_LIBERO_SOURCE=capx/third_party/LIBERO-PRO \

@@ -50,6 +50,7 @@ class ControlSession:
         self.mode = "STOPPED"
         self.last_reason = "attached"
         self.client_id = None
+        self.command_sequences = {}
         self.program_id = None
         self.program_metadata = {}
         self.events = deque()
@@ -90,6 +91,29 @@ class ControlSession:
             self.last_sequence = -1
             self._event("mode_changed", previous=previous, mode=mode, reason=reason)
             return self.status()
+
+    def command(self, mode, *, client_id, sequence, expected_epoch):
+        """Order commands per page; late mode/code requests cannot undo a newer stop."""
+        if mode not in self.MODES:
+            raise ValueError("Unknown control mode")
+        if (
+            not isinstance(client_id, str)
+            or not 1 <= len(client_id) <= 100
+            or type(sequence) is not int
+            or sequence < 0
+            or type(expected_epoch) is not int
+        ):
+            raise ValueError("Invalid control command")
+        with self.lock:
+            if sequence <= self.command_sequences.get(client_id, -1):
+                return dict(self.status(), accepted=False)
+            self.command_sequences[client_id] = sequence
+            # A stop is always accepted, even when its page has an old snapshot.
+            if mode != "STOPPED" and expected_epoch != self.env.epoch:
+                return dict(self.status(), accepted=False)
+            result = self.switch(mode, client_id=client_id)
+            self._event("command_accepted", client_id=client_id, sequence=sequence, action=mode)
+            return dict(result, accepted=True)
 
     def begin(self, source):
         with self.lock:
@@ -211,6 +235,7 @@ class ControlSession:
             return dict(
                 mode=self.mode,
                 reason=self.last_reason,
+                client_id=self.client_id,
                 epoch=self.env.epoch,
                 program_id=self.program_id,
                 input_fresh=fresh,

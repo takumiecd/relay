@@ -273,7 +273,7 @@ def test_console_checks_origin_and_never_runs_simulator_in_http_thread(tmp_path)
     console=Console(runner,port=0)
     url=f'http://127.0.0.1:{console.port}'
     def post(origin,token):
-        request=urllib.request.Request(url+'/api/mode',data=json.dumps({'mode':'HUMAN','client_id':'test'}).encode(),
+        request=urllib.request.Request(url+'/api/mode',data=json.dumps({'mode':'HUMAN','client_id':'test','sequence':1,'expected_epoch':runner.env.epoch}).encode(),
                 headers={'Content-Type':'application/json','X-CapX-Token':token,'Origin':origin})
         with urllib.request.urlopen(request,timeout=2) as response:return json.load(response)
     try:
@@ -282,3 +282,78 @@ def test_console_checks_origin_and_never_runs_simulator_in_http_thread(tmp_path)
         assert post(url,console.token)['mode']=='HUMAN'
         assert runner.env.applied_steps==0
     finally:console.close();runner.close()
+
+
+def test_late_mode_and_code_cannot_override_a_newer_stop(tmp_path):
+    env=FakeEnv();runner=HybridRunner(env,tmp_path,realtime=False)
+    try:
+        epoch=env.epoch
+        result=runner.request_mode('STOPPED',client_id='page',sequence=2,expected_epoch=epoch)
+        assert result['accepted']
+        assert not runner.request_mode('VLA',client_id='page',sequence=1,expected_epoch=epoch)['accepted']
+        assert not runner.submit_code('pass','page',sequence=1,expected_epoch=epoch)['accepted']
+        assert runner.control.mode=='STOPPED' and runner.pending_code is None
+        # A fresh page's stop is accepted even before its first state snapshot.
+        assert runner.request_mode('STOPPED',client_id='other',sequence=1,expected_epoch=-1)['accepted']
+    finally:runner.close()
+
+
+def test_stale_page_cannot_start_motion_after_another_page_takes_over(tmp_path):
+    env=FakeEnv();runner=HybridRunner(env,tmp_path,realtime=False)
+    try:
+        epoch=env.epoch
+        assert runner.request_mode('HUMAN',client_id='first',sequence=1,expected_epoch=epoch)['accepted']
+        assert not runner.request_mode('VLA',client_id='second',sequence=1,expected_epoch=epoch)['accepted']
+        assert runner.control.status()['client_id']=='first'
+    finally:runner.close()
+
+
+def test_new_trial_preserves_finished_record_and_invalidates_old_inputs(real_hybrid_env,tmp_path):
+    import hashlib
+    from capx.extensions.vla.recording import TrajectoryRecorder
+    env=real_hybrid_env;env.reset(seed=0)
+    env.attach_recorder(TrajectoryRecorder(tmp_path/'trajectory',{'test_only':True}))
+    runner=HybridRunner(env,tmp_path,predictor=TestVla(),test_operator=True,realtime=False)
+    limit=env.max_steps
+    try:
+        env.max_steps=1
+        runner.request_mode('HUMAN',client_id='test',sequence=1,expected_epoch=env.epoch)
+        old_epoch=env.epoch
+        runner.control.submit_input(client_id='test',sequence=1,epoch=old_epoch,keys=['KeyR'],speed=.3,deadman=True)
+        runner.tick()
+        assert env.ended and env.applied_steps==1
+        old_file=tmp_path/'trajectory/steps.jsonl'
+        before=hashlib.sha256(old_file.read_bytes()).hexdigest()
+        runner.request_trial(client_id='test',sequence=2,expected_epoch=env.epoch)
+        runner.tick()
+        assert runner.trial_index==2 and not env.ended and env.applied_steps==0
+        assert runner.control.mode=='STOPPED'
+        assert hashlib.sha256(old_file.read_bytes()).hexdigest()==before
+        assert (tmp_path/'trajectory/vla-candidates.jsonl').is_file()
+        assert (tmp_path/'trials/0002/trajectory/episode.json').is_file()
+        assert not runner.control.submit_input(client_id='test',sequence=100,epoch=old_epoch,
+                                               keys=['KeyR'],speed=.3,deadman=True)
+    finally:
+        env.max_steps=limit
+        runner.close()
+
+
+@pytest.mark.parametrize('mode',['HUMAN','VLA'])
+def test_stop_during_committed_step_does_not_leave_running_status(mode,tmp_path):
+    env=FakeEnv();runner=HybridRunner(env,tmp_path,predictor=TestVla(),test_operator=True,realtime=False)
+    try:
+        runner.control.switch(mode,client_id='test' if mode=='HUMAN' else None)
+        if mode=='VLA':
+            runner.tick();assert runner.vla_job.done.wait(2)
+        else:
+            runner.control.submit_input(client_id='test',sequence=1,epoch=env.epoch,
+                                        keys=['KeyR'],speed=.3,deadman=True)
+        after_step=env.after_step
+        def stop_after_commit():
+            runner.control.switch('STOPPED')
+            after_step()
+        env.after_step=stop_after_commit
+        runner.tick()
+        assert env.applied_steps==1 and runner.control.mode=='STOPPED'
+        assert runner.message=='停止中' and not runner.chunk
+    finally:runner.close()
