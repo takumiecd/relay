@@ -8,6 +8,7 @@ import time
 
 import numpy as np
 from PIL import Image
+from relay.backends.base import SimulationClock
 
 
 def write_json(path, data):
@@ -25,6 +26,7 @@ class TrajectoryRecorder:
         self.count = 0
 
     def _observation(self, env):
+        clock: SimulationClock = env
         index = env.context()['observation_id']
         relative = f"observations/{env.context()['epoch']:04d}-{index:06d}"
         if (self.root / f'{relative}.json').exists():
@@ -39,7 +41,7 @@ class TrajectoryRecorder:
         np.save(self.root / physics, env.physics_state(), allow_pickle=False)
         item = {'context': env.context(), 'images': paths, 'state': observation['state'],
                 'image_convention': observation['image_convention'], 'physics_state': physics,
-                'wall_time_ns': time.time_ns(), 'sim_time_s': float(env.handle.env.sim.data.time)}
+                'wall_time_ns': time.time_ns(), 'sim_time_s': clock.simulation_time()}
         write_json(self.root / f'{relative}.json', item)
         return f'{relative}.json'
 

@@ -204,6 +204,43 @@ class OscLiberoEnv(BaseEnv):
         site = self.robot.eef_site_id
         return sim.data.site_xpos[site].copy(), sim.data.site_xmat[site].reshape(3, 3).copy()
 
+    def eef_pose(self):
+        """Relay CartesianBackend: copied WORLD position and rotation matrix."""
+        self._owner()
+        return self._pose()
+
+    def cartesian_delta_action(self, translation_m, rotation_vector_rad, gripper_command):
+        """Encode physical WORLD increments using this OSC controller's scale.
+
+        This only constructs an action. apply_native remains the sole authority-
+        checked physical application entry point.
+        """
+        self._owner()
+        translation = np.asarray(translation_m, dtype=float)
+        rotation = np.asarray(rotation_vector_rad, dtype=float)
+        if translation.shape != (3,) or rotation.shape != (3,):
+            raise ValueError("Expected XYZ translation and axis-angle rotation vectors")
+        delta = np.r_[translation, rotation]
+        if not np.isfinite(delta).all() or not np.isfinite(gripper_command):
+            raise ValueError("Expected finite Cartesian and gripper commands")
+        c = self.controller
+        if c.action_scale is None:
+            c.scale_action(np.zeros(6))
+        if not np.allclose(c.action_output_transform, 0):
+            raise ValueError("Nonzero controller action offset is unsupported")
+        native = np.r_[delta / c.action_scale, gripper_command]
+        self.validate_chunk([native])
+        return native
+
+    def gripper_action(self, command):
+        """Hold the current OSC EEF target and apply a normalized gripper command."""
+        return self.cartesian_delta_action(np.zeros(3), np.zeros(3), command)
+
+    def simulation_time(self):
+        """Relay SimulationClock: simulator seconds, including settling steps."""
+        self._owner()
+        return float(self.handle.env.sim.data.time)
+
     def get_observation(self):
         self._owner()
         p, r = self._pose()
