@@ -1,0 +1,67 @@
+{
+  "schema": "relay.repair-demo.v1",
+  "source_commit": "3a0b6c5",
+  "parent_steps": 78,
+  "fork_step": 51,
+  "repair_steps": 95,
+  "selected_steps": 146,
+  "selected_sources": {
+    "VLA": 73,
+    "TEST_OPERATOR": 73
+  },
+  "manual_displacement_m": [
+    0.026492164553339678,
+    0.007002775061217964,
+    0.05401417093694538
+  ],
+  "restored_physics_vector_exact": true,
+  "compared_state_shape": [
+    92
+  ],
+  "training_admitted": false,
+  "task_completed": false,
+  "terminal_reward": 1.0,
+  "terminated": true,
+  "every_replayed_physics_state_exact": true,
+  "replay_refresh_differences": [
+    {
+      "before_forward": true,
+      "after_forward": false,
+      "qpos_equal": true,
+      "ncon_before": 75,
+      "ncon_after": 73
+    }
+  ],
+  "duration_seconds": 93.0,
+  "video_sha256": "ae95f709f9bbb01d40daed2dfb07e124f6373bf05452e9453e6fa144e4c71341",
+  "storyboard_sha256": "51eaa9fd13bdcdfa9da004703a876a4bbca6d33cc8f1096931df28e2ad3d97f7",
+  "replay_verification_sha256": "b1af40cbfa32a12435fbe1f1d7192de0db8b69287fdb1a06dccf383e42b521ac",
+  "build_script_sha256": "ceff2d5b021764c4857bc90a932339120635c907af3050dab372e9f4f708554e",
+  "limitations": [
+    "Baseline completed at 78 steps; this is not an AI failure-recovery demonstration.",
+    "Adopted route returned reward 1 and terminated; post-forward task_completed is false.",
+    "Manual input is agent-operated TEST_OPERATOR; no real human demonstration claim.",
+    "Recorded observations are edited in playback time; no continuous real-time inference claim.",
+    "No model training, no stable placement success claim for the intervened route."
+  ],
+  "build_script_commit": "757603c",
+  "baseline_task_completed": true,
+  "baseline_reward": 1.0,
+  "additional_branch_retained": true,
+  "real_predictions": 127,
+  "model": {
+    "model": "openvla/openvla-7b-finetuned-libero-spatial",
+    "revision": "962318cec55ac10993ff0f5f43eda9a270b4c873",
+    "code_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+    "device": "NVIDIA L4",
+    "torch": "2.2.2+cu121",
+    "attention": "sdpa",
+    "quantized": false,
+    "seed": 7
+  },
+  "gpu_job": "l4job-ac4a5610d111408e9e9ca62eaf60f84c",
+  "owned_gpu_stopped": true,
+  "owned_console_and_tunnel_stopped": true,
+  "video_bytes": 3913365,
+  "full_material_manifest_sha256": "b83cb656ca47f78ad28193ba989e204c8e61ca0a7f4bff162d153f8b5769730e"
+}
