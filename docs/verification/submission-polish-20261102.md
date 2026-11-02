@@ -73,4 +73,9 @@ skipはGenesis専用runtimeが必要なケースで、Genesis環境で別途実�
 生のログ・画面・記録は`output/submission-polish-20261102/`。
 改良版の資料は元の提出物を上書きせず、`output/pdf/polished/`と`output/submission-polished-takumiecd/`へ作る。
 生成scriptは`scripts/build_pai_polished.py`。元映像・採用経路・生成コードのhashと出所を検査してから作成する。
+改良版は5ページのPDFと132.625秒・1920×1080・H.264の無音MP4。字幕で内容と再生倍率を示す。
+PDF全ページ、動画の全11区間を目視確認。手動区間は実画面と両カメラの記録を拡大して示す。
+最終sourceから再ビルドしたイメージでも、別domainの3 cyclesを再確認した。
+数値・素材／完成物のhash・source commit・shipping imageは[機械可読の結果](artifacts/submission-polish-20261102/result.json)へ保存。
+資料に記載したsource commitは生成元の`261bb5e`で、この後の検証JSON・説明追記とは分けて固定している。
 YouTubeやOmniCampusへの再送信はこの作業に含めない。
