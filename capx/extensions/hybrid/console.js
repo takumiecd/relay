@@ -15,9 +15,7 @@ let commandSequence = 0,
   pendingCommand = null,
   inputSequence = 0,
   inputRequests = 0;
-let padArmed = false,
-  lastPadButtons = [],
-  lastKey = "—",
+let lastKey = "—",
   frameBusy = false;
 let flashMessage = null,
   lastFrameKey = null,
@@ -64,7 +62,7 @@ async function command(path, body, { preserveKeys = false, message } = {}) {
     keyboard.gripperKey = null;
     keyboard.release();
   }
-  padArmed = false;
+
   const id = ++commandSequence;
   pendingCommand = id;
   const payload = {
@@ -140,7 +138,7 @@ window.addEventListener("keyup", (event) => keyboard.up(event), {
   capture: true,
 });
 window.addEventListener("blur", () => {
-  padArmed = false;
+
   keyboard.blur();
 });
 window.addEventListener("focus", () => {
@@ -148,7 +146,7 @@ window.addEventListener("focus", () => {
 });
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
-    padArmed = false;
+
     keyboard.blur();
   }
 });
@@ -199,6 +197,19 @@ async function seek(step, branch = state.timeline?.branch) {
   await command("/api/seek", { branch, step });
 }
 const branchGraph = new BranchGraph($("branch-graph"), seek, (text) => { $("graph-hint").textContent = text; });
+function setHistoryExpanded(expanded) {
+  $("history-body").hidden = !expanded;
+  $("toggle-history").setAttribute("aria-expanded", String(expanded));
+  const label = expanded ? "履歴を折りたたむ" : "履歴を展開する";
+  $("toggle-history").setAttribute("aria-label", label);
+  $("toggle-history").title = label;
+  localStorage.setItem("capx.history.expanded", String(expanded));
+}
+$("toggle-history").onclick = () => {
+  setHistoryExpanded($("history-body").hidden);
+  focusWorkspace();
+};
+setHistoryExpanded(localStorage.getItem("capx.history.expanded") !== "false");
 $("adopt-route").onclick = () => {
   const history = state.timeline;
   if (!history) return;
@@ -284,50 +295,7 @@ function updateSpeed() {
 }
 $("speed").oninput = updateSpeed;
 updateSpeed();
-function padInput() {
-  const pad = Array.from(navigator.getGamepads?.() || []).find(
-    (pad) => pad && pad.mapping === "standard",
-  );
-  if (!pad) {
-    lastPadButtons = [];
-    padArmed = false;
-    return { axes: [0, 0, 0, 0, 0, 0], keys: [], enabled: false };
-  }
-  const pressed = (index) => !!pad.buttons[index]?.pressed,
-    deadzone = (value) => (Math.abs(value || 0) < 0.15 ? 0 : value);
-  if (
-    !isEditing(document.activeElement) &&
-    keyboard.focused &&
-    !document.hidden
-  ) {
-    for (const [index, value] of [
-      [1, "HUMAN"],
-      [3, "VLA"],
-      [2, "LLM"],
-      [9, "STOPPED"],
-    ])
-      if (pressed(index) && !lastPadButtons[index]) mode(value);
-  }
-  if (!owned() || pendingCommand !== null || !keyboard.focused || !pressed(5))
-    padArmed = false;
-  else if (!lastPadButtons[5]) padArmed = true;
-  lastPadButtons = pad.buttons.map((button) => button.pressed);
-  return {
-    axes: [
-      -deadzone(pad.axes[1]),
-      -deadzone(pad.axes[0]),
-      (pad.buttons[7]?.value || 0) - (pad.buttons[6]?.value || 0),
-      0,
-      deadzone(pad.axes[3]),
-      -deadzone(pad.axes[2]),
-    ],
-    keys: [...(pressed(4) ? ["KeyV"] : []), ...(pressed(0) ? ["KeyC"] : [])],
-    enabled: pressed(5) && padArmed,
-  };
-}
 async function sendInput(forceRelease = false) {
-  const pad = padInput();
-  if (pad.keys.length) keyboard.gripperKey = pad.keys[0];
   if (
     !owned() ||
     ((pendingCommand !== null || state.seeking || state.adopting) && !forceRelease) ||
@@ -339,7 +307,7 @@ async function sendInput(forceRelease = false) {
     keyboard.focused &&
     !document.hidden &&
     !isEditing(document.activeElement) &&
-    (keyboard.held.has("Space") || pad.enabled) &&
+    keyboard.held.has("Space") &&
     !state.ended;
   const selecting =
     !forceRelease &&
@@ -365,7 +333,7 @@ async function sendInput(forceRelease = false) {
               )
               .concat(gripKeys)
           : gripKeys,
-        axes: enabled ? pad.axes : [0, 0, 0, 0, 0, 0],
+        axes: [0, 0, 0, 0, 0, 0],
         speed: Number($("speed").value) / 100,
         deadman: enabled,
       },
@@ -381,7 +349,7 @@ async function sendInput(forceRelease = false) {
 setInterval(() => sendInput(), 50);
 function render() {
   const busy = pendingCommand !== null || state.resetting || state.seeking || state.adopting;
-  const localHeld = keyboard?.held.has("Space") || padArmed;
+  const localHeld = keyboard?.held.has("Space");
   const receiving = owned() && localHeld && state.input_fresh && state.deadman;
   $("connection").lastChild.textContent = connected
     ? "接続済み"
@@ -495,7 +463,7 @@ async function update() {
       if (next.epoch !== state.epoch) {
         keyboard.gripperKey = null;
         keyboard.release();
-        padArmed = false;
+
       }
       mergeStatus(next);
       if (!next.seeking && !draggingHistory) seekPreview = null;

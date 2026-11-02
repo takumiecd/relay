@@ -10,6 +10,9 @@ Development branch: `codex/vla-integration`.
 Goal: [collect aligned VLA / code / human trajectories](docs/dataset-design.md).
 This extension is under development and is separate from the upstream benchmark results.
 
+[PAI final project: scope, evidence, and submission guide (Japanese)](docs/pai-submission.md).
+The console uses keyboard input; ROS 2 and gamepad support are outside this submission.
+
 ### A Framework for Benchmarking and Improving Coding Agents for Robot Manipulation
 
 [Project Page](https://capgym.github.io/) &ensp;|&ensp; [Paper](https://arxiv.org/abs/2603.22435) 

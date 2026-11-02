@@ -68,16 +68,13 @@ Space中は移動キーなしでもstepを進め、指の開閉が完了する�
 C/Vは目標を選択して保持する。先にC/Vを押して離し、後からSpaceを押しても開閉できる。
 Spaceを押していない間は、目標を選んでも物理を進めない。
 遅れて到着した古いsequence、別tabのclient、切替前のepochの入力は受け付けない。
-Space release・blur・非表示でも解除を送る。ゲームパッドは引継ぎ後にR1を押し直す。
+Space release・blur・非表示でも解除を送る。
 Spaceは手動以外でもページscrollやbuttonの押下へ使わない。Pythonの編集欄では通常の空白を入力できる。
 Escは編集欄にfocusがあっても停止を優先し、画面へ停止受付を表示する。
 モード／コードの要求にもsequenceとexpected epochを付け、遅れて届いた開始要求が停止を上書きしない。
 再読み込みした画面はHまたは手動中のSpaceで操作権を引き継げる。
 
-PlayStation系はブラウザの`standard` mappingを使う。
-R1が有効化、左stickが前後左右、L2/R2が上下、右stickが回転。
-L1で開く、✕で閉じる。○が手動、△がVLA、□がLLM、Optionsが停止。
-実機のゲームパッド接続試験はまだ行っていない。
+操作UIはキーボード専用。ゲームパッド接続は提出範囲に含めない。
 
 手首カメラが最初の主表示。主表示buttonまたはdragで全体カメラと並び替えられる。
 配置と速度はbrowser内に保持する。カメラの撮影位置／向きを変える機能ではない。
@@ -89,7 +86,7 @@ flowchart LR
     V[VLA推論thread] --> S[sim owner thread]
     L[LLM生成thread] --> C[CaP-Xコードprocess]
     C -->|API要求| S
-    H[キーボード・gamepad] --> A[mode・epoch・lease]
+    H[キーボード] --> A[mode・epoch・lease]
     A --> S
     S --> E[単一のOSC環境]
     E --> R[実行済み記録]
