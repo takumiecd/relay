@@ -23,7 +23,8 @@ def run(connection_file, output, seconds=600, adapter="openvla", adapter_config=
     def request(path, body=None):
         req = urllib.request.Request(connection["url"].rstrip("/") + path,
             data=None if body is None else json.dumps(body, allow_nan=False).encode(),
-            headers={"Content-Type": "application/json", "Authorization": "Bearer " + connection["token"]})
+            headers={"Content-Type": "application/json", "Authorization": "Bearer " + connection["token"],
+                     'X-CapX-Worker-ID': worker_id})
         with urllib.request.urlopen(req, timeout=30) as response:
             return json.load(response)
 

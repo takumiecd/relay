@@ -53,7 +53,11 @@ class PolicyBridge:
                 if self.path != "/next":
                     return self.reply(404, {})
                 with owner.condition:
+                    if owner.worker_id is not None and self.headers.get('X-CapX-Worker-ID') != owner.worker_id:
+                        return self.reply(409, {'error': 'Worker superseded'})
                     owner.condition.wait_for(lambda: owner.closed or owner.pending is not None, 8)
+                    if owner.worker_id is not None and self.headers.get('X-CapX-Worker-ID') != owner.worker_id:
+                        return self.reply(409, {'error': 'Worker superseded'})
                     item = {"type": "close"} if owner.closed else owner.pending or {"type": "wait"}
                     self.reply(200, item)
 
@@ -93,6 +97,7 @@ class PolicyBridge:
                             owner.error = str(body.get("error", "worker failed"))[:2000]
                             owner.ready = None
                             owner.worker_id = None
+                            owner.pending, owner.result = None, None
                         elif self.path == '/detach':
                             if body.get('worker_id') != owner.worker_id:
                                 return self.reply(409, {'accepted': False})

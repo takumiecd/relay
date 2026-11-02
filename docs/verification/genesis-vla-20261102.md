@@ -91,3 +91,10 @@ WORLD deltaの接続を待ち受け、LLMは既存のMac上MLX APIへ接続す�
 GPU workerは試験後に停止しているため、現在のVLAボタンは接続待ちである。
 実VLAを再開するときは`notebooks/vla_worker.ipynb`のGenesis設定で接続する。
 利用者の手動入力はHUMAN、QAの代理キー入力はTEST_OPERATORのまま区別する。
+
+## マージ前レビュー（2026-11-02）
+
+worker交代時の結果の競合を追加修正した。旧workerのpollをworker IDで拒否し、
+error時は保留中の要求／結果を破棄する。新しいpolicy metadataが届いたときにVLA実行中または委譲中なら停止し、
+旧workerの返答が既に受信済みでも実行しない。
+新規の再接続・poll検査と既存のGenesis統合を合わせて **82 passed, no skips**。

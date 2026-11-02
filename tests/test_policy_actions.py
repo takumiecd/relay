@@ -263,3 +263,32 @@ def test_worker_round_trip_registers_identity_and_detaches_cleanly(tmp_path,monk
         assert json.loads((tmp_path/'worker/result.json').read_text())['predictions']==1
     finally:
         bridge.request_close();thread.join(5);bridge.close()
+
+
+def test_reconnected_worker_discards_an_already_received_old_prediction(reference,tmp_path):
+    policy=DeltaFixture()
+    policy.ready=dict(policy.ready,worker_id='old')
+    runner=HybridRunner(reference,tmp_path,predictor=policy,
+                        policy_actions=PolicyActions(reference,WORLD_DELTA),realtime=False)
+    try:
+        runner.control.switch('VLA');runner.tick();assert runner.vla_job.done.wait(2)
+        policy.ready=dict(policy.ready,worker_id='new')
+        runner.tick()
+        assert reference.applied_steps==0 and runner.control.mode=='STOPPED'
+        assert runner.control.last_reason=='vla_policy_changed'
+        assert runner.policy_metadata['worker_id']=='new' and not runner.chunk
+    finally:runner.close()
+
+
+def test_superseded_worker_cannot_poll_new_requests():
+    import urllib.error
+    bridge=PolicyBridge(port=0,action_contract=WORLD_DELTA)
+    def request(path,body=None,worker_id='new'):
+        req=urllib.request.Request(bridge.url+path,data=json.dumps(body).encode() if body is not None else None,
+            headers={'Authorization':'Bearer '+bridge.token,'Content-Type':'application/json','X-CapX-Worker-ID':worker_id})
+        with urllib.request.urlopen(req,timeout=2) as response:return json.load(response)
+    try:
+        request('/ready',{'action_contract':WORLD_DELTA,'worker_id':'new'})
+        with pytest.raises(urllib.error.HTTPError) as error:request('/next',worker_id='old')
+        assert error.value.code==409 and bridge.ready['worker_id']=='new'
+    finally:bridge.close()

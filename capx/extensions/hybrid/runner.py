@@ -352,6 +352,8 @@ class HybridRunner:
             self.control.switch('STOPPED', reason='vla_disconnected')
         metadata = getattr(self.predictor, "ready", None)
         if isinstance(metadata, dict) and metadata != self.policy_metadata:
+            if self.policy_metadata is not None and (self.control.mode == 'VLA' or self.delegated is not None):
+                self.control.switch('STOPPED', reason='vla_policy_changed')
             self.policy_metadata = dict(metadata)
             with self.control.lock:
                 self.control._event("policy_ready", metadata=self.policy_metadata)
