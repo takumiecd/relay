@@ -1,0 +1,42 @@
+{
+  "schema": "capx.branch-graph-verification.v1",
+  "date": "2026-11-02",
+  "test_counts": {
+    "python": 44,
+    "javascript": 12
+  },
+  "console": {
+    "output": "output/hybrid-dag-01",
+    "test_vla": true,
+    "test_llm": true,
+    "test_operator": true,
+    "clicked_point": 87,
+    "clicked_line": 88,
+    "active_branch": "0001",
+    "cursor": 113,
+    "adopted_branch": "0002",
+    "adopted_end_step": 92,
+    "physical_cursor_independent": true
+  },
+  "exported": {
+    "rows": 92,
+    "candidates": 92,
+    "shared_prefix_rows": 80,
+    "corrected_suffix_rows": 12,
+    "route_sha256": "359ebfc76f85080bcea4688ba332bc8754045b2a8595bd249cb510245e26f48e",
+    "route_digest_matches": true,
+    "all_images_exist": true
+  },
+  "invariants": {
+    "appending_does_not_extend_selection": true,
+    "old_selections_retained": true,
+    "stale_commands_rejected": true,
+    "all_branches_and_selection_reconstruct": true
+  },
+  "reconstruction": {
+    "branches": 2,
+    "previous_cursor": 113,
+    "every_replayed_physics_state_exact": true
+  },
+  "training_admitted": false
+}

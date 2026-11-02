@@ -934,3 +934,30 @@ input[type="range"] {
 .camera img { max-height: calc(100dvh - 410px); }
 @media (max-width: 780px) { .timeline { padding: 10px; } .timeline-heading { flex-wrap: wrap; gap: 6px; } .timeline-heading select { max-width: 150px; } .timeline-caption { align-items: flex-start; gap: 10px; } .timeline-controls { gap: 5px; } #step-number { width: 50px; } #history-head { font-size: 9px; padding: 4px 6px; } }
 @media (max-width: 560px) { .camera img { max-height: none; } .timeline { margin-top: 10px; } }
+
+.graph-titlebar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 6px; border-top: 1px solid #edf1f6; margin-top: 5px; color: #536d88; font-size: 10px; font-weight: 600; }
+.graph-titlebar small { font-size: 7px; color: #a4b0be; letter-spacing: .1em; margin-left: 6px; }
+.graph-legend { display: flex; gap: 5px; align-items: center; font-size: 8px; color: #91a0af; font-weight: 400; }
+.graph-legend i { width: 6px; height: 6px; border-radius: 50%; margin-left: 6px; background: #9aa8b7; }
+.graph-legend .vla { background: #719cba; }.graph-legend .human { background: #c49861; }.graph-legend .code { background: #9b88b7; }
+.branch-graph { overflow: auto; max-height: 174px; border: 1px solid #edf1f6; border-radius: 7px; background: #fcfdff; scrollbar-width: thin; }
+.branch-graph svg { display: block; font-family: inherit; user-select: none; }
+.branch-graph.busy { opacity: .55; pointer-events: none; }
+.graph-grid { stroke: #edf1f6; stroke-dasharray: 2 4; }
+.graph-tick { font-size: 8px; fill: #a2afbd; }.graph-branch-label { font-size: 10px; fill: #6f8297; cursor: pointer; font-weight: 550; }
+.graph-active-row { fill: #edf4fc; }.graph-track, .graph-connector { stroke: #b8c6d6; stroke-width: 2; fill: none; }
+.graph-connector.adopted { stroke: #9ac7a8; stroke-width: 4; }
+.graph-source { stroke: #a1aebc; stroke-width: 3; }.graph-source.vla { stroke: #719cba; }.graph-source.human { stroke: #c49861; }.graph-source.code { stroke: #9b88b7; }
+.graph-adopted-route { stroke: #b6dcc0; stroke-width: 10; stroke-linecap: round; }
+.graph-hit, .graph-node, .graph-head-label { cursor: pointer; }.graph-node circle { stroke: #8b9fb5; stroke-width: 1.5; fill: #fff; }.graph-node:hover circle { stroke: #3568ae; stroke-width: 2.5; fill: #dceafb; }
+.graph-node:focus-visible { outline: none; }.graph-node:focus-visible circle { stroke: #3568ae; stroke-width: 3; }
+.graph-head-label { font-size: 9px; fill: #8091a5; }.graph-adopted-end { stroke: #649a74; stroke-width: 2; fill: none; }
+.graph-head-marker { fill: #477cbe; }.graph-head-text { fill: #477cbe; font-size: 7px; font-weight: 700; letter-spacing: .05em; }
+.graph-caption { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 8px; color: #a1afbd; margin: 6px 0 11px; }
+.graph-caption > span:last-child { display: flex; align-items: center; gap: 5px; white-space: nowrap; }.graph-caption b { color: #477cbe; font-size: 9px; }.graph-caption i { width: 11px; height: 5px; border-radius: 3px; background: #b6dcc0; margin-left: 5px; }
+.adoption-row { border-top: 1px solid #edf1f6; margin-top: 11px; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.adoption-label { display: block; color: #9baaba; font-size: 7px; letter-spacing: .12em; margin-bottom: 4px; }.adoption-row strong { font-size: 10px; font-weight: 500; color: #8a9bab; }.adoption-row strong.selected { color: #62816c; }.adoption-row .button { min-height: 30px; font-size: 10px; padding: 6px 10px; }
+.camera img { max-height: calc(100dvh - 610px); }
+@media (max-height: 760px) and (min-width: 561px) { .timeline { padding-top: 8px; padding-bottom: 8px; margin-top: 8px; }.branch-graph { max-height: 116px; }.task-line { min-height: 48px; padding-bottom: 10px; }.workspace-footer { padding-top: 9px; }.camera img { max-height: max(100px, calc(100dvh - 550px)); } }
+@media (max-width: 780px) { .graph-titlebar small, .graph-legend { display: none; }.graph-caption { font-size: 7px; }.adoption-row { flex-wrap: wrap; }.adoption-row .button { font-size: 9px; }.branch-graph { max-height: 146px; } }
+@media (max-width: 560px) { .camera img { max-height: none; } }

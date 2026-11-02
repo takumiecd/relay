@@ -16,7 +16,7 @@ ROS 2は使わず、一つのMuJoCo環境と共通の実行済み記録を共有
 `http://127.0.0.1:8876/`を開く。最初は停止している。
 `--test-vla`は固定OSC指令、`--test-llm`は固定Pythonを返す試験用provider。
 これらを実モデルの推論結果とは扱わない。自動試験の操作は`--test-operator`で
-`TEST_OPERATOR`と記録し、HUMANの教師へ変えない。全記録は採用前の候補である。
+`TEST_OPERATOR`と記録し、HUMANの教師へ変えない。経路を選択しても、品質確認・学習投入とは区別する。
 
 実VLA・実LLMを接続する場合：
 
@@ -120,7 +120,7 @@ headerの「新しい試行」で、今の記録を保存・exportして初期�
 最初の経路のraw記録は`trajectory/`、分岐の新規区間は`branches/0002/trajectory/`等へ保存する。
 分岐の`episode.json`のmetadataには`parent_trajectory`と絶対stepの`parent_step`を残す。
 `read_lineage()`と`vla.replay --trajectory`は親の先頭区間と分岐の実行区間をつなげて読める。
-UIで経路を表示しただけでは教師として採用しない。採用の判断・区間指定は次段階。
+分岐図の操作と採用経路の保存は以下の通り。学習投入の品質確認と任意区間の指定は次段階。
 
 checkpointはMuJoCoのintegration state（warmstart・ctrlを含む）、OSCの目標・内部状態、
 グリッパー開閉の蓄積値、robot buffer、観測cache、乱数状態、終了flagを保存する。
@@ -139,6 +139,46 @@ checkpointはpickleを含まないNPZ/JSON。各stepで画像・checkpointを保
   --restore-trajectory output/previous/branches/0002/trajectory \
   --output output/resumed
 ```
+
+## 分岐図と採用する経路
+
+分岐図は共有する過去を一本の線で示し、修正した未来を別の行へ分ける。
+点・線をクリックすると、その経路の指定stepへ移動して停止する。
+点を間引いた長い経路でも線上をクリックしてstepを選べる。数字欄で正確なstepも指定できる。
+行の名前か末尾の点をクリックすると、その経路の末尾へ移動する。
+青いHEADは現在位置、緑の線と終点は採用した経路であり、別々に表示する。
+VLA・手動・コード・数値再生は線の色で区別する。試験入力の出所はraw記録で区別する。
+
+「この経路を採用 · step Nまで」で、表示している経路の**先頭から末尾Nまで**を固定する。
+表示中のstepが途中でも、buttonに表示された末尾までを選択する。
+採用操作は制御を停止するが、表示中の物理状態を別のstepへ移動しない。
+その後に同じ経路を延長・巻き戻し・分岐しても採用範囲は変わらない。
+別の経路を採用すると最新の選択を切り替え、以前の選択ファイルも残す。
+
+`history/manifest.json`の`adopted`が最新の選択を参照する。
+`history/adoptions/<id>/`には以下を保存する。
+
+- `selection.json`：経路・固定終点・選択したclient・時刻・endpointと操作列のSHA256。
+- `route.jsonl`：共有する親の先頭区間と修正区間をつないだ操作列。元のsource・context・provenanceを保持。
+- `vla-candidates.jsonl`：その経路の画像・状態・指示・action・source・policy・実行コード参照。
+
+全参照pathは試行のrootからの相対path。画像はraw記録を参照し、複製しない。
+選択済みを`selected_for_dataset=true`で記録するが、`training_admitted=false`は維持する。
+タスク成功・品質・学習用split・formatの確認を経ず、自動で学習に使う機能ではない。
+
+既存の全経路・現在位置・採用先を別の出力先で復元するには`--restore-session`を使う。
+各経路を実行済みactionから再構築して全stepの物理状態を完全一致で照合し、元のraw記録を残す。
+直接checkpointを異なるmodel/resetに適用する方法ではない。再構築のsourceは`CODE_REPLAY`とし、
+元の出所とprovenanceは別項目で保持する。
+
+```bash
+.local/openvla-sim/bin/python -m capx.extensions.hybrid.server \
+  --test-vla --test-llm --test-operator \
+  --restore-session output/previous-trial \
+  --output output/restored-session
+```
+
+検証：[branch-graph-20261102.md](verification/branch-graph-20261102.md)。
 
 ## コードの実行
 
@@ -186,13 +226,13 @@ VLA推論・LLM生成は別threadで待つ。遅延結果はepoch/contextと権�
 
 ## 今後
 
-切替・巻き戻し・分岐記録は実装した。branch採用・人が確認した説明や成功判定、
+切替・巻き戻し・分岐図・採用経路の固定と書き出しは実装した。人が確認した説明や成功判定、
 意味のあるコードへの要約・学習用format変換・学習そのものはまだ実装していない。
 本番の人の修正デモと、実VLA＋GPU上の実LLMを同時に接続した試験は次の検証になる。
 
 テスト：
 
-キー入力の回帰試験は`node --test tests/web/hybrid-keyboard.test.mjs`。
+キー入力・分岐図の試験は`node --test tests/web/hybrid-*.test.mjs`。
 
 ```bash
 CAPX_LIBERO_SOURCE=capx/third_party/LIBERO-PRO \

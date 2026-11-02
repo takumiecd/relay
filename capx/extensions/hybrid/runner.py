@@ -113,6 +113,8 @@ class HybridRunner:
         self.pending_reset = False
         self.pending_seek = None
         self.seeking = False
+        self.pending_adoption = None
+        self.adopting = False
         self.timeline = Timeline(env, self.output) if env.recorder is not None and hasattr(env, "capture_checkpoint") else None
         self.env.before_action = self._before_action
         self.trial_index = 1
@@ -132,14 +134,16 @@ class HybridRunner:
 
     def request_mode(self, mode, *, client_id, sequence, expected_epoch):
         with self.pending_lock:
-            if (self.pending_reset or self.seeking) and mode != "STOPPED":
-                raise ValueError("新しい試行を準備中です")
+            if (self.pending_reset or self.seeking or self.adopting) and mode != "STOPPED":
+                raise ValueError("履歴を処理中です")
             return self.control.command(
                 mode, client_id=client_id, sequence=sequence, expected_epoch=expected_epoch
             )
 
     def request_trial(self, *, client_id, sequence, expected_epoch):
         with self.pending_lock:
+            if self.adopting:
+                raise ValueError("採用する経路を保存中です")
             with self.control.lock:
                 if expected_epoch != self.env.epoch:
                     return dict(self.control.status(), accepted=False, resetting=self.pending_reset)
@@ -155,7 +159,7 @@ class HybridRunner:
 
     def request_seek(self, branch, step, *, client_id, sequence, expected_epoch):
         with self.pending_lock, self.control.lock:
-            if self.timeline is None or self.pending_reset or self.seeking:
+            if self.timeline is None or self.pending_reset or self.seeking or self.adopting:
                 raise ValueError("履歴を準備中です")
             self.timeline.validate_target(branch, step)
             if expected_epoch != self.env.epoch:
@@ -167,6 +171,39 @@ class HybridRunner:
                 self.pending_seek = (branch, step)
                 self.seeking = True
             return dict(result, seeking=self.seeking)
+
+    def request_adoption(self, branch, end_step, *, client_id, sequence, expected_epoch):
+        with self.pending_lock, self.control.lock:
+            if self.timeline is None or self.pending_reset or self.seeking or self.adopting:
+                raise ValueError("履歴を処理中です")
+            self.timeline.validate_target(branch, end_step)
+            if end_step == 0:
+                raise ValueError("操作を含む経路を選んでください")
+            if expected_epoch != self.env.epoch:
+                return dict(self.control.status(), accepted=False)
+            result = self.control.command("STOPPED", client_id=client_id, sequence=sequence,
+                                          expected_epoch=expected_epoch)
+            if result["accepted"]:
+                self.pending_code = None
+                self.pending_adoption = (branch, end_step, client_id)
+                self.adopting = True
+            return dict(result, adopting=self.adopting)
+
+    def _adopt(self):
+        with self.pending_lock:
+            target, self.pending_adoption = self.pending_adoption, None
+        if target is None:
+            return
+        try:
+            self._finish_program("route_adoption")
+            result = self.timeline.adopt(target[0], target[1], client_id=target[2])
+            with self.control.lock:
+                self.control._event("route_adopted", selection=result)
+            self.message = f"経路 {target[0]} のstep {target[1]}までを採用しました"
+        finally:
+            with self.pending_lock:
+                self.adopting = False
+        self.service()
 
     def _seek(self):
         with self.pending_lock:
@@ -237,8 +274,8 @@ class HybridRunner:
     def submit_code(self, code, client_id, sequence=None, expected_epoch=None):
         code = extract_code(code)
         with self.pending_lock:
-            if self.pending_reset or self.seeking:
-                raise ValueError("新しい試行を準備中です")
+            if self.pending_reset or self.seeking or self.adopting:
+                raise ValueError("履歴を処理中です")
             status = (
                 self.control.switch("LLM", reason="operator_code")
                 if sequence is None
@@ -417,6 +454,9 @@ class HybridRunner:
         if self.seeking:
             self._seek()
             return
+        if self.adopting:
+            self._adopt()
+            return
         if self.llm_job and self.llm_job.done.is_set():
             job, self.llm_job = self.llm_job, None
             if self.control.valid(job.lease):
@@ -528,6 +568,7 @@ class HybridRunner:
             trial_index=self.trial_index,
             resetting=self.pending_reset,
             seeking=self.seeking,
+            adopting=self.adopting,
             timeline=self.timeline.status() if self.timeline else None,
             applied_steps=self.env.applied_steps,
             ended=self.env.ended,

@@ -1,4 +1,5 @@
 import { KeyboardController, MOVEMENT_KEYS, isEditing } from "./keyboard.mjs";
+import { BranchGraph, branchName } from "./graph.mjs";
 const $ = (id) => document.getElementById(id);
 const token = document.querySelector('meta[name="capx-token"]').content;
 const client = crypto.randomUUID();
@@ -113,7 +114,7 @@ const keyboard = new KeyboardController({
   context: () => ({
     mode: state.mode,
     owned: owned(),
-    pending: pendingCommand !== null || state.seeking,
+    pending: pendingCommand !== null || state.seeking || state.adopting,
   }),
   stop: () => mode("STOPPED", { message: "Escで停止しました" }),
   mode: (value) => mode(value),
@@ -187,7 +188,7 @@ $("run-code").onclick = () => {
   command("/api/code", { code });
 };
 async function seek(step, branch = state.timeline?.branch) {
-  if (!state.timeline || state.seeking || state.resetting) return;
+  if (!state.timeline || state.seeking || state.resetting || state.adopting) return;
   const head = state.timeline.branches.find((item) => item.id === branch)?.head;
   if (!Number.isInteger(step) || step < 0 || step > head) {
     flash("記録されているstepを選んでください");
@@ -197,6 +198,14 @@ async function seek(step, branch = state.timeline?.branch) {
   seekPreview = step;
   await command("/api/seek", { branch, step });
 }
+const branchGraph = new BranchGraph($("branch-graph"), seek, (text) => { $("graph-hint").textContent = text; });
+$("adopt-route").onclick = () => {
+  const history = state.timeline;
+  if (!history) return;
+  focusWorkspace();
+  command("/api/adopt", { branch: history.branch, end_step: history.head },
+    { message: `step ${history.head}までの経路を保存しています` });
+};
 $("history-step").onpointerdown = () => { draggingHistory = true; };
 $("history-step").oninput = () => {
   seekPreview = Number($("history-step").value);
@@ -229,7 +238,18 @@ function renderHistory(busy) {
   $("step-back").disabled = unavailable || history.cursor <= 0;
   $("step-forward").disabled = unavailable || history.cursor >= history.head;
   $("resume-here").disabled = unavailable || state.ended || state.epoch < 0;
+  $("adopt-route").disabled = unavailable || history.head === 0;
   if (!history) return;
+  branchGraph.render(history, busy);
+  const adopted = history.adopted;
+  const adoptedBranch = adopted && history.branches.find((branch) => branch.id === adopted.branch);
+  $("adopted-route").textContent = adopted
+    ? `${branchName(adoptedBranch)} · step ${adopted.end_step}までを採用済み`
+    : "まだ経路を採用していません";
+  $("adopted-route").classList.toggle("selected", !!adopted);
+  const sameSelection = adopted?.branch === history.branch && adopted?.end_step === history.head;
+  $("adopt-route").textContent = sameSelection ? "この経路は採用済み" : `この経路を採用 · step ${history.head}まで`;
+  $("adopt-route").disabled ||= sameSelection;
   const optionsKey = JSON.stringify(history.branches);
   if ($("history-branch").dataset.options !== optionsKey) {
     $("history-branch").replaceChildren(...history.branches.map((branch) => {
@@ -310,7 +330,7 @@ async function sendInput(forceRelease = false) {
   if (pad.keys.length) keyboard.gripperKey = pad.keys[0];
   if (
     !owned() ||
-    ((pendingCommand !== null || state.seeking) && !forceRelease) ||
+    ((pendingCommand !== null || state.seeking || state.adopting) && !forceRelease) ||
     (inputRequests > 0 && !forceRelease)
   )
     return;
@@ -360,7 +380,7 @@ async function sendInput(forceRelease = false) {
 }
 setInterval(() => sendInput(), 50);
 function render() {
-  const busy = pendingCommand !== null || state.resetting || state.seeking;
+  const busy = pendingCommand !== null || state.resetting || state.seeking || state.adopting;
   const localHeld = keyboard?.held.has("Space") || padArmed;
   const receiving = owned() && localHeld && state.input_fresh && state.deadman;
   $("connection").lastChild.textContent = connected
@@ -372,7 +392,7 @@ function render() {
     "· TRIAL " + String(state.trial_index || 1).padStart(2, "0");
   renderHistory(busy);
   $("steps").textContent = `${state.timeline?.cursor ?? state.applied_steps ?? 0} / ${state.timeline?.head ?? state.applied_steps ?? 0}`;
-  $("mode-chip").textContent = state.seeking ? "移動中" : state.resetting
+  $("mode-chip").textContent = state.adopting ? "採用を保存中" : state.seeking ? "移動中" : state.resetting
     ? "準備中"
     : state.ended
       ? "試行終了"

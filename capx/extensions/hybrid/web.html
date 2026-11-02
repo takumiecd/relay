@@ -78,6 +78,12 @@
             <select id="history-branch" aria-label="記録の経路"></select>
             <span id="history-status">記録を準備しています</span>
           </div>
+          <div class="graph-titlebar">
+            <span>分岐図 <small>BRANCHES</small></span>
+            <div class="graph-legend"><i class="vla"></i>VLA <i class="human"></i>手動 <i class="code"></i>コード <i class="replay"></i>再生</div>
+          </div>
+          <div id="branch-graph" class="branch-graph" aria-label="操作経路の分岐図"></div>
+          <div class="graph-caption"><span id="graph-hint">点・線をクリックして、そのstepへ戻れます</span><span><b>▼</b> 現在位置 <i></i> 採用経路</span></div>
           <div class="timeline-controls">
             <button id="step-back" class="button" title="1step戻る" aria-label="1step戻る">‹</button>
             <input id="history-step" type="range" min="0" max="0" value="0" step="1" aria-label="記録ステップを選択" />
@@ -88,6 +94,10 @@
           <div class="timeline-caption">
             <span id="history-hint">バーを離すとその状態へ移動・停止します。</span>
             <button id="resume-here">ここから手動再開 ↗</button>
+          </div>
+          <div class="adoption-row">
+            <div><span class="adoption-label">DATASET ROUTE</span><strong id="adopted-route">まだ経路を採用していません</strong></div>
+            <button id="adopt-route" class="button primary">この経路を採用</button>
           </div>
         </section>
         <div class="workspace-footer">

@@ -62,6 +62,7 @@ class Console:
         assets = {
             "/assets/console.css": ("console.css", "text/css"),
             "/assets/console.js": ("console.js", "text/javascript"),
+            "/assets/graph.mjs": ("graph.mjs", "text/javascript"),
             "/assets/keyboard.mjs": ("keyboard.mjs", "text/javascript"),
         }
 
@@ -137,6 +138,8 @@ class Console:
                         if "sequence" not in body or "expected_epoch" not in body:
                             raise ValueError("Missing command ordering")
                         result = runner.submit_code(**body)
+                    elif self.path == "/api/adopt":
+                        result = runner.request_adoption(**body)
                     elif self.path == "/api/seek":
                         result = runner.request_seek(**body)
                     elif self.path == "/api/trial":
@@ -189,27 +192,21 @@ class Console:
         self.thread.join(timeout=2)
 
 
-def restore_recorded_route(runner, source):
-    """Reconstruct a saved lineage before serving, checking every recorded physics state."""
-    from capx.extensions.vla.recording import read_lineage
-    lineage = read_lineage(source)
-    if not 0 < len(lineage) < runner.env.max_steps:
-        raise ValueError("Expected a finite nonempty route below the environment horizon")
+def _restore_actions(runner, lineage):
     env = runner.env
     def state(root, observation):
         item = json.loads((root / observation).read_text())
         return np.load(root / item["physics_state"], allow_pickle=False)
-    np.testing.assert_array_equal(env.physics_state(), state(lineage[0][0], lineage[0][1]["observation"]))
+    if lineage:
+        np.testing.assert_array_equal(env.physics_state(), state(lineage[0][0], lineage[0][1]["observation"]))
     realtime, control = runner.realtime, env.control
     try:
-        # No HTTP server exists yet. The single owner reconstructs recorded actions only.
-        runner.realtime = False
-        env.control = None
-        env.paused = False
+        # Only called before HTTP serving starts; reconstruction owns the single simulator.
+        runner.realtime, env.control, env.paused = False, None, False
         for root, row in lineage:
             env.apply_native(row["native_action"], context=env.context(), source="CODE_REPLAY",
                              provenance=dict(original_source=row["source"], original_trajectory=str(root),
-                                             original_context=row["context"],
+                                             original_context=row["context"], original_provenance=row.get("provenance", {}),
                                              observation_origin="reconstructed_by_numerical_replay"))
             np.testing.assert_array_equal(env.physics_state(), state(root, row["next_observation"]))
     finally:
@@ -217,6 +214,48 @@ def restore_recorded_route(runner, source):
         runner.control.switch("STOPPED", reason="recorded_route_restored")
         runner.next_tick = time.monotonic()
         runner.service()
+
+
+def restore_recorded_route(runner, source):
+    """Reconstruct a saved lineage, checking every recorded physics state."""
+    from capx.extensions.vla.recording import read_lineage
+    lineage = read_lineage(source)
+    if not 0 < len(lineage) < runner.env.max_steps:
+        raise ValueError("Expected a finite nonempty route below the environment horizon")
+    _restore_actions(runner, lineage)
+
+
+def restore_recorded_session(runner, source):
+    """Rebuild all branches and the cursor without discarding the original raw session."""
+    from capx.extensions.vla.recording import read_lineage
+    source = Path(source).resolve()
+    manifest = json.loads((source / "history/manifest.json").read_text())
+    mapping = {}
+    for branch in manifest["branches"]:
+        path = source / branch["trajectory"]
+        if branch["parent"] is None:
+            _restore_actions(runner, read_lineage(path))
+            mapping[branch["id"]] = runner.timeline.branch_id
+        else:
+            runner.timeline.seek(mapping[branch["parent"]], branch["parent_step"])
+            # Materialize even a branch created by a read-only/interrupted program.
+            runner.timeline.before_action()
+            mapping[branch["id"]] = runner.timeline.branch_id
+            rows = [(path, json.loads(line)) for line in (path/"steps.jsonl").read_text().splitlines()] if (path/"steps.jsonl").exists() else []
+            _restore_actions(runner, rows)
+    runner.timeline.seek(mapping[manifest["active_branch"]], manifest["cursor"])
+    runner.control.switch("STOPPED", reason="session_restored")
+    if manifest.get("adopted"):
+        selected = manifest["adopted"]
+        result = runner.timeline.adopt(mapping[selected["branch"]], selected["end_step"], client_id="session_restore")
+        write_json(runner.output / "restored-selection.json", dict(previous=selected, restored=result))
+    runner.program_root = runner.timeline.current["recorder"].root / "programs"
+    runner.program_root.mkdir(exist_ok=True)
+    write_json(runner.output / "session-restoration.json", dict(
+        source=str(source), branch_mapping=mapping, cursor=manifest["cursor"],
+        every_replayed_physics_state_exact=True, training_admitted=False,
+    ))
+    runner.service()
 
 
 def main():
@@ -232,7 +271,9 @@ def main():
     parser.add_argument("--llm-url")
     parser.add_argument("--llm-model")
     parser.add_argument("--llm-images", action="store_true")
-    parser.add_argument("--restore-trajectory", type=Path, help="Reconstruct a saved route with per-step physics checks before serving")
+    restore = parser.add_mutually_exclusive_group()
+    restore.add_argument("--restore-session", type=Path, help="Reconstruct all branches, selection and cursor from a saved trial")
+    restore.add_argument("--restore-trajectory", type=Path, help="Reconstruct a saved route with per-step physics checks before serving")
     parser.add_argument("--max-seconds", type=float, default=3600)
     args = parser.parse_args()
     if bool(args.llm_url) != bool(args.llm_model):
@@ -272,7 +313,7 @@ def main():
                     "test_vla": args.test_vla,
                     "test_llm": args.test_llm,
                     "test_operator": args.test_operator,
-                    "observation_origin": "reconstructed_by_numerical_replay" if args.restore_trajectory else "direct_capture",
+                    "observation_origin": "reconstructed_by_numerical_replay" if args.restore_trajectory or args.restore_session else "direct_capture",
                     "generator": getattr(generator, "metadata", None),
                 },
             )
@@ -286,6 +327,8 @@ def main():
         )
         if args.restore_trajectory:
             restore_recorded_route(runner, args.restore_trajectory)
+        if args.restore_session:
+            restore_recorded_session(runner, args.restore_session)
         console = Console(runner, port=args.port)
         print(
             json.dumps(

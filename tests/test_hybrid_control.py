@@ -554,7 +554,7 @@ def test_seek_discards_delayed_vla_and_code_can_resume_in_a_new_branch(real_hybr
         assert runner.request_trial(client_id='page', sequence=3, expected_epoch=env.epoch)['accepted']
         runner.tick()
         assert runner.trial_index == 2 and env.applied_steps == 0
-        assert runner.timeline.status()['branches'] == [dict(id='0001',head=0,parent=None,parent_step=None)]
+        assert runner.timeline.status()['branches'] == [dict(id='0001',head=0,parent=None,parent_step=None,segments=[])]
         assert (tmp_path/'trajectory/vla-candidates.jsonl').exists()
         assert (tmp_path/'branches/0002/trajectory/vlm-code-candidates.jsonl').exists()
     finally:
@@ -591,3 +591,122 @@ def test_finished_episode_can_seek_before_end_and_resume_vla(real_hybrid_env, tm
     finally:
         runner.close()
         env.max_steps = previous_limit
+
+
+def test_route_adoption_pins_branch_prefix_exports_and_keeps_cursor_independent(real_hybrid_env, tmp_path):
+    import hashlib
+    from capx.extensions.vla.recording import TrajectoryRecorder
+    env = real_hybrid_env
+    env.reset(seed=0)
+    env.attach_recorder(TrajectoryRecorder(tmp_path/'trajectory', {'test_only': True}))
+    runner = HybridRunner(env, tmp_path, test_operator=True, realtime=False)
+    def manual(count, key='KeyR'):
+        runner.control.switch('HUMAN', client_id='test')
+        for i in range(count):
+            runner.control.submit_input(client_id='test', sequence=i, epoch=env.epoch,
+                                        keys=[key], speed=.2, deadman=True)
+            runner.tick()
+    def seek(branch, step, seq):
+        assert runner.request_seek(branch, step, client_id='page', sequence=seq,
+                                   expected_epoch=env.epoch)['accepted']
+        runner.tick()
+    try:
+        manual(8)
+        original = (tmp_path/'trajectory/steps.jsonl').read_bytes()
+        seek('0001', 3, 1)
+        manual(3, 'KeyW')
+        branch_actions = [row['native_action'] for row in env.trace]
+        seek('0001', 1, 2)
+        before = env.capture_checkpoint()['physical']
+        response = runner.request_adoption('0002', 6, client_id='page', sequence=3, expected_epoch=env.epoch)
+        assert response['accepted'] and response['adopting']
+        assert runner.timeline.adopted is None
+        runner.tick()
+        selected = runner.timeline.status()['adopted']
+        assert selected['branch'] == '0002' and selected['end_step'] == 6
+        assert runner.timeline.cursor == 1 and runner.timeline.branch_id == '0001'
+        np.testing.assert_array_equal(env.capture_checkpoint()['physical'], before)
+        assert not selected['training_admitted'] and selected['selected_for_dataset']
+        route_path = tmp_path/selected['route']
+        route_bytes = route_path.read_bytes()
+        assert hashlib.sha256(route_bytes).hexdigest() == selected['route_sha256']
+        route = [json.loads(line) for line in route_bytes.decode().splitlines()]
+        candidates = [json.loads(line) for line in (tmp_path/selected['candidates']).read_text().splitlines()]
+        assert len(route) == len(candidates) == 6
+        assert [r['native_action'] for r in route] == branch_actions
+        assert [r['trajectory'] for r in route[:3]] == ['trajectory']*3
+        assert [r['trajectory'] for r in route[3:]] == ['branches/0002/trajectory']*3
+        for index, row in enumerate(candidates):
+            assert row['timestep'] == index and row['source'] == 'TEST_OPERATOR'
+            assert row['selected_for_dataset'] and not row['training_admitted']
+            assert all((tmp_path/path).exists() for path in row['images'].values())
+            assert (tmp_path/row['observation']).is_file()
+            assert (tmp_path/row['next_observation']).is_file()
+        # Later recording on the same branch leaves the selected endpoint and bytes pinned.
+        seek('0002', 6, 4)
+        manual(1)
+        assert runner.timeline.status()['head'] == 7
+        assert runner.timeline.status()['adopted']['end_step'] == 6
+        assert route_path.read_bytes() == route_bytes
+        assert (tmp_path/'trajectory/steps.jsonl').read_bytes() == original
+        stale = runner.request_adoption('0001', 8, client_id='page', sequence=3, expected_epoch=env.epoch)
+        assert not stale['accepted']
+        assert runner.timeline.adopted == selected
+        with pytest.raises(ValueError):
+            runner.request_adoption('0001', 0, client_id='page', sequence=5, expected_epoch=env.epoch)
+        assert runner.request_adoption('0001', 8, client_id='page', sequence=6, expected_epoch=env.epoch)['accepted']
+        runner.tick()
+        assert runner.timeline.adopted['id'] != selected['id']
+        assert route_path.read_bytes() == route_bytes
+        assert len(list((tmp_path/'history/adoptions').glob('*/selection.json'))) == 2
+    finally:
+        runner.close()
+
+
+def test_all_branches_cursor_and_adoption_survive_session_reconstruction(real_hybrid_env, tmp_path):
+    from capx.extensions.vla.recording import TrajectoryRecorder
+    from capx.extensions.vla.checkpoint import load_checkpoint
+    from capx.extensions.hybrid.server import restore_recorded_session
+    env = real_hybrid_env
+    env.reset(seed=0)
+    first = tmp_path/'original'
+    env.attach_recorder(TrajectoryRecorder(first/'trajectory', {'test_only': True}))
+    runner = HybridRunner(env, first, test_operator=True, realtime=False)
+    runner.control.switch('HUMAN', client_id='test')
+    for i in range(5):
+        runner.control.submit_input(client_id='test', sequence=i, epoch=env.epoch,
+                                    keys=['KeyR', 'KeyC'], speed=.2, deadman=True)
+        runner.tick()
+    runner.control.switch('STOPPED')
+    runner.timeline.seek('0001', 2)
+    runner.control.switch('HUMAN', client_id='test')
+    for i in range(2):
+        runner.control.submit_input(client_id='test', sequence=i, epoch=env.epoch,
+                                    keys=['KeyW', 'KeyC'], speed=.2, deadman=True)
+        runner.tick()
+    runner.timeline.adopt('0002', 4, client_id='test')
+    runner.control.switch('STOPPED')
+    runner.timeline.seek('0001', 3)
+    expected = env.capture_checkpoint()
+    expected_branch = load_checkpoint(first / runner.timeline.branches['0002']['points'][4]['checkpoint'])
+    runner.save_trial('test_restart')
+    runner.close()
+    env.reset(seed=0)
+    second = tmp_path/'restored'
+    env.attach_recorder(TrajectoryRecorder(second/'trajectory', {'test_only': True}))
+    restored = HybridRunner(env, second, test_operator=True, realtime=False)
+    try:
+        restore_recorded_session(restored, first)
+        assert restored.timeline.cursor == 3 and restored.timeline.branch_id == '0001'
+        assert [b['head'] for b in restored.timeline.status()['branches']] == [5, 4]
+        np.testing.assert_array_equal(env.capture_checkpoint()['physical'], expected['physical'])
+        assert restored.timeline.adopted['branch'] == '0002'
+        assert restored.timeline.adopted['end_step'] == 4
+        assert not restored.timeline.adopted['training_admitted']
+        restored.timeline.seek('0002', 4)
+        np.testing.assert_array_equal(env.capture_checkpoint()['physical'], expected_branch['physical'])
+        np.testing.assert_array_equal(env.raw_obs['agentview_image'], expected_branch['raw_obs']['agentview_image'])
+        assert (first/'history/adoptions').is_dir()
+        assert json.loads((second/'session-restoration.json').read_text())['every_replayed_physics_state_exact']
+    finally:
+        restored.close()
