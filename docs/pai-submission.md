@@ -20,6 +20,12 @@ GENIAC PrizeなどのCode as Policy型の利用は開発動機・将来目標。
 - 実装場所：`capx/extensions/vla/`と`capx/extensions/hybrid/`。
 - 検証の出典：`docs/verification/`。
 
+## 提出後の拡張案
+
+[ROS 2・Gazebo・Genesisの接続位置](environment-adapters.md)を、説明PDFの4ページ目にも図示する。
+GenesisはPython APIへ直接、ROS 2はtopic／action通信を通してGazebo・実機の制御系へ接続する案。
+現時点の動作確認はLIBERO／OSCのみであり、図の追加接続は未実装。
+
 ## 映像と説明の範囲
 
 実OpenVLAの記録は`output/vla-live-02/osc-vla.mp4`。

@@ -22,6 +22,7 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [操作画面・起動方法](docs/hybrid-console.md)
 - [VLA／OSC接続](docs/vla-osc.md)
 - [記録とdatasetの方針](docs/dataset-design.md)
+- [ROS 2・Gazebo・Genesisの接続位置（今後の拡張案）](docs/environment-adapters.md)
 - [PAI最終課題：実装範囲・検証・提出方法](docs/pai-submission.md)
 
 提出・利用の基準は`main`です。現在の環境対応はLIBERO／OSCのみで、操作UIはキーボード専用です。

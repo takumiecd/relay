@@ -129,6 +129,36 @@ def create_report(path, output, account, info, commit):
     y=paragraph('提出コード：'+REPO,y,size=8.4,leading=14)
     y=paragraph('ソース：'+commit[:12]+' / docs/hybrid-console.md / docs/verification/',y,size=8.4,leading=14)
     y=paragraph('使用部品：github.com/capgym/cap-x / github.com/openvla/openvla\n実モデル：openvla/openvla-7b-finetuned-libero-spatial\n版：962318cec55ac10993ff0f5f43eda9a270b4c873',y,size=8.2,leading=13,color=MUTED)
+    c.showPage()
+
+    page(4,'今後の接続位置')
+    y=heading('ROS 2・Gazebo・Genesisをどこへ接続するか',757)
+    paragraph('下図は提出後の拡張案。現在の動作確認はLIBERO／OSCのみ。Relayの共通部を切り出し、その下に接続先ごとのアダプタを追加する。ROS 2は通信・制御への窓口であり、シミュレータとは役割が異なる。',y,size=10,leading=16)
+    box(42,602,511,77,'Relay共通部（今後、環境依存部分から分離）',
+        ['VLA・キーボード操作・CaP-Xによるコード実行を接続。',
+         '制御主体の切替・停止・観測と操作の記録・分岐図・採用経路の選択を再利用する。'])
+    arrow(298,602,298,576)
+    box(42,512,511,64,'共通APIと環境アダプタ（今後切り出す）',
+        ['観測取得／手先・グリッパーの指令／停止。状態保存・復元の可否も環境ごとに扱う。'])
+    for x in (120,298,475):arrow(298,512,x,478)
+    box(42,384,157,94,'LIBERO + OSC',
+        ['現在の実装・動作確認あり','既存のOSCへ相対指令','MuJoCoの状態を保存・復元'])
+    box(219,384,157,94,'Genesis',
+        ['構想・未実装','Python APIへ直接接続','IK → 関節位置制御'],MUTED)
+    box(396,384,157,94,'ROS 2',
+        ['構想・未実装','topic / actionで指令送信','画像・関節状態などを受信'],MUTED)
+    arrow(475,384,475,359)
+    box(396,288,157,71,'Gazebo / 実機',
+        ['構想・未実装','Gazebo: gz_ros2_control','実機: 対応するdriver'],MUTED)
+    text(42,330,'接続時に追加する処理',13,BLUE)
+    text(42,307,'・手先指令を接続先のIK／制御器へ変換',9.3)
+    text(42,289,'・画像、関節状態、手先姿勢を共通形式へ',9.3)
+    y=heading('実装を進める順序と、確認が必要な範囲',254)
+    y=paragraph('1. 現在のVlaApi・OscLiberoEnvに残るOSC／MuJoCo依存を整理し、観測・操作・停止を共通APIとして切り出す。2. GenesisかROS 2のどちらか一つを追加し、まずキーボードで動作確認する。',y,size=9.5,leading=16)
+    y=paragraph('3. 座標系・単位・指令の意味・制御周期を合わせ、VLAとコードを接続する。接続できることと、別環境でもVLAがタスクを解けることは分けて検証する。',y-5,size=9.5,leading=16)
+    y=paragraph('4. 巻き戻しはシミュレータごとに状態保存・復元を実装し、次の動作まで一致するか確認する。実機では過去の物理状態へ瞬時には戻せないため、ログの分岐と再開状態の準備を分けて扱う。',y-5,size=9.5,leading=16)
+    text(42,75,'参考：Genesis公式 Control your robot / ROS 2公式 gz_ros2_control',8,MUTED)
+    text(42,60,'既存部品の利用案であり、今回の提出で接続・検証済みという意味ではない。',8,MUTED)
     c.showPage();c.save()
 
 
