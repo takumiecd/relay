@@ -1,7 +1,8 @@
-# Genesis：キーボード操作と記録
+# Genesis：キーボード操作・記録・巻き戻し
 
 Genesis 1.4.5のPandaアーム・床・箱を、Relayの共通backend経由で動かす。
-最初の対応範囲はキーボード操作、2カメラ表示、実行した指令・観測の保存、新しい試行。
+キーボード操作、2カメラ表示、実行した指令・観測の保存、新しい試行に対応する。
+`feat/genesis-history`ではCPUの同じ稼働中scene/reset内での巻き戻し・分岐・経路採用も追加した。
 LIBEROのタスクではなく、成功判定のない操作用sandboxである。
 
 ## 専用Python環境
@@ -19,6 +20,8 @@ NumPy 1.26.4／SciPy 1.14.1を明示し、LIBEROのMuJoCo／Torch依存を変更
 `--no-config`はCaP-X用のuv依存overrideを引き継がないために指定する。
 Genesisの描画・画像依存も専用requirementsの版にそろえる。
 CUDA／Metalでの動作確認は今回の対象外。
+checkpointはGenesis 1.4.5・CPUで検証した構成に限定する。
+他のdevice／SDKで従来の手動操作だけを使う場合は、設定に`"checkpoints": false`を指定する。
 
 ## 起動
 
@@ -49,6 +52,33 @@ CUDA／Metalでの動作確認は今回の対象外。
 操作中は最後に実行した手先目標から入力を積み上げ、Spaceのみではその目標を維持する。
 PD制御の追従中はSpaceを押し続けることで目標へ収束する。Spaceを離すと物理時間自体を止める。
 
+## 巻き戻し・分岐・採用経路
+
+同梱のCPU設定では`checkpoints: true`で起動する。
+
+1. H→Space＋WASD/RF等で操作し、Escで止める。
+2. カメラ下のシークバー・step番号・分岐図の点で、記録済みのstepを選ぶ。
+   その物理状態へ戻り、停止する。進んでいた元の未来も残る。
+3. Hまたは「ここから手動再開」で操作を続ける。途中から新しい操作を実行すると別の分岐になる。
+4. 経路の選択欄や分岐図で、元の経路・別の分岐へ行き来できる。
+5. 「この経路を採用」で、選んだ経路の末尾までを固定して書き出す。
+   以後の操作で経路を延長しても、この採用結果の終点は変わらない。
+
+`history/manifest.json`に分岐・現在位置・採用結果、`history/checkpoints/*.npz`に状態を保存する。
+`branches/0002/trajectory/`等には分岐後の新規区間だけを記録し、親の先頭区間を参照する。
+元のraw記録・checkpoint・採用した経路は上書きしない。
+「新しい試行」は全経路を保存してresetし、別の履歴を開始する。
+
+checkpointにはGenesis SDKの制御入力・接触／拘束計算の状態・warm start・物理パラメータ・導出済み姿勢を含め、
+Relay側の関節制御目標・手先目標・開閉・乱数状態も保存する。
+配列の整数／真偽値／floatのdtypeを維持し、数値とJSONだけで保存する。pickleは使用しない。
+復元時はSDK版・sceneのdigest・model/resetの識別子と各配列の形／dtypeを検証し、
+owner threadで復元した後、epochを更新して古い推論・キー入力を無効にする。
+
+これは**同じプロセス・同じscene／reset内**の復元である。
+アプリ再起動後の保存セッション再開、reset前の別試行への復元、別SDK／GPUへの移送には未対応。
+`state_replay`は引き続きfalseとし、保存した指令列から厳密に再構成できるとは扱わない。
+
 ## 指令が関節へ届く経路
 
 ```text
@@ -78,19 +108,21 @@ LIBEROの7次元相対OSC指令とは異なる。OpenVLAをこのまま接続し
   `backend_diagnostics`にはIKで得た9関節の制御目標、IK誤差、物理step数も保存する。
 - `trajectory/observations/`：手首／全体RGB画像、実測関節・手先・箱の状態、時刻、数値状態ベクトル。
 - `events.jsonl`：モード切替・停止など。
+- `history/`・`branches/`：checkpoint対応時の分岐・復元点・採用結果と修正区間。
 - 新しい試行は`trials/0002/trajectory/`等に分け、前の記録を上書きしない。
 
 操作を自動テストする場合は`--test-operator`を付けて`TEST_OPERATOR`と記録する。
 利用者が操作する通常起動では付けずに`HUMAN`として保存する。
 品質確認・学習投入は別工程で、保存しただけでは`training_admitted=true`にしない。
 
-今回のGenesis backendは**checkpoint・巻き戻し・分岐・保存セッションの再実行復元には未対応**。
-診断用の数値状態ベクトルは保存するが、完全なGenesis状態として復元できるとは扱わない。
-タイムラインは無効にし、機械的な`replay_actions()`コードも生成しない。
+診断用の32次元状態ベクトルだけを完全なGenesis状態として復元しない。
+復元には上記のSDK checkpointを使う。`checkpoints: false`ならタイムラインを表示せず、通常の記録は続ける。
+機械的な`replay_actions()`コードの自動生成は引き続き行わない。
 
 ## 実装と確認
 
-[今回の検証結果](verification/genesis-keyboard-20261102.md)：専用環境17件、既存環境の回帰76件、JavaScript12件。
+[手動操作の検証結果](verification/genesis-keyboard-20261102.md)と、
+[状態復元・分岐の検証結果](verification/genesis-history-20261102.md)を参照。
 
 - `relay/backends/genesis.py`：Genesis専用処理。
 - `configs/relay/genesis-panda.json`：CPU・周期・画像サイズの設定。
@@ -99,10 +131,11 @@ LIBEROの7次元相対OSC指令とは異なる。OpenVLAをこのまま接続し
 ```bash
 uv pip install --python .local/genesis-sim/bin/python pytest
 RELAY_TEST_GENESIS=1 .local/genesis-sim/bin/python -m pytest \
-  tests/test_genesis_backend.py -q --disable-warnings
+  tests/test_genesis_backend.py tests/test_genesis_history.py -q --disable-warnings
 ```
 
-`RELAY_TEST_GENESIS=1`なしでは実Genesisの4テストはskipし、SDK不要の契約・CLIテストだけを実行する。
+`RELAY_TEST_GENESIS=1`なしでは実Genesisのテストをskipし、SDK不要の契約・CLIテストだけを実行する。
 
 公式資料：[GenesisのIKと関節制御](https://genesis-world.readthedocs.io/en/latest/user_guide/robot_control/inverse_kinematics_motion_planning.html)、
 [座標・quaternion規約](https://genesis-world.readthedocs.io/en/latest/user_guide/configuration/conventions.html)。
+状態復元は[公式checkpoint仕様](https://genesis-world.readthedocs.io/en/latest/user_guide/configuration/checkpoints.html)も参照。
