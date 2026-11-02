@@ -1,0 +1,83 @@
+{
+  "schema": "relay.cli-verification.v1",
+  "source_commit": "2c038fc3bc8f1c493b205ed25dd7045d50188db0",
+  "parent_branch": "feat/submission-polish",
+  "parent_commit": "b954a1ceb8a7499e05e2936486db6bc6e6e1e73a",
+  "tests_passed": 64,
+  "test_groups": {
+    "tests.test_relay_cli": 20,
+    "tests.test_backend_runtime": 14,
+    "tests.test_hybrid_control": 23,
+    "tests.test_manual_recovery": 7
+  },
+  "upstream_warnings": 15,
+  "server_api_changed": false,
+  "lightweight_install": {
+    "python": "3.12.13",
+    "editable_no_deps": true,
+    "entrypoint": "relay.cli:main",
+    "absent_packages": [
+      "numpy",
+      "torch",
+      "genesis",
+      "rclpy",
+      "mujoco"
+    ]
+  },
+  "browser_qa": {
+    "backend": "relay.kinematic-reference",
+    "original_steps": 23,
+    "fork_step": 5,
+    "repair_steps": 15,
+    "selected_branch": "0002",
+    "selected_steps": 20,
+    "selected_by_cli": true,
+    "training_admitted": false,
+    "physics_vector_shape": [
+      9
+    ],
+    "restored_vector_bitwise_equal": true,
+    "route_sha256": "41b79d1bb24edc1235cc658cc77c7b281e3c7957d76088bcef14e06d5daf6218",
+    "original_steps_sha256": "3206a84b95c49557ea3a03e6a0060277f714a7e98ad160eec5a6c1fcd445144a",
+    "repair_steps_sha256": "d91facd26ba4e5fad95186f2451ecd704efc50cb898e11f00ce80df44f7ad05e"
+  },
+  "genesis_qa": {
+    "backend": "genesis.panda-sandbox",
+    "original_steps": 30,
+    "fork_step": 0,
+    "repair_steps": 15,
+    "selected_branch": "0002",
+    "selected_steps": 15,
+    "selected_by_cli": true,
+    "training_admitted": false,
+    "physics_vector_shape": [
+      32
+    ],
+    "restored_vector_bitwise_equal": true,
+    "route_sha256": "4c8bb0735c71b5ce3aa421a409b0d7a3b7c139b3f759f22b623d98eaf000edc8",
+    "original_steps_sha256": "8f54be71502c49f83919a817b21e48b02595f2f33f7d36f7ae52803802cb3bf2",
+    "repair_steps_sha256": "f2d452a9b914b487564bf533d2ffdf2ecf74f6fe0de60c14f76d01feaff13360"
+  },
+  "existing_ros_session": {
+    "port": 8883,
+    "operations": "status only",
+    "recorded_commands": 15,
+    "epoch": 2,
+    "mode": "HUMAN"
+  },
+  "limitations": [
+    "Loopback Console API only",
+    "History requires backend checkpoints",
+    "Control commands select a mode; no terminal keyboard teleoperation",
+    "LLM/VLA mode integration tests use explicit test providers; no new model benchmark"
+  ],
+  "artifacts_sha256": {
+    "output/relay-cli-20261102/cli-adopted-browser.png": "29e97ca8cb6ee7d9b1df2a7d0c06eb556e2183976c256b50976d751f88652a5f",
+    "output/relay-cli-20261102/cli-genesis-adopted.png": "2b09384f040368dd8d82fa275f723db5358c572dd2a2379e977cfbaa4610eea1",
+    "output/relay-cli-20261102/tests.xml": "67c328f2d64cd3cd82af56b179643a80e6bd3ed922deb5ef849cb7c2a9547dc8",
+    "output/relay-cli-20261102/seek.json": "f594c487d59859aae7aece9f2b9dc03739f4a4d204620c56e6b9106caa0ac4f9",
+    "output/relay-cli-20261102/adopt.json": "78f9b5902a927ea7363c71716ea7232f2f2536d2bda0eda6f4622d2cb10a6f84",
+    "output/relay-cli-20261102/genesis-seek.json": "947a8ed224bc63f5ebb90f6e62c90ecbf6cd2342afdc6e007481599a1d5fefbd",
+    "output/relay-cli-20261102/genesis-adopt.json": "d29357bb410c8906a365f1e917a4f750349458722212f2f3aea2ec893a340a5e"
+  }
+}

@@ -56,6 +56,9 @@ dependencies = [
   "cloudpickle",
 ]
 
+[project.scripts]
+relay = "relay.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8",

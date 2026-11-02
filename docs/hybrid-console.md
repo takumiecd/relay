@@ -3,6 +3,7 @@
 CaP-Xを拡張したRelayの機能。提出版は`pai-final-20261102`、共通化はPR #1でmainへ取り込み済み。
 [既存のVLA/OSC起動手順](vla-osc.md)と同じsim専用venv・LIBERO-PRO submoduleを使う。
 以下の既定起動はLIBERO／MuJoCo環境を使う。Genesisは[専用ガイド](genesis.md)を参照。
+起動中のセッションには[Relay CLI](cli.md)からも接続できる。ブラウザと同じAPI・操作権・履歴を共有する。
 
 ## 起動
 
