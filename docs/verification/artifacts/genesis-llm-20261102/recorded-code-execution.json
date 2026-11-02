@@ -1,0 +1,48 @@
+[
+  {
+    "instruction": "Move the end effector 2 centimeters upwards from its current position, then close the gripper for 10 actions. Use max_actions=40 for the motion.",
+    "delta_m": [
+      0.0003243386745452881,
+      3.102760456386022e-05,
+      0.015494048595428467
+    ],
+    "applied_actions": 50,
+    "error": null,
+    "generation": {
+      "program_id": "4e47239a418642c0ba51a27aceafddda",
+      "code": "s = get_robot_state()\np = s['robot_cartesian_pos'][:3]\nRESULT = move_to_pose([p[0], p[1], p[2] + 0.02], max_actions=40)\nRESULT = close_gripper(10)",
+      "instruction": "Move the end effector 2 centimeters upwards from its current position, then close the gripper for 10 actions. Use max_actions=40 for the motion.",
+      "generator": "recorded_llm_response",
+      "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+      "stage": "program_completed",
+      "applied_actions": 50
+    },
+    "gripper_qpos": [
+      0.00024000840494409204,
+      0.00024000191478990018
+    ]
+  },
+  {
+    "instruction": "Open the gripper for 10 actions, then move the end effector 2 centimeters along negative world X. Use max_actions=40 for the motion.",
+    "delta_m": [
+      0.00013190507888793945,
+      3.234216637792997e-05,
+      -0.004532754421234131
+    ],
+    "applied_actions": 40,
+    "error": "Expected a finite target within 0.20 meters (after 40 gripper actions)",
+    "generation": {
+      "program_id": "2749e0b4e5374231b6c00faca4285518",
+      "code": "open_gripper(40)\nmove_to_pose([-0.2, 0.0, 0.5805436372756958], quaternion_wxyz=[-0.0001716874460271799, 0.9989483489491028, -0.007219910286986716, 0.04527736245333056], max_actions=40)",
+      "instruction": "Open the gripper for 10 actions, then move the end effector 2 centimeters along negative world X. Use max_actions=40 for the motion.",
+      "generator": "recorded_llm_response",
+      "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+      "stage": "program_error",
+      "applied_actions": 40
+    },
+    "gripper_qpos": [
+      0.040000006556510925,
+      0.03999998793005943
+    ]
+  }
+]

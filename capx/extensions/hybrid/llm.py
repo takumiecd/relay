@@ -71,7 +71,19 @@ class HttpCodeGenerator:
                 "content": "Return one finite Python program, no explanation. Use the provided tools only. "
                 "WORLD XYZ meters; quaternion WXYZ. Use short local motions. "
                 "At most 100 executed actions total; do not import, reset, launch processes or access files. "
-                "run_vla delegates a bounded primitive and then returns to your code.\n" + api_docs,
+                "Call only functions listed below; a VLA may be unavailable. "
+                "Read get_robot_state() before motion; robot_cartesian_pos is a flat list "
+                "[x,y,z,qw,qx,qy,qz]. move_to_pose position_m takes EXACTLY THREE absolute "
+                "coordinates, never a 7-element pose or a relative displacement. "
+                "RESULT may contain a final return value.\n" + api_docs +
+                ("\nExample: move up by 1cm relative to NOW (not an absolute z of 0.01):\n"
+                 "s = get_robot_state()\n"
+                 "p = s['robot_cartesian_pos'][:3]\n"
+                 "RESULT = move_to_pose([p[0], p[1], p[2] + 0.01], max_actions=30)\n"
+                 "For -X instead, use [p[0] - distance_m, p[1], p[2]]. "
+                 "For a subsequent motion, get_robot_state() again. "
+                 "Omit quaternion_wxyz to preserve orientation.\n"
+                 if 'move_to_pose(' in api_docs else ''),
             },
             {"role": "user", "content": content},
         ]

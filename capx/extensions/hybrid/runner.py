@@ -9,6 +9,7 @@ from pathlib import Path
 from dataclasses import asdict
 import threading
 import time
+import uuid
 
 from capx.extensions.vla.api import VlaApi
 from capx.extensions.vla.recording import TrajectoryRecorder, export_views, write_json
@@ -111,6 +112,8 @@ class HybridRunner:
         self.message = "停止中"
         self.closed = False
         self.pending_code = None
+        self.llm_request = None
+        self.last_generation = None
         self.pending_reset = False
         self.pending_seek = None
         self.seeking = False
@@ -142,15 +145,31 @@ class HybridRunner:
     @property
     def available_tools(self):
         capabilities = getattr(self.env, 'capabilities', None)
-        return TOOLS - {'move_to_pose'} if capabilities is not None and not capabilities.cartesian_control else TOOLS
+        tools = set(TOOLS)
+        if capabilities is not None and not capabilities.cartesian_control:
+            tools.discard('move_to_pose')
+        if self.predictor is None or not bool(getattr(self.predictor, 'ready', True)):
+            tools.discard('run_vla')
+        return tools
 
-    def request_mode(self, mode, *, client_id, sequence, expected_epoch):
-        with self.pending_lock:
+    def request_mode(self, mode, *, client_id, sequence, expected_epoch, instruction=None):
+        if instruction is not None and (mode != 'LLM' or not isinstance(instruction, str)
+                or not instruction.strip() or len(instruction) > 2000):
+            raise ValueError('LLM instruction must be a non-empty string of at most 2000 characters')
+        if mode == 'LLM' and self.generator is None:
+            raise ValueError('Connect an LLM endpoint before requesting code')
+        with self.pending_lock, self.control.lock:
             if (self.pending_reset or self.seeking or self.adopting) and mode != "STOPPED":
                 raise ValueError("履歴を処理中です")
-            return self.control.command(
+            result = self.control.command(
                 mode, client_id=client_id, sequence=sequence, expected_epoch=expected_epoch
             )
+            if result['accepted'] and mode == 'LLM':
+                self.llm_request = dict(epoch=self.env.epoch,
+                    instruction=(instruction or self.env.instruction).strip(), client_id=client_id)
+                self.control._event('code_requested', instruction=self.llm_request['instruction'],
+                    client_id=client_id, provider=getattr(self.generator, 'metadata', {}))
+            return result
 
     def request_trial(self, *, client_id, sequence, expected_epoch):
         if getattr(self.env, 'capabilities', None) is not None and not self.env.capabilities.reset:
@@ -397,7 +416,10 @@ class HybridRunner:
         )
         if generation:
             write_json(directory / "generation.json", generation)
-        self.program = CodeProcess(code, self.env.instruction, lease, timeout=self.code_timeout)
+        self.last_generation = dict(program_id=lease.program_id, code=code,
+            instruction=metadata.get('instruction', self.env.instruction),
+            generator=metadata.get('generator'), model=metadata.get('model'), stage='running')
+        self.program = CodeProcess(code, metadata.get('instruction', self.env.instruction), lease, timeout=self.code_timeout)
         self.message = "コードを実行中"
 
     def _finish_program(self, reason, result=None):
@@ -414,10 +436,11 @@ class HybridRunner:
             ),
         )
         if reason == "program_error":
-            self.error = str(result.get("error") or result.get("info", {}).get("stderr", reason))[
-                :500
-            ]
+            # Keep the final exception message visible; the full traceback is in result.json.
+            self.error = str(result.get("error") or result.get("info", {}).get("stderr", reason)).strip()[-500:]
         program.close()
+        if self.last_generation and self.last_generation.get('program_id') == program.lease.program_id:
+            self.last_generation.update(stage=reason, applied_actions=program.steps)
         self.program = None
         if self.control.valid(program.lease):
             self.control.switch("STOPPED", reason=reason)
@@ -476,15 +499,21 @@ class HybridRunner:
             return
         if self.llm_job and self.llm_job.done.is_set():
             job, self.llm_job = self.llm_job, None
+            write_json(job.record_path, dict(job.request_record,
+                status='discarded' if not self.control.valid(job.lease) else 'error' if job.error else 'received',
+                error=str(job.error)[:500] if job.error else None, generation=job.result))
             if self.control.valid(job.lease):
                 if job.error:
                     self.error = self.message = str(job.error)[:300]
                     self.control.switch("STOPPED", reason="llm_error")
                 else:
-                    data = job.result
-                    self._start_program(
-                        extract_code(data["code"]), job.context, data["metadata"], data
-                    )
+                    try:
+                        data = job.result
+                        metadata = dict(data['metadata'], **job.request_metadata)
+                        self._start_program(extract_code(data['code']), job.context, metadata, data)
+                    except (ValueError, SyntaxError, KeyError, TypeError) as error:
+                        self.error = self.message = str(error)[:300]
+                        self.control.switch('STOPPED', reason='llm_error')
         with self.pending_lock:
             pending, self.pending_code = self.pending_code, None
         if pending and self.control.mode == "LLM" and pending[1] == self.env.context():
@@ -573,12 +602,22 @@ class HybridRunner:
             from .control import Lease
 
             lease = Lease(self.env.epoch, "LLM", "CODE", None)
+            request = self.llm_request if self.llm_request and self.llm_request['epoch'] == self.env.epoch else {}
+            instruction = request.get('instruction', self.env.instruction)
             self.llm_job = Job(
                 self.generator.generate,
-                (self.env.code_observation(), self.env.instruction, self.api_docs),
+                (self.env.code_observation(), instruction, self.api_docs),
                 lease,
                 self.env.context(),
             )
+            self.llm_job.request_metadata = dict(instruction=instruction,
+                client_id=request.get('client_id'), request_epoch=lease.epoch)
+            directory = self.trial_root / 'llm-requests'
+            directory.mkdir(exist_ok=True)
+            self.llm_job.record_path = directory / (uuid.uuid4().hex + '.json')
+            self.llm_job.request_record = dict(self.llm_job.request_metadata,
+                context=self.llm_job.context, provider=getattr(self.generator, 'metadata', {}))
+            write_json(self.llm_job.record_path, dict(self.llm_job.request_record, status='pending'))
         self.service()
 
     def status(self):
@@ -601,6 +640,9 @@ class HybridRunner:
             llm_ready=self.generator is not None,
             test_llm=getattr(self.generator, "metadata", {}).get("generator") == "test_generator",
             program_running=self.program is not None,
+            llm_generating=bool(self.llm_job and self.control.valid(self.llm_job.lease)),
+            generation=self.last_generation,
+            llm_provider=getattr(self.generator, 'metadata', {}).get('model'),
         )
 
     def close(self):
@@ -609,6 +651,10 @@ class HybridRunner:
         self.closed = True
         self.control.switch("STOPPED", reason="session_closed")
         self._finish_program("session_closed")
+        if self.llm_job is not None:
+            job = self.llm_job
+            write_json(job.record_path, dict(job.request_record, status='session_closed',
+                generation=job.result if job.done.is_set() else None))
         for job in (self.vla_job, self.delegated):
             if job:
                 self._cancel_job(job)

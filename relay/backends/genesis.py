@@ -200,7 +200,8 @@ class GenesisBackend:
         return self.validate_chunk([np.r_[target, q, gripper_command]])[0]
 
     def gripper_action(self, command):
-        return self.cartesian_delta_action(np.zeros(3), np.zeros(3), command)
+        # Keep the committed EEF target through repeated gripper-only code actions.
+        return self.teleop_action(np.zeros(6), command)
 
     def step_native(self, action):
         self._owner()

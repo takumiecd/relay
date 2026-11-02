@@ -106,7 +106,17 @@ function mode(value, options = {}) {
     flash("接続先が準備できていません");
     return;
   }
-  return command("/api/mode", { mode: value }, options);
+  const body = { mode: value };
+  if (value === "LLM") {
+    const instruction = $("llm-instruction").value.trim();
+    if (!instruction) {
+      flash("LLMへの操作指示を入力してください");
+      $("llm-instruction").focus();
+      return;
+    }
+    body.instruction = instruction;
+  }
+  return command("/api/mode", body, options);
 }
 const keyboard = new KeyboardController({
   context: () => ({
@@ -184,6 +194,10 @@ $("run-code").onclick = () => {
   const code = $("code").value;
   focusWorkspace();
   command("/api/code", { code });
+};
+$("generate-code").onclick = () => {
+  focusWorkspace();
+  mode("LLM");
 };
 async function seek(step, branch = state.timeline?.branch) {
   if (!state.timeline || state.seeking || state.resetting || state.adopting) return;
@@ -402,6 +416,17 @@ function render() {
     ? "操作と画像を記録します。この環境は巻き戻し未対応です。"
     : "すべての経路を残しながら操作できます。";
   $("run-code").disabled = busy || !!state.ended;
+  $("generate-code").disabled = busy || !!state.ended || !state.llm_ready || state.llm_generating || state.program_running;
+  $("llm-model").textContent = state.llm_provider || "未設定";
+  $("llm-model").title = state.llm_provider || "";
+  const generation = state.generation;
+  const stageNames = { running: "コード実行中", program_completed: "コード完了", interrupted: "引き継ぎにより中断", program_error: "コードエラー", program_timeout: "実行時間の上限", route_adoption: "経路の採用で停止", timeline_seek: "履歴の移動で停止", new_trial: "新しい試行で停止" };
+  $("generation-status").textContent = state.llm_generating ? "生成中です。Escで停止、Hで手動に引き継げます。"
+    : state.error ? state.error
+    : generation ? `${stageNames[generation.stage] || generation.stage} · ${generation.applied_actions ?? 0} actions`
+    : "画像と状態からPythonコードを生成します。Escで停止できます。";
+  $("generated-code").textContent = generation?.code || "まだ生成していません";
+  $("generation-instruction").textContent = generation?.instruction || "";
   $("control-focus").disabled = !!state.ended || busy;
   $("stop").disabled = false;
   $("vla-provider").textContent = state.test_vla
@@ -412,7 +437,7 @@ function render() {
   $("llm-provider").textContent = state.test_llm
     ? "試験コード"
     : state.llm_ready
-      ? "API接続"
+      ? "API設定済み"
       : "未接続";
   $("owner").textContent = owned()
     ? "この画面が操作中"

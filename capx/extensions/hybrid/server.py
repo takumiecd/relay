@@ -275,6 +275,7 @@ def main():
     parser.add_argument("--libero-source", default="capx/third_party/LIBERO-PRO")
     parser.add_argument('--backend', default='libero', help='libero, genesis, kinematic, or trusted module:Factory')
     parser.add_argument('--manual-only', action='store_true', help='Keyboard and recording without VLA/LLM connections')
+    parser.add_argument('--no-vla', action='store_true', help='Disable the VLA bridge; allow LLM and keyboard control')
     parser.add_argument('--backend-config', type=Path, help='JSON file of backend factory keyword arguments')
     parser.add_argument("--test-vla", action="store_true")
     parser.add_argument("--test-llm", action="store_true")
@@ -282,6 +283,8 @@ def main():
     parser.add_argument("--llm-url")
     parser.add_argument("--llm-model")
     parser.add_argument("--llm-images", action="store_true")
+    parser.add_argument('--llm-key-env', default='CAPX_LLM_API_KEY', help='Environment variable containing the API key')
+    parser.add_argument('--llm-timeout', type=float, default=120, help='HTTP generation timeout in seconds')
     restore = parser.add_mutually_exclusive_group()
     restore.add_argument("--restore-session", type=Path, help="Reconstruct all branches, selection and cursor from a saved trial")
     restore.add_argument("--restore-trajectory", type=Path, help="Reconstruct a saved route with per-step physics checks before serving")
@@ -291,6 +294,10 @@ def main():
         parser.error("--llm-url and --llm-model must be specified together")
     if args.test_llm and args.llm_url:
         parser.error("Choose a real LLM endpoint or --test-llm")
+    if not 0 < args.llm_timeout <= 600:
+        parser.error('--llm-timeout must be in (0,600]')
+    if args.no_vla and args.test_vla:
+        parser.error('--no-vla cannot be combined with --test-vla')
     if args.manual_only and (args.test_vla or args.test_llm or args.llm_url):
         parser.error('--manual-only cannot be combined with VLA/LLM providers')
     args.output.mkdir(parents=True, exist_ok=False)
@@ -309,7 +316,7 @@ def main():
         env = BackendEnv(load_backend(args.backend, config))
         if (args.restore_session or args.restore_trajectory) and not env.capabilities.state_replay:
             raise ValueError('This backend does not support restoring recorded sessions/routes')
-        if args.manual_only:
+        if args.manual_only or args.no_vla:
             predictor = None
         elif args.test_vla:
             # Owner-thread conversion only. This fixed test action is NOT a model policy.
@@ -327,7 +334,8 @@ def main():
         generator = (
             TestGenerator()
             if args.test_llm
-            else HttpCodeGenerator(args.llm_url, args.llm_model, images=args.llm_images)
+            else HttpCodeGenerator(args.llm_url, args.llm_model, images=args.llm_images,
+                                   key_env=args.llm_key_env, timeout=args.llm_timeout)
             if args.llm_url
             else None
         )

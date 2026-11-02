@@ -1,0 +1,66 @@
+{
+  "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+  "revision": "fdcc572e8b05ba9daeaf71be8c9e4267c826ff9b",
+  "mlx_vlm": "0.7.11",
+  "mlx": "0.32.4",
+  "hardware": "Apple Silicon Mac, Metal",
+  "requests": [
+    {
+      "instruction": "現在位置から手先を上に2cm動かして、その後グリッパーを10ステップ閉じてください。移動にはmax_actions=40を使ってください。",
+      "status": "received",
+      "request_epoch": 2,
+      "code": "s = get_robot_state()\np = s['robot_cartesian_pos'][:3]\nRESULT = move_to_pose([p[0], p[1], p[2] + 0.02], max_actions=40)\nRESULT = close_gripper(10)",
+      "metadata": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true
+      }
+    },
+    {
+      "instruction": "グリッパーを10ステップ開いてください。",
+      "status": "received",
+      "request_epoch": 4,
+      "code": "open_gripper(steps=10)",
+      "metadata": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true
+      }
+    },
+    {
+      "instruction": "現在位置から上に1cm動かし、グリッパーを10ステップ閉じ、そのあと10ステップ開いてください。現在位置はget_robot_stateで取得してください。",
+      "status": "discarded",
+      "request_epoch": 7,
+      "code": "s = get_robot_state()\np = s['robot_cartesian_pos'][:3]\nRESULT = move_to_pose([p[0], p[1], p[2] + 0.01], max_actions=30)\ns = get_robot_state()\nclose_gripper(10)\ns = get_robot_state()\nopen_gripper(10)",
+      "metadata": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true
+      }
+    }
+  ],
+  "programs": [
+    {
+      "program_id": "b3e80d1230e846869da5c31a9ed13de4",
+      "instruction": "グリッパーを10ステップ開いてください。",
+      "generator": "llm_http",
+      "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+      "reason": "program_completed",
+      "applied_actions": 10
+    },
+    {
+      "program_id": "d169968cb51b4a20bab9f971a129a954",
+      "instruction": "現在位置から手先を上に2cm動かして、その後グリッパーを10ステップ閉じてください。移動にはmax_actions=40を使ってください。",
+      "generator": "llm_http",
+      "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+      "reason": "program_completed",
+      "applied_actions": 50
+    }
+  ],
+  "total_executed_actions": 60,
+  "late_response_applied_actions": 0,
+  "training_admitted": false
+}

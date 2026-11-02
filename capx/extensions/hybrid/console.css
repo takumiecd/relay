@@ -197,3 +197,9 @@ input[type="range"] { accent-color:#5b86bc; }
   .cameras[data-multi="true"] .camera:nth-child(n+2) .camera-head { flex-wrap: wrap; padding: 8px; gap: 5px; }
   .cameras[data-multi="true"] .camera:nth-child(n+2) .viewport { min-height: 0; aspect-ratio: auto; }
 }
+.llm-panel { padding: 14px 17px; }
+.llm-panel textarea { width: 100%; margin-top: 7px; padding: 10px; resize: vertical; border: 1px solid #d8dee3; border-radius: 6px; background: #f4f6f9; color: #344454; font: inherit; line-height: 1.6; }
+.llm-panel .button { width: 100%; margin-top: 8px; }
+.llm-panel details { margin-top: 10px; font-size: 11px; }
+#llm-model { max-width: 145px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#generated-code { padding: 10px; max-height: 250px; overflow: auto; background: #f4f6f9; border-radius: 6px; color: #505c68; white-space: pre-wrap; overflow-wrap: anywhere; font: 10px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace; }

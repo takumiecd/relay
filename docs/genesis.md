@@ -2,7 +2,8 @@
 
 Genesis 1.4.5のPandaアーム・床・箱を、Relayの共通backend経由で動かす。
 キーボード操作、2カメラ表示、実行した指令・観測の保存、新しい試行に対応する。
-`feat/genesis-history`ではCPUの同じ稼働中scene/reset内での巻き戻し・分岐・経路採用も追加した。
+CPUの同じ稼働中scene/reset内での巻き戻し・分岐・経路採用にも対応する。
+LLMからの指示入力とコード操作は[genesis-llm.md](genesis-llm.md)を参照。
 LIBEROのタスクではなく、成功判定のない操作用sandboxである。
 
 ## 専用Python環境
