@@ -1,0 +1,75 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 0.1
+      Plane Cell Count: 20
+      Color: 184; 193; 204
+      Alpha: 0.5
+      Reference Frame: world
+    - Class: rviz_default_plugins/RobotModel
+      Name: Relay reference arm (no physics)
+      Enabled: true
+      Alpha: 1
+      Description Source: Topic
+      Description Topic:
+        Value: /relay_reference/robot_description
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Visual Enabled: true
+      Collision Enabled: false
+      TF Prefix: ""
+    - Class: rviz_default_plugins/Axes
+      Name: World axes
+      Enabled: true
+      Reference Frame: world
+      Length: 0.2
+      Radius: 0.005
+    - Class: rviz_default_plugins/TF
+      Name: TF (enable to inspect frames)
+      Enabled: false
+      Frame Timeout: 1
+      Marker Scale: 0.2
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+  Global Options:
+    Background Color: 239; 243; 248
+    Fixed Frame: world
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 1.8
+      Focal Point:
+        X: 0.18
+        Y: 0
+        Z: 0.35
+      Pitch: 0.4
+      Yaw: 0.8
+      Target Frame: world
+      Near Clip Distance: 0.01
+Window Geometry:
+  Width: 1440
+  Height: 900
+  X: 0
+  Y: 0
+  Displays:
+    collapsed: false
+  Views:
+    collapsed: true

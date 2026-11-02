@@ -6,7 +6,7 @@ PR #3で、同じ稼働中CPU scene/reset内のGenesis巻き戻し・分岐を�
 続くLLM・採用経路のコード出力に加え、`feat/genesis-vla`ではWORLD変位を介したVLA接続を追加した。
 [Genesisの三者接続](genesis-vla.md)ではLIBERO用OpenVLAの短い実接続を確認したが、Genesisでのタスク成功評価ではない。
 `feat/ros2-joint-backend`では[ROS 2標準action／JointStateによる関節操作・記録](ros2.md)を追加した。
-付属ノードは数値参照実装で、物理／IKはない。Genesisの再起動後の保存セッション復元、Gazebo、ROS 2の手先操作adapterは未実装。
+付属ノードは数値参照実装で、[URDF／robot_state_publisher／RVizでの表示](ros2-rviz.md)にも対応する。物理／IKはない。Genesisの再起動後の保存セッション復元、Gazebo、ROS 2の手先操作adapterは未実装。
 提出版は`pai-final-20261102`に固定し、共通化はPR #1でmainへ取り込み済み。
 Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
 
@@ -109,7 +109,7 @@ flowchart TD
 | 接続先 | 指令と観測の処理 | 検証すること |
 |---|---|---|
 | Genesis | PandaでIK→関節PD制御・画像／指令記録・CPU同一scene内の状態復元と分岐 | WORLD変位で実VLA・LLMとの短い接続を確認。再起動後の復元・別robot／scene・policy適応評価は次段階 |
-| ROS 2 | FollowJointTrajectory＋JointStateによる関節操作・記録。参照ノードは数値補間のみ | 実DDSでキーボード・コード・記録・古い状態の拒否・結果timeoutを検証。物理・画像topic・IKは次段階 |
+| ROS 2 | FollowJointTrajectory＋JointStateによる関節操作・記録。URDF／TF／RVizで表示。参照ノードは数値補間のみ | 実DDSで操作・記録・timeoutと、測定角度からのTFを検証。物理・画像topic・IKは次段階 |
 | Gazebo | ROS 2経由ならgz_ros2_controlと必要な制御ノードへ接続 | 観測と指令の対応、sim固有の保存・復元 |
 | 実機 | ROS 2対応driverなど、実機の制御口へ接続 | 停止・速度／可動範囲・物理的な再開状態の準備 |
 

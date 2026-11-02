@@ -2,7 +2,7 @@
 
 `feat/ros2-joint-backend`の最初の接続です。RelayをROS 2 Humble環境で実行し、標準の`control_msgs/action/FollowJointTrajectory`へ目標角度を送ります。`sensor_msgs/msg/JointState`から測定角度と時刻を読み、指令・結果・出所を記録します。
 
-付属ノードは**数値の参照コントローラ**です。物理、接触、ロボット形状、実カメラ、MoveIt／IKはありません。画面の棒グラフは受信したJointStateの模式表示です。既存のGenesis／LIBERO画面やROS 2学習用コンテナとは別に起動します。
+付属ノードは**数値の参照コントローラ**です。物理、接触、実カメラ、MoveIt／IKはありません。画面の棒グラフは受信したJointStateの模式表示です。[URDF／RVizでロボット形状を表示する構成](ros2-rviz.md)も追加しています。既存のGenesis／LIBERO画面やROS 2学習用コンテナとは別に起動します。
 
 ```mermaid
 flowchart LR
@@ -96,7 +96,7 @@ ros2 interface show control_msgs/action/FollowJointTrajectory
 
 ## 次の段階
 
-実際のロボットモデルをRVizに出すにはURDFとrobot_state_publisherが必要です。手先操作にはMoveIt Servo／IKを行う別adapter、Gazeboでの物理動作にはモデル・ros2_control controller・state publisherの構成が必要です。Genesisは既存の直接backendで動き、このROS 2接続を必須にしません。共通の権限・記録・コード実行層は維持します。
+[表示用URDFとrobot_state_publisher／RViz](ros2-rviz.md)まで実装しました。手先操作にはMoveIt Servo／IKを行う別adapter、Gazeboでの物理動作にはモデル・ros2_control controller・state publisherの構成が必要です。Genesisは既存の直接backendで動き、このROS 2接続を必須にしません。共通の権限・記録・コード実行層は維持します。
 
 ## テスト
 
