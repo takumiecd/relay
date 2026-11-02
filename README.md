@@ -24,6 +24,7 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [操作画面・起動方法](docs/hybrid-console.md)
 - [CLI：状態確認・切替・停止・巻き戻し・経路採用](docs/cli.md)
 - [Runtime：構成・CaP-Xとの境界・独立配布](docs/runtime.md)
+- [デモ構成案：AI操作を途中から修正し、採用経路を残す](docs/demo-storyboard.md)
 - [Genesis：キーボード操作・記録・巻き戻し](docs/genesis.md)
 - [GenesisをLLMのPythonコードから操作する](docs/genesis-llm.md)
 - [GenesisでVLA・LLM・手動を切り替える](docs/genesis-vla.md)

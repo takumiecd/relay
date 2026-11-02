@@ -9,14 +9,36 @@ flowchart TD
   Browser[ブラウザ] --> API[relay.server / HTTP API]
   CLI[relay CLI] --> API
   API --> Runtime[relay.runtime / RelayRuntime]
-  Policy[VLA・LLM HTTP接続] --> Runtime
+  VLA[VLA / 外部worker] <-->|観測と操作値| Runtime
+  Runtime -->|指示と観測| LLM[LLM・VLM / 外部API]
+  LLM -->|生成したPython| Executor
   Runtime --> Env[RelayEnvironment / backend契約]
   Env --> Libero[LIBERO + OSC]
   Env --> Genesis[Genesis]
   Env --> ROS[ROS 2 / MoveIt参照版]
-  Runtime --> Executor[CodeExecutorFactory / 任意]
-  Executor --> Capx[CaP-Xコード実行器]
+  Runtime --> Executor[コード実行器 / 任意のCaP-Xアダプタ]
+  Executor -->|tool呼び出し| Runtime
 ```
+
+## 操作が届くまで
+
+| 操作者 | 流れ |
+|---|---|
+| 人間 | ブラウザのキー入力 → HTTP API → Runtime → 環境 |
+| VLA | 環境の観測 → 外部VLA worker → 操作値 → Runtime → 環境 |
+| LLM／VLM | 指示・観測 → 外部モデル → Pythonコード → 実行器 → `move_to_pose()`等のtool → Runtime → 環境 |
+
+ブラウザとCLIは同じ稼働sessionに接続する二つの入口。
+ブラウザは映像・キー入力・分岐図を、CLIは状態確認・切替・停止・復元・経路採用を提供する。
+CLIを起動しても新しいシミュレータは起動しない。端末でのWASD入力は現CLIの範囲外。
+
+環境はサーバー起動時に一つ選ぶ。複数backendの同時進行や稼働session内の環境差し替えは、
+今回実装した機能ではない。共通化したのは接続契約と操作・記録の仕組み。
+モデル自体は外部worker/APIで稼働するため、Relayの起動だけでは実VLAや実LLMが接続済みにはならない。
+
+コード実行器は任意。CaP-Xなしで手動・VLA・履歴を利用でき、現在のLLM生成コード実行には
+CaP-Xアダプタを選ぶ。LLMコードの`run_vla()`からVLAへ処理の一部を委譲することもできる。
+この委譲と、人間が画面のP／L／Hで制御主体を切り替える操作は区別して記録する。
 
 ## 配置と責務
 
@@ -29,6 +51,7 @@ flowchart TD
 | `relay/runtime/execution.py` | 実行器のProtocolと、停止可能な子プロセス通信 |
 | `relay/policy/` | VLAのaction契約・HTTP転送・LLM HTTPクライアント |
 | `relay/server.py` / `relay/web/` | HTTP console、起動CLI、画面の実体 |
+| `relay/cli.py` / `relay/client.py` | 起動中sessionへ接続するCLIとHTTPクライアント |
 | `relay/integrations/capx.py` | 選択時だけCaP-Xを読み込むコード実行アダプタ |
 | `relay/backends/` | SDK別実装。SDKの導入は別途必要 |
 
@@ -83,7 +106,7 @@ CaP-Xのコード実行を使う開発環境では、明示的に有効にする
 ```bash
 python -m relay.server --backend genesis \
   --backend-config configs/relay/genesis-panda.json \
-  --code-executor capx --llm-url http://127.0.0.1:8000 --llm-model YOUR_MODEL_ID \
+  --code-executor capx --llm-url http://127.0.0.1:8000/v1/chat/completions --llm-model YOUR_MODEL_ID \
   --port 8878 --output output/genesis-code
 ```
 
@@ -109,3 +132,4 @@ HTTP起動CLIに任意の未検証モジュールをロードする新機能は�
 - 元の提出タグとROS参照タグは保持する。以前の資料が示す起動方法も維持する。
 
 検証範囲と実測は[分離の確認記録](verification/runtime-extraction-20261102.md)を参照。
+機能を使った映像案と、追加開発の候補は[デモ構成案](demo-storyboard.md)にまとめる。
