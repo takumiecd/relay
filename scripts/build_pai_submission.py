@@ -148,13 +148,13 @@ def create_report(path, output, account, info, commit):
     box(396,384,157,94,'ROS 2',
         ['構想・未実装','topic / actionで指令送信','画像・関節状態などを受信'],MUTED)
     arrow(475,384,475,359)
-    box(396,288,157,71,'Gazebo / 実機',
+    box(396,278,157,81,'Gazebo / 実機',
         ['構想・未実装','Gazebo: gz_ros2_control','実機: 対応するdriver'],MUTED)
     text(42,330,'接続時に追加する処理',13,BLUE)
     text(42,307,'・手先指令を接続先のIK／制御器へ変換',9.3)
     text(42,289,'・画像、関節状態、手先姿勢を共通形式へ',9.3)
     y=heading('実装を進める順序と、確認が必要な範囲',254)
-    y=paragraph('1. 現在のVlaApi・OscLiberoEnvに残るOSC／MuJoCo依存を整理し、観測・操作・停止を共通APIとして切り出す。2. GenesisかROS 2のどちらか一つを追加し、まずキーボードで動作確認する。',y,size=9.5,leading=16)
+    y=paragraph('1. 現在のVlaApi・OscLiberoEnvに残るOSC／MuJoCo依存を整理し、観測・操作・停止を共通APIとして切り出す。\n2. GenesisかROS 2のどちらか一つを追加し、まずキーボードで動作確認する。',y,size=9.5,leading=16)
     y=paragraph('3. 座標系・単位・指令の意味・制御周期を合わせ、VLAとコードを接続する。接続できることと、別環境でもVLAがタスクを解けることは分けて検証する。',y-5,size=9.5,leading=16)
     y=paragraph('4. 巻き戻しはシミュレータごとに状態保存・復元を実装し、次の動作まで一致するか確認する。実機では過去の物理状態へ瞬時には戻せないため、ログの分岐と再開状態の準備を分けて扱う。',y-5,size=9.5,leading=16)
     text(42,75,'参考：Genesis公式 Control your robot / ROS 2公式 gz_ros2_control',8,MUTED)
