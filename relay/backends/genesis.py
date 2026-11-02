@@ -6,8 +6,11 @@ Genesis is imported only when this backend is selected, in its own environment.
 from __future__ import annotations
 
 import importlib.metadata
+from dataclasses import replace
 import math
+import random
 import threading
+import uuid
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -21,6 +24,13 @@ def _numpy(value):
     return np.asarray(value, dtype=float).copy()
 
 
+def _state_array(value):
+    """Checkpoint copies must retain integer flags, booleans and float precision."""
+    if hasattr(value, 'detach'):
+        value = value.detach().cpu().numpy()
+    return np.asarray(value).copy()
+
+
 class GenesisBackend:
     backend_id = 'genesis.panda-sandbox'
     action_contract = 'genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1'
@@ -31,7 +41,7 @@ class GenesisBackend:
 
     def __init__(self, max_steps=10000, control_freq=20, physics_dt=.01,
                  camera_size=320, device='cpu', settle_steps=20,
-                 translation_m_per_step=.01, rotation_rad_per_step=.05):
+                 translation_m_per_step=.01, rotation_rad_per_step=.05, checkpoints=True):
         if (type(max_steps) is not int or max_steps < 1 or type(camera_size) is not int
                 or not 64 <= camera_size <= 1280 or type(settle_steps) is not int or settle_steps < 0):
             raise ValueError('Expected a positive horizon, image size 64..1280, and nonnegative settling steps')
@@ -45,6 +55,9 @@ class GenesisBackend:
             raise ValueError('Teleop gains exceed supported per-step increments')
         if device not in {'cpu', 'cuda', 'metal'}:
             raise ValueError('Genesis device must be cpu, cuda, or metal')
+        if type(checkpoints) is not bool or (checkpoints and device != 'cpu'):
+            raise ValueError('Checkpoints are validated on CPU only; use checkpoints=False on other devices')
+        self.capabilities = BackendCapabilities(checkpoints=checkpoints, state_replay=False)
         self.owner_thread = threading.get_ident()
         self.max_steps, self.control_freq = max_steps, float(control_freq)
         self.physics_dt, self.physics_steps = float(physics_dt), int(round(ratio))
@@ -56,12 +69,16 @@ class GenesisBackend:
         self._ik_warmed = False
         self._images = None
         self._joint_target = self.INITIAL_Q.copy()
+        self._checkpoint_header = None
         self.instruction = 'Genesis Panda sandbox: move the arm and open/close the gripper around the cube.'
         try:
             import genesis as gs
         except ImportError as error:
             raise ImportError('Install the separate Genesis environment; see docs/genesis.md') from error
         self.gs = gs
+        self._sdk_version = importlib.metadata.version('genesis-world')
+        if checkpoints and self._sdk_version != '1.4.5':
+            raise ValueError('Genesis checkpoints require the validated genesis-world==1.4.5')
         if not gs._initialized:
             gs.init(backend=getattr(gs, device), seed=0, logging_level='warning')
         elif gs.backend != getattr(gs, device):
@@ -103,6 +120,7 @@ class GenesisBackend:
                 gripper='-1=open (0.04m per finger), +1=close (0m)',
                 camera_labels=dict(wrist='手首カメラ', overview='全体カメラ'),
                 task_success_evaluator=False,
+                checkpoint_scope='same live CPU scene/model/reset; Genesis 1.4.5',
                 physics_state_format='time, robot qpos(9), qvel(9), cube XYZ/WXYZ(7), linear/angular velocity(6)')
         except BaseException:
             self.close()
@@ -120,6 +138,7 @@ class GenesisBackend:
             raise ValueError('Genesis sandbox has no alternate tasks/reset options yet')
         if seed not in (None, 0):
             raise ValueError('This fixed sandbox supports seed=0 only')
+        self.model_generation = uuid.uuid4().hex
         self.scene.reset()
         self.robot.set_dofs_position(self.INITIAL_Q, zero_velocity=True)
         self.robot.control_dofs_position(self.INITIAL_Q)
@@ -245,6 +264,92 @@ class GenesisBackend:
         return np.r_[self.simulation_time(), _numpy(self.robot.get_qpos()),
                      _numpy(self.robot.get_dofs_velocity()), _numpy(self.cube.get_pos()),
                      _numpy(self.cube.get_quat()), _numpy(self.cube.get_vel()), _numpy(self.cube.get_ang())]
+
+    def capture_checkpoint(self):
+        """Full SDK solver state + Relay targets/RNG, encoded as numeric/JSON data.
+
+        Scene description/config objects stay in this live backend. Files contain
+        no Python objects, imports, pickle, or assets to reconstruct another scene.
+        """
+        self._owner()
+        if not self.capabilities.checkpoints:
+            raise NotImplementedError('Genesis checkpoints are disabled')
+        import torch
+        if self._checkpoint_header is None:
+            native = self.scene.__getstate__()
+            self._checkpoint_header = replace(native, sim=None)
+            self._checkpoint_configs = {name: record.configs for name, record in native.sim.solvers.items()}
+            self._checkpoint_kinds = {name: record.kinds for name, record in native.sim.solvers.items()}
+            self._checkpoint_arrays = {name: {key: (tuple(value.shape), _state_array(value).dtype.str)
+                for key, value in record.arrays.items()} for name, record in native.sim.solvers.items()}
+            self._checkpoint_steps = (tuple(native.sim.steps.shape), _state_array(native.sim.steps).dtype.str)
+            state = native.sim
+        else:
+            # The fixed scene/header was checked above. Avoid exporting its
+            # camera-less description (and logging export warnings) every step.
+            state = self.scene.sim.__getstate__()
+        return dict(
+            schema='relay.genesis-checkpoint.v1', model_generation=self.model_generation,
+            genesis_version=self._sdk_version, scene_digest=self._checkpoint_header.digest,
+            simulator_steps=_state_array(state.steps),
+            solvers={name: dict(kinds=sorted(int(kind) for kind in record.kinds),
+                               arrays={key: _state_array(value) for key, value in record.arrays.items()})
+                     for name, record in state.solvers.items()},
+            joint_target=self._joint_target.copy(), target_position=self._target_position.copy(),
+            target_rotation=self._target_rotation.copy(), gripper=self.gripper,
+            numpy_rng=np.random.get_state(), python_rng=random.getstate(),
+            torch_cpu_rng=torch.random.get_rng_state().numpy().copy())
+
+    def restore_checkpoint(self, snapshot):
+        """Restore this live model/reset; validate all payloads before mutating it."""
+        self._owner()
+        if not self.capabilities.checkpoints:
+            raise NotImplementedError('Genesis checkpoints are disabled')
+        if (snapshot.get('schema') != 'relay.genesis-checkpoint.v1'
+                or snapshot.get('model_generation') != self.model_generation
+                or snapshot.get('genesis_version') != self._sdk_version
+                or self._checkpoint_header is None
+                or snapshot.get('scene_digest') != self._checkpoint_header.digest):
+            raise ValueError('Checkpoint belongs to a different Genesis scene/model/reset or SDK version')
+        from genesis.engine.states.solvers import SimulatorCheckpoint, SolverCheckpoint
+        import torch
+
+        def check_array(array, spec):
+            if not isinstance(array, np.ndarray) or (array.shape, array.dtype.str) != spec:
+                raise ValueError('Genesis checkpoint array shape/dtype mismatch')
+        check_array(snapshot['simulator_steps'], self._checkpoint_steps)
+        if np.any(snapshot['simulator_steps'] < 0) or set(snapshot['solvers']) != set(self._checkpoint_configs):
+            raise ValueError('Genesis checkpoint solver/step mismatch')
+        records = {}
+        for name, record in snapshot['solvers'].items():
+            kinds = self._checkpoint_kinds[name]
+            if (record['kinds'] != sorted(int(kind) for kind in kinds)
+                    or set(record['arrays']) != set(self._checkpoint_arrays[name])):
+                raise ValueError('Genesis checkpoint fields/kinds mismatch')
+            for key, value in record['arrays'].items():
+                check_array(value, self._checkpoint_arrays[name][key])
+            records[name] = SolverCheckpoint(arrays=record['arrays'], configs=self._checkpoint_configs[name], kinds=kinds)
+        for key, shape in [('joint_target', (9,)), ('target_position', (3,)), ('target_rotation', (3, 3))]:
+            value = np.asarray(snapshot[key])
+            if value.shape != shape or not np.isfinite(value).all():
+                raise ValueError('Invalid Genesis controller target in checkpoint')
+        if not np.isfinite(snapshot['gripper']) or abs(snapshot['gripper']) > 1:
+            raise ValueError('Invalid Genesis gripper target in checkpoint')
+        # Validate RNG records on temporary generators before touching globals.
+        np.random.RandomState().set_state(snapshot['numpy_rng'])
+        random.Random().setstate(snapshot['python_rng'])
+        torch_rng = torch.from_numpy(snapshot['torch_cpu_rng'].copy())
+        torch.Generator(device='cpu').set_state(torch_rng)
+        simulator = SimulatorCheckpoint(steps=snapshot['simulator_steps'], solvers=records)
+        self.scene.__setstate__(replace(self._checkpoint_header, sim=simulator))
+        self._joint_target = snapshot['joint_target'].copy()
+        self._target_position = snapshot['target_position'].copy()
+        self._target_rotation = snapshot['target_rotation'].copy()
+        self.gripper = float(snapshot['gripper'])
+        self._images = None
+        np.random.set_state(snapshot['numpy_rng'])
+        random.setstate(snapshot['python_rng'])
+        torch.random.set_rng_state(torch_rng)
 
     def task_completed(self):
         self._owner()

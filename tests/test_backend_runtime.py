@@ -232,3 +232,15 @@ def test_bad_camera_identifier_is_rejected_before_writing_outside_recording(tmp_
         assert not (tmp_path / 'bad.png').exists()
     finally:
         env.close()
+
+
+@pytest.mark.parametrize('key,value', [('applied_steps', -1), ('applied_steps', True),
+    ('observation_id', 1.5), ('ended', 1), ('gripper', float('nan'))])
+def test_invalid_runtime_checkpoint_is_rejected_before_backend_mutation(reference, key, value):
+    env, runner = reference
+    snapshot = dict(env.capture_checkpoint(), **{key: value})
+    before, context = env.physics_state(), env.context()
+    with pytest.raises(ValueError, match='runtime state'):
+        env.restore_checkpoint(snapshot)
+    np.testing.assert_array_equal(env.physics_state(), before)
+    assert env.context() == context

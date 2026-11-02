@@ -1,0 +1,62 @@
+{
+  "branch": "feat/genesis-history",
+  "parent_commit": "eed9b4b383d6605403a1aaf36cdf749e3436cb1f",
+  "genesis": "1.4.5",
+  "physics_device": "cpu",
+  "scope": "same live scene/model/reset",
+  "state_replay": false,
+  "exact_restore": {
+    "solver_fields": 210,
+    "continuation_actions": 8,
+    "restored_state_and_controller_targets_equal": true,
+    "regenerated_cameras_equal": [
+      "wrist",
+      "overview"
+    ],
+    "numpy_python_torch_rng_restored": true,
+    "serialized_without_pickle": true
+  },
+  "tests": {
+    "genesis": {
+      "passed": 33,
+      "skipped": 0
+    },
+    "regression": {
+      "passed": 83,
+      "skipped_genesis_physics": 18,
+      "warnings": 15
+    },
+    "javascript": {
+      "passed": 12
+    }
+  },
+  "browser_qa": {
+    "session": "output/genesis-history-qa-20261102-114851",
+    "original_head": 16,
+    "fork_step": 3,
+    "branch_head": 18,
+    "adopted_end": 13,
+    "selected_rows": 13,
+    "raw_executed_steps": 31,
+    "source": "TEST_OPERATOR",
+    "original_steps_sha256": "9e810f8767f12e9f0d02aaf578551b8c07b33b210312fd2c7a319fa7cd5cea48",
+    "original_unchanged": true,
+    "selection_sha256": "3b6f3351e3707d290bff9dc2cb01b908419c5ae255fae14014c16ea2513db1ca",
+    "original_future_restored": true,
+    "console_errors": []
+  },
+  "previous_manual_session": {
+    "path": "output/genesis-manual-20261102-112900",
+    "saved_steps": 353
+  },
+  "ready_session": "output/genesis-history-manual-20261102-115446",
+  "ready_url": "http://127.0.0.1:8877/",
+  "source_sha256": {
+    "relay/backends/genesis.py": "ff5d09471cec3b30765f5226ddbadeeab9743f06ff6ff4cc1757f4483a673659",
+    "relay/environment.py": "7eed65696815776b96ac759b0bf8b96917c432fd563cc4995f4ffaa275911686",
+    "configs/relay/genesis-panda.json": "f5631fb95fe050c8104fd8ddd33ed5f333b946cb04b901832e632d790179d35a",
+    "tests/test_genesis_history.py": "fed6603b457db6293c8f3d1f31f57330b97e2dff51d84b554e13e7ac84f62b30",
+    "tests/test_genesis_backend.py": "6a8d659a38a8f19d7790780dd7525e1f809ef49aef9f307ddd5ee5c00c44bd55",
+    "tests/test_backend_runtime.py": "8565aa819953a9079388e058c2028e4e6b3a1edef2cdafcf957ef06cc19336c7"
+  }
+}

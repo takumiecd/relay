@@ -29,7 +29,8 @@ def test_genesis_contract_import_does_not_import_sdk():
 
 
 @pytest.mark.parametrize('config', [dict(control_freq=17), dict(physics_dt=0),
-    dict(camera_size=0), dict(device='unknown'), dict(translation_m_per_step=1)])
+    dict(camera_size=0), dict(device='unknown'), dict(translation_m_per_step=1),
+    dict(device='metal'), dict(checkpoints='yes')])
 def test_bad_genesis_configuration_rejected_before_sdk_initialization(config):
     with pytest.raises(ValueError):
         GenesisBackend(**config)
@@ -141,7 +142,7 @@ def test_real_genesis_keyboard_record_stop_and_new_trial(real_genesis, tmp_path)
     env.attach_recorder(TrajectoryRecorder(tmp_path/'trajectory', {'test_only': True}))
     runner = HybridRunner(env, tmp_path, test_operator=True, realtime=False)
     try:
-        assert runner.timeline is None and not env.capabilities.state_replay
+        assert runner.timeline is not None and not env.capabilities.state_replay
         runner.control.switch('HUMAN', client_id='test')
         for i in range(8):
             assert runner.control.submit_input(client_id='test', sequence=i, epoch=env.epoch,
@@ -171,6 +172,7 @@ def test_real_genesis_keyboard_record_stop_and_new_trial(real_genesis, tmp_path)
         runner.request_trial(client_id='test', sequence=1, expected_epoch=env.epoch)
         runner.tick()
         assert env.applied_steps == 0 and runner.trial_index == 2 and runner.control.mode == 'STOPPED'
-        assert runner.timeline is None and (tmp_path/'trials/0002/trajectory/episode.json').is_file()
+        assert runner.timeline is not None and runner.timeline.cursor == 0
+        assert (tmp_path/'trials/0002/trajectory/episode.json').is_file()
     finally:
         runner.close()

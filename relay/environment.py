@@ -191,6 +191,12 @@ class RelayEnvironment:
                 or snapshot.get('relay_action_contract', self.backend.action_contract)
                 != self.backend.action_contract):
             raise ValueError('Checkpoint belongs to a different backend/action contract')
+        if (any(type(snapshot.get(key)) is not int or snapshot[key] < 0
+                for key in ('applied_steps', 'observation_id'))
+                or type(snapshot.get('ended')) is not bool
+                or not isinstance(snapshot.get('gripper'), (int, float))
+                or not math.isfinite(snapshot['gripper']) or abs(snapshot['gripper']) > 1):
+            raise ValueError('Invalid runtime state in checkpoint')
         with self.lock:
             # The adapter validates model/reset compatibility before restoring.
             self.backend.restore_checkpoint(snapshot)
