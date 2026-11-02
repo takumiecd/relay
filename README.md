@@ -25,6 +25,7 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [CLI：状態確認・切替・停止・巻き戻し・経路採用](docs/cli.md)
 - [Runtime：構成・CaP-Xとの境界・独立配布](docs/runtime.md)
 - [デモ構成案：AI操作を途中から修正し、採用経路を残す](docs/demo-storyboard.md)
+- [実OpenVLAの介入・巻き戻し・記録デモ（93秒）と検証結果](docs/verification/repair-demo-20261102.md)
 - [Genesis：キーボード操作・記録・巻き戻し](docs/genesis.md)
 - [GenesisをLLMのPythonコードから操作する](docs/genesis-llm.md)
 - [GenesisでVLA・LLM・手動を切り替える](docs/genesis-vla.md)
