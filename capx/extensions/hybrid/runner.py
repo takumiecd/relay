@@ -12,6 +12,7 @@ import time
 import uuid
 
 from capx.extensions.vla.api import VlaApi
+from capx.extensions.vla.actions import PolicyActions
 from capx.extensions.vla.recording import TrajectoryRecorder, export_views, write_json
 from .code_worker import CodeProcess, TOOLS
 from .control import AuthorityLost, ControlSession
@@ -43,6 +44,10 @@ class ResponsivePredictor:
     def __init__(self, runner):
         self.runner = runner
         self.is_test = getattr(runner.predictor, "is_test", False)
+
+    @property
+    def ready(self):
+        return getattr(self.runner.predictor, 'ready', None)
 
     def predict(self, observation, instruction, context):
         runner = self.runner
@@ -83,6 +88,7 @@ class HybridRunner:
         *,
         predictor=None,
         generator=None,
+        policy_actions=None,
         test_operator=False,
         code_timeout=30,
         code_budget=100,
@@ -97,7 +103,8 @@ class HybridRunner:
         self.program_root.mkdir(exist_ok=True)
         self.predictor, self.generator = predictor, generator
         self.control = ControlSession(env, test_operator=test_operator)
-        self.api = VlaApi(env, ResponsivePredictor(self))
+        self.policy_actions = policy_actions or PolicyActions(env)
+        self.api = VlaApi(env, ResponsivePredictor(self), policy_actions=self.policy_actions)
         self.code_timeout, self.code_budget = code_timeout, code_budget
         self.realtime = realtime
         self.next_tick = time.monotonic()
@@ -114,6 +121,7 @@ class HybridRunner:
         self.pending_code = None
         self.llm_request = None
         self.last_generation = None
+        self.vla_instruction = env.instruction
         self.pending_reset = False
         self.pending_seek = None
         self.seeking = False
@@ -153,9 +161,9 @@ class HybridRunner:
         return tools
 
     def request_mode(self, mode, *, client_id, sequence, expected_epoch, instruction=None):
-        if instruction is not None and (mode != 'LLM' or not isinstance(instruction, str)
+        if instruction is not None and (mode not in {'LLM', 'VLA'} or not isinstance(instruction, str)
                 or not instruction.strip() or len(instruction) > 2000):
-            raise ValueError('LLM instruction must be a non-empty string of at most 2000 characters')
+            raise ValueError('Automatic control instruction must be a non-empty string of at most 2000 characters')
         if mode == 'LLM' and self.generator is None:
             raise ValueError('Connect an LLM endpoint before requesting code')
         with self.pending_lock, self.control.lock:
@@ -169,6 +177,9 @@ class HybridRunner:
                     instruction=(instruction or self.env.instruction).strip(), client_id=client_id)
                 self.control._event('code_requested', instruction=self.llm_request['instruction'],
                     client_id=client_id, provider=getattr(self.generator, 'metadata', {}))
+            if result['accepted'] and mode == 'VLA':
+                self.vla_instruction = (instruction or self.env.instruction).strip()
+                self.control._event('vla_requested', instruction=self.vla_instruction, client_id=client_id)
             return result
 
     def request_trial(self, *, client_id, sequence, expected_epoch):
@@ -301,6 +312,7 @@ class HybridRunner:
         self.program_root = self.env.recorder.root / "programs"
         self.program_root.mkdir()
         self.policy_metadata = None
+        self.vla_instruction = self.env.instruction
         self.error = None
         self.next_tick = time.monotonic()
 
@@ -336,8 +348,12 @@ class HybridRunner:
         flush = getattr(self.env, 'flush_control', None)
         if flush is not None:
             flush()
+        if self.control.mode == 'VLA' and self.predictor is not None and not bool(getattr(self.predictor, 'ready', True)):
+            self.control.switch('STOPPED', reason='vla_disconnected')
         metadata = getattr(self.predictor, "ready", None)
         if isinstance(metadata, dict) and metadata != self.policy_metadata:
+            if self.policy_metadata is not None and (self.control.mode == 'VLA' or self.delegated is not None):
+                self.control.switch('STOPPED', reason='vla_policy_changed')
             self.policy_metadata = dict(metadata)
             with self.control.lock:
                 self.control._event("policy_ready", metadata=self.policy_metadata)
@@ -552,10 +568,10 @@ class HybridRunner:
                         reply = job.result
                         if (
                             reply.get("context") != job.context
-                            or reply.get("action_contract") != job.context["action_contract"]
+                            or reply.get("action_contract") != self.policy_actions.action_contract
                         ):
                             raise ValueError("VLA reply context or contract mismatch")
-                        actions = self.env.validate_chunk(reply["native_actions"])
+                        actions = self.policy_actions.validate_chunk(reply["native_actions"], reply['action_contract'])
                         self.chunk = deque(
                             (
                                 a.tolist(),
@@ -563,6 +579,8 @@ class HybridRunner:
                                     request_id=reply.get("request_id"),
                                     chunk_index=i,
                                     chunk_size=len(actions),
+                                    instruction=job.instruction,
+                                    **self.policy_actions.provenance(a.tolist(), reply.get('diagnostics'), self.policy_metadata),
                                 ),
                             )
                             for i, a in enumerate(actions)
@@ -575,7 +593,7 @@ class HybridRunner:
                 ):
                     action, provenance = self.chunk.popleft()
                     self.env.apply_native(
-                        action,
+                        self.policy_actions.to_native(action),
                         context=self.chunk_context,
                         source=source,
                         lease=self.chunk_lease,
@@ -593,10 +611,11 @@ class HybridRunner:
                 context = self.env.context()
                 self.vla_job = Job(
                     self.predictor.predict,
-                    (self.env.policy_observation(), self.env.instruction, context),
+                    (self.env.policy_observation(), self.vla_instruction, context),
                     self.control.begin(source),
                     context,
                 )
+                self.vla_job.instruction = self.vla_instruction
         elif mode == "LLM" and self.llm_job is None and self.generator is not None:
             # Generation itself owns no code run; capture an epoch lease for late-result rejection.
             from .control import Lease
@@ -643,6 +662,8 @@ class HybridRunner:
             llm_generating=bool(self.llm_job and self.control.valid(self.llm_job.lease)),
             generation=self.last_generation,
             llm_provider=getattr(self.generator, 'metadata', {}).get('model'),
+            vla_instruction=self.vla_instruction,
+            policy_control=self.policy_actions.metadata,
         )
 
     def close(self):

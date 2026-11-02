@@ -18,6 +18,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from PIL import Image
 
 from capx.extensions.vla.bridge import PolicyBridge
+from capx.extensions.vla.actions import PolicyActions
+from capx.extensions.vla.contracts import WORLD_DELTA
 from capx.extensions.vla.env import ACTION_CONTRACT, BackendEnv, configure_libero
 from relay.backends.loader import load_backend
 from capx.extensions.vla.recording import TrajectoryRecorder, write_json
@@ -272,6 +274,8 @@ def main():
     parser.add_argument("--port", type=int, default=8876)
     parser.add_argument("--vla-port", type=int, default=8896)
     parser.add_argument("--vla-public-url")
+    parser.add_argument('--vla-actions', choices=['native', 'world-delta'], default='native',
+                        help='Expected policy output convention; WORLD deltas are converted on the owner thread')
     parser.add_argument("--libero-source", default="capx/third_party/LIBERO-PRO")
     parser.add_argument('--backend', default='libero', help='libero, genesis, kinematic, or trusted module:Factory')
     parser.add_argument('--manual-only', action='store_true', help='Keyboard and recording without VLA/LLM connections')
@@ -314,16 +318,19 @@ def main():
         if args.backend == 'libero':
             configure_libero(args.libero_source, str(args.output / 'libero-config'))
         env = BackendEnv(load_backend(args.backend, config))
+        policy_actions = PolicyActions(env, WORLD_DELTA if args.vla_actions == 'world-delta' else None)
+        env.metadata['policy_control'] = policy_actions.metadata
         if (args.restore_session or args.restore_trajectory) and not env.capabilities.state_replay:
             raise ValueError('This backend does not support restoring recorded sessions/routes')
         if args.manual_only or args.no_vla:
             predictor = None
         elif args.test_vla:
             # Owner-thread conversion only. This fixed test action is NOT a model policy.
-            predictor = TestVla(action_contract=env.context()['action_contract'],
-                                native_action=env.teleop_action([.12, 0, 0, 0, 0, 0], -1))
+            predictor = TestVla(action_contract=policy_actions.action_contract,
+                                native_action=[.001, 0, 0, 0, 0, 0, -1] if args.vla_actions == 'world-delta'
+                                else env.teleop_action([.12, 0, 0, 0, 0, 0], -1))
         else:
-            bridge = PolicyBridge(port=args.vla_port, action_contract=env.context()['action_contract'])
+            bridge = PolicyBridge(port=args.vla_port, action_contract=policy_actions.action_contract)
             predictor = bridge
             connection = {"url": args.vla_public_url or bridge.url, "token": bridge.token}
             descriptor = os.open(
@@ -356,6 +363,7 @@ def main():
             args.output,
             predictor=predictor,
             generator=generator,
+            policy_actions=policy_actions,
             test_operator=args.test_operator,
         )
         if args.restore_trajectory:

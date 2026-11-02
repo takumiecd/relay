@@ -73,9 +73,10 @@
           <div class="status-line"><i id="status-dot"></i><span id="message">停止中</span></div>
         </section>
         <section class="panel llm-panel">
-          <div class="panel-title"><h2>LLMへ指示</h2><span id="llm-model" class="owner">未設定</span></div>
+          <div class="panel-title"><h2>操作指示</h2><span id="llm-model" class="owner">未設定</span></div>
           <label class="small" for="llm-instruction">次に行う短い操作</label>
           <textarea id="llm-instruction" maxlength="2000" rows="3" placeholder="例：現在位置から手先を上に2cm動かして、グリッパーを閉じてください。"></textarea>
+          <p class="small">VLAはP／VLAボタン、LLMは下の「指示を実行」で開始します。</p>
           <button id="generate-code" class="button primary">指示を実行 <kbd>L</kbd></button>
           <p id="generation-status" class="small" role="status">画像と状態からPythonコードを生成します。Escで停止できます。</p>
           <details id="generation-details"><summary>生成コードと実行結果</summary><p id="generation-instruction" class="small"></p><pre id="generated-code">まだ生成していません</pre></details>
