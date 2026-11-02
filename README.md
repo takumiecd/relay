@@ -24,6 +24,7 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [Genesis：キーボード操作・記録・巻き戻し](docs/genesis.md)
 - [GenesisをLLMのPythonコードから操作する](docs/genesis-llm.md)
 - [GenesisでVLA・LLM・手動を切り替える](docs/genesis-vla.md)
+- [ROS 2：関節指令・状態受信・記録（参照コントローラ）](docs/ros2.md)
 - [VLA／OSC接続](docs/vla-osc.md)
 - [記録とdatasetの方針](docs/dataset-design.md)
 - [LLMの引き継ぎ・修正・採用経路のデータ出力](docs/intervention-dataset.md)
@@ -34,17 +35,18 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 提出時の版は[`pai-final-20261102`](https://github.com/takumiecd/relay/tree/pai-final-20261102)で固定しています。
 共通API分離はPR #1、Genesisのキーボード操作・記録はPR #2でmainへ取り込み済みです。
 CPUのGenesis状態復元・分岐はPR #3でmainへ取り込み済みです。
-`feat/genesis-llm`では指示入力からのLLMコード生成・Genesis操作・記録を追加しています。
+PR #4〜#6でLLMコード生成・修正経路の出力・共通VLA接続をmainへ取り込み済みです。
 外部`module:Factory`のbackend接続、任意のカメラ名・台数、巻き戻し非対応の環境を扱えます。
 付属の`kinematic`は8次元絶対手先指令を使う数値サンプルで、物理シミュレータではありません。
 Genesis backendはPandaのキーボード操作・画像／指令の記録に対応します。
 このブランチでは、同じ稼働中のCPU scene/reset内での巻き戻し・分岐・採用経路選択にも対応します。
 Genesisの保存セッションの再起動後の復元は未対応です。
-`feat/genesis-vla`ではWORLD変位を介した共通VLA接続を追加し、LIBERO用OpenVLAの短い実モデル接続試験を行っています。
+WORLD変位を介した共通VLA接続を追加し、LIBERO用OpenVLAの短い実モデル接続試験を行っています。
 これはGenesisに適応した把持policyの評価ではありません。
 LLMはHTTP API経由で接続し、GPU上のモデルや商用APIを差し替えられます。
 実OpenVLAの接続確認と、試験providerによる切替・分岐機能の確認を区別しています。
-ROS 2・Gazebo・ゲームパッドは未対応です。
+`feat/ros2-joint-backend`ではROS 2標準action／JointStateを使う関節操作・記録を追加しています。
+付属のROS 2ノードは物理やIKのない参照コントローラです。Gazebo・ROS 2経由の手先操作・ゲームパッドは未対応です。
 以下は上流CaP-Xの紹介とクレジットです。上流ベンチマークの結果を本拡張の性能とは扱いません。
 
 ## Upstream CaP-X

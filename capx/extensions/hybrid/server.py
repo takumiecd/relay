@@ -59,7 +59,7 @@ class TestGenerator:
 
 
 class Console:
-    def __init__(self, runner, *, port=8876):
+    def __init__(self, runner, *, port=8876, bind_host='127.0.0.1'):
         self.runner = runner
         self.token = secrets.token_urlsafe(32)
         self.lock = threading.Lock()
@@ -158,7 +158,7 @@ class Console:
                 except (ValueError, TypeError, KeyError, SyntaxError) as error:
                     self.reply(400, {"error": str(error)[:500]})
 
-        self.http = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        self.http = ThreadingHTTPServer((bind_host, port), Handler)
         self.http.daemon_threads = True
         self.port = self.http.server_address[1]
         self.thread = threading.Thread(target=self.http.serve_forever, daemon=True)
@@ -188,6 +188,9 @@ class Console:
             cameras=list(images),
             camera_labels=env.metadata.get('camera_labels', {}) if hasattr(env, 'metadata') else {},
             context=env.context(),
+            teleop=getattr(env,'metadata',{}).get('teleop', {}),
+            joint_positions_rad=np.asarray(obs['robot_joint_pos']).tolist() if 'robot_joint_pos' in obs else None,
+            feedback_fresh=obs.get('feedback_fresh'),
             eef_position_m=obs["robot_cartesian_pos"][:3].tolist()
             if "robot_cartesian_pos" in obs
             else None,
@@ -272,12 +275,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--port", type=int, default=8876)
+    parser.add_argument('--bind-host', choices=['127.0.0.1','0.0.0.0'], default='127.0.0.1',
+                        help='Use 0.0.0.0 only inside a container with loopback-only host port publishing')
     parser.add_argument("--vla-port", type=int, default=8896)
     parser.add_argument("--vla-public-url")
     parser.add_argument('--vla-actions', choices=['native', 'world-delta'], default='native',
                         help='Expected policy output convention; WORLD deltas are converted on the owner thread')
     parser.add_argument("--libero-source", default="capx/third_party/LIBERO-PRO")
-    parser.add_argument('--backend', default='libero', help='libero, genesis, kinematic, or trusted module:Factory')
+    parser.add_argument('--backend', default='libero', help='libero, genesis, kinematic, ros2, or trusted module:Factory')
     parser.add_argument('--manual-only', action='store_true', help='Keyboard and recording without VLA/LLM connections')
     parser.add_argument('--no-vla', action='store_true', help='Disable the VLA bridge; allow LLM and keyboard control')
     parser.add_argument('--backend-config', type=Path, help='JSON file of backend factory keyword arguments')
@@ -370,7 +375,7 @@ def main():
             restore_recorded_route(runner, args.restore_trajectory)
         if args.restore_session:
             restore_recorded_session(runner, args.restore_session)
-        console = Console(runner, port=args.port)
+        console = Console(runner, port=args.port, bind_host=args.bind_host)
         print(
             json.dumps(
                 {

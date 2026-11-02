@@ -195,6 +195,7 @@ $("run-code").onclick = () => {
   focusWorkspace();
   command("/api/code", { code });
 };
+$("code").oninput = () => { $("code").dataset.userEdited = "1"; };
 $("generate-code").onclick = () => {
   focusWorkspace();
   mode("LLM");
@@ -364,6 +365,17 @@ async function sendInput(forceRelease = false) {
 }
 setInterval(() => sendInput(), 50);
 function render() {
+  const jointControl = state.teleop?.control_space === "joint";
+  $("position-label").textContent = jointControl ? "J1 / J2 / J3 [rad]" : "手先 XYZ [m]";
+  $("control-space").textContent = jointControl ? "関節操作：W/S=J1、A/D=J2、R/F=J3、Z/X=J4、Q/E=J6" : "WORLD座標の手先操作";
+  $("rf-label").textContent = jointControl ? "J3" : "上下";
+  $("qe-label").textContent = jointControl ? "J6" : "回転";
+  $("motion-help").textContent = jointControl ? "キーは関節角を変更します。手先XYZやIKの指令ではありません。J5はコードのmove_jointsで操作できます。" : "W/S ±X、A/D ±Y、R/F ±Z。カメラを変えても操作の座標系は変わりません。";
+  $("llm-instruction").placeholder = jointControl ? "例：関節1を現在位置から0.04rad動かしてください。" : "例：現在位置から手先を上に2cm動かして、グリッパーを閉じてください。";
+  if (jointControl && !$("code").dataset.initialized && !$("code").dataset.userEdited) {
+    $("code").value = "s = get_robot_state()\nq = s['robot_joint_pos'][:]\nq[0] += 0.04\nRESULT = move_joints(q)";
+    $("code").dataset.initialized = "joint";
+  }
   const busy = pendingCommand !== null || state.resetting || state.seeking || state.adopting;
   const localHeld = keyboard?.held.has("Space");
   const receiving = owned() && localHeld && state.input_fresh && state.deadman;
@@ -403,6 +415,11 @@ function render() {
   $("episode-title").textContent = state.task_completed
     ? "タスク完了"
     : "この試行は終了しました";
+  $("episode-help").textContent = state.capabilities?.reset === false
+    ? "この接続先はリセット・巻き戻し非対応です。記録を保存して終了し、接続先の状態を確認して新しいセッションを開始してください。"
+    : state.capabilities?.checkpoints === false
+      ? "新しい試行を始められます。この環境は巻き戻し非対応です。"
+      : "履歴から途中へ戻るか、新しい試行を始められます。";
   for (const button of document.querySelectorAll("[data-mode]")) {
     button.classList.toggle("active", button.dataset.mode === state.mode);
     button.disabled =
@@ -468,11 +485,12 @@ function render() {
     flashMessage && performance.now() < flashMessage.until
       ? flashMessage
       : null;
-  $("notice").textContent = state.error || current?.text || "";
+  $("notice").textContent = state.error || current?.text || (state.feedback_fresh === false ? "関節状態の更新が止まっています。指令は送れません。" : "");
   $("notice").classList.toggle("error", !!state.error || !!current?.error);
-  if (state.eef_position_m) {
+  const positionValues = jointControl ? state.joint_positions_rad?.slice(0,3) : state.eef_position_m;
+  if (positionValues) {
     $("position").replaceChildren(
-      ...state.eef_position_m.flatMap((value, index) => {
+      ...positionValues.flatMap((value, index) => {
         const node = document.createTextNode(Number(value).toFixed(3));
         if (!index) return [node];
         const separator = document.createElement("em");

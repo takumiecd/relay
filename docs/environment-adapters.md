@@ -5,7 +5,8 @@ LIBERO／OSCに加え、PR #2でGenesis Pandaのキーボード操作・記録�
 PR #3で、同じ稼働中CPU scene/reset内のGenesis巻き戻し・分岐を追加した。
 続くLLM・採用経路のコード出力に加え、`feat/genesis-vla`ではWORLD変位を介したVLA接続を追加した。
 [Genesisの三者接続](genesis-vla.md)ではLIBERO用OpenVLAの短い実接続を確認したが、Genesisでのタスク成功評価ではない。
-Genesisの再起動後の保存セッション復元、ROS 2・Gazeboの実adapterは未実装。
+`feat/ros2-joint-backend`では[ROS 2標準action／JointStateによる関節操作・記録](ros2.md)を追加した。
+付属ノードは数値参照実装で、物理／IKはない。Genesisの再起動後の保存セッション復元、Gazebo、ROS 2の手先操作adapterは未実装。
 提出版は`pai-final-20261102`に固定し、共通化はPR #1でmainへ取り込み済み。
 Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
 
@@ -50,7 +51,7 @@ Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
   初期主表示は辞書の先頭、画面上で主表示・配置を変更できる。
   `policy_observation()`の画像と規約は別に保持し、LIBEROのraw画像の向きを変更しない。
   LLM／VLM用は`code_observation()`が`rgb_top_left`画像を返す。LIBEROの既存の180度回転も専用backendへ移した。
-- `BackendCapabilities`で`checkpoints`・`state_replay`・`cartesian_control`・`reset`を明示する。
+- `BackendCapabilities`で`checkpoints`・`state_replay`・`cartesian_control`・`joint_control`・`reset`を明示する。
   checkpoint非対応なら記録は続け、タイムラインは作らない。reset非対応なら新しい試行を拒否する。
   `physics_state()`は診断ベクトルであり、それだけで完全復元できるとは扱わない。
   再実行非対応の環境では、機械的な`replay_actions()`コードを学習候補として生成しない。
@@ -61,7 +62,7 @@ Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
 
 LIBEROの`suite_name`・`task_id`を変更する具体例は、[操作ガイド「LIBEROのタスクを変える」](hybrid-console.md#liberoのタスクを変える)を参照。
 
-built-inは`libero`・`genesis`と、数値参照実装の`kinematic`。
+built-inは`libero`・`genesis`・`ros2`と、数値参照実装の`kinematic`。
 外部adapterは`load_backend("your_package.backend:YourBackend", config)`で読み込む。
 factoryはJSON設定をキーワード引数として受け、契約を満たすbackendを返す。
 これはローカルの信頼したPythonコードを読み込む仕組みである。
@@ -97,8 +98,8 @@ flowchart TD
     R --> A[RelayEnvironment + backend契約]
     A --> B[LIBERO + OSC: 現在の実装]
     A --> G[Genesis Panda: キーボード・記録、CPUの同一scene内の巻き戻し]
-    A --> N[ROS 2ノード: 構想]
-    N --> T[接続先のIK・制御ノード]
+    A --> N[ROS 2: 関節trajectory + JointState参照接続]
+    N --> T[接続先のIK・物理制御ノード: 今後]
     T --> Z[gz_ros2_control + Gazebo: 構想]
     T --> H[対応driver + 実機: 構想]
 ```
@@ -108,7 +109,7 @@ flowchart TD
 | 接続先 | 指令と観測の処理 | 検証すること |
 |---|---|---|
 | Genesis | PandaでIK→関節PD制御・画像／指令記録・CPU同一scene内の状態復元と分岐 | WORLD変位で実VLA・LLMとの短い接続を確認。再起動後の復元・別robot／scene・policy適応評価は次段階 |
-| ROS 2 | topic／action通信で制御ノードへ指令。画像・関節状態・手先姿勢を受信 | 時刻対応・通信遅延・停止・指令の意味と制御周期 |
+| ROS 2 | FollowJointTrajectory＋JointStateによる関節操作・記録。参照ノードは数値補間のみ | 実DDSでキーボード・コード・記録・古い状態の拒否・結果timeoutを検証。物理・画像topic・IKは次段階 |
 | Gazebo | ROS 2経由ならgz_ros2_controlと必要な制御ノードへ接続 | 観測と指令の対応、sim固有の保存・復元 |
 | 実機 | ROS 2対応driverなど、実機の制御口へ接続 | 停止・速度／可動範囲・物理的な再開状態の準備 |
 
@@ -120,7 +121,7 @@ VLAのactionを関節指令へそのまま流すのではなく、指令の座�
 共通APIを通して接続先を一つ追加 → キーボードで確認 → VLA・コードを接続 → 状態復元を検証、の順で進める。
 実機では物体も含む過去の状態を瞬時に復元できないため、ログの分岐と物理的な再開準備を分ける。
 
-## 検証（2026-11-02）
+## 共通backend分離時の検証（PR #1、2026-11-02）
 
 ```bash
 CAPX_LIBERO_SOURCE=capx/third_party/LIBERO-PRO \
@@ -143,7 +144,8 @@ LIBEROを指定しない実行では実物理テストがskipされるため、�
 - 外部module:Factoryで3カメラの参照backendを起動し、ブラウザでカメラ名・配信・レイアウトを確認した。
 - 既存のCaP-X実行器、VLA通信、制御主体切替、記録・再実行・分岐・巻き戻しのテストも通過した。
 
-GPU上の実モデル推論や、ROS 2／Gazebo／Genesisの接続試験はこの変更では行っていない。
+PR #1ではGPU上の実モデル推論やROS 2／Gazebo／Genesisの接続試験は行っていない。
+その後のGenesis検証は[Genesisガイド](genesis.md)、ROS 2検証は[専用ガイド](ros2.md)を参照。
 
 参考：[Genesis公式](https://genesis-world.readthedocs.io/en/latest/user_guide/getting_started/control_your_robot.html)、
 [gz_ros2_control公式](https://control.ros.org/jazzy/doc/gz_ros2_control/doc/index.html)。

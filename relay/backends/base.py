@@ -49,6 +49,12 @@ class SimulationClock(Protocol):
         ...
 
 
+class JointBackend(Protocol):
+    """Optional absolute joint-position conversion; no command is sent here."""
+
+    def joint_position_action(self, positions_rad: ArrayLike, gripper_command: float) -> NDArray[np.float64]: ...
+
+
 @dataclass(frozen=True)
 class BackendCapabilities:
     """Features that require explicit implementation and validation per adapter."""
@@ -57,6 +63,7 @@ class BackendCapabilities:
     state_replay: bool = False
     cartesian_control: bool = True
     reset: bool = True
+    joint_control: bool = False
 
 
 @dataclass

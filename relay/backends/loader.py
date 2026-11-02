@@ -15,10 +15,13 @@ def load_backend(name, config=None):
     elif name == 'genesis':
         from .genesis import GenesisBackend
         factory = GenesisBackend
+    elif name == 'ros2':
+        from .ros2 import Ros2JointBackend
+        factory = Ros2JointBackend
     else:
         module, separator, symbol = name.partition(':')
         if not separator or not module or not symbol:
-            raise ValueError('Expected libero, genesis, kinematic, or a trusted module:Factory')
+            raise ValueError('Expected libero, genesis, kinematic, ros2, or a trusted module:Factory')
         factory = getattr(import_module(module), symbol)
     backend = factory(**config)
     try:
@@ -32,6 +35,8 @@ def load_backend(name, config=None):
                    'simulation_time', 'physics_state', 'task_completed', 'compute_reward', 'stop', 'close']
         if backend.capabilities.cartesian_control:
             methods += ['eef_pose', 'cartesian_delta_action']
+        if backend.capabilities.joint_control:
+            methods += ['joint_position_action']
         if backend.capabilities.checkpoints:
             methods += ['capture_checkpoint', 'restore_checkpoint']
         for name in methods:

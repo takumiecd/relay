@@ -23,12 +23,46 @@ class VlaApi(ApiBase):
     def functions(self):
         return {"run_vla": self.run_vla, "get_robot_state": self.get_robot_state,
                 "move_to_pose": self.move_to_pose, "open_gripper": self.open_gripper,
-                "close_gripper": self.close_gripper, "replay_actions": self.replay_actions}
+                "close_gripper": self.close_gripper, "move_joints": self.move_joints,
+                "replay_actions": self.replay_actions}
+
+    def move_joints(self, positions_rad, max_actions: int = 40):
+        """Move the ordered arm joints to absolute radians through a joint backend.
+
+        Order is backend.arm_joint_names in the observation metadata. Each joint
+        target must be within 0.30 rad of its current measured angle. No IK or
+        collision avoidance is provided. Returns reached=False on budget/stop.
+        """
+        if not getattr(getattr(self._env,'capabilities',None),'joint_control',False):
+            raise NotImplementedError('Connect a joint-position backend first')
+        target=np.asarray(positions_rad,dtype=float)
+        current=np.asarray(self._env.get_observation()['robot_joint_pos'],dtype=float)
+        if (target.shape!=current.shape or not np.isfinite(target).all()
+                or np.any(np.abs(target-current)>.30) or type(max_actions) is not int or not 1<=max_actions<=100):
+            raise ValueError('Expected ordered arm joint angles within 0.30 rad and budget 1..100')
+        # Validate the final target before any intermediate trajectory is sent.
+        self._env.joint_position_action(target,self._env.gripper)
+        lease=self._lease('CODE');epoch=self._env.context()['epoch']
+        for _ in range(max_actions):
+            if self._env.ended or self._env.paused or self._env.context()['epoch']!=epoch:
+                return {'reached':False,'stop_reason':'interrupted_or_ended'}
+            current=np.asarray(self._env.get_observation()['robot_joint_pos'],dtype=float)
+            delta=target-current
+            if np.max(np.abs(delta))<=.002:return {'reached':True}
+            action=self._env.joint_position_action(current+np.clip(delta,-.02,.02),self._env.gripper)
+            self._env.apply_native(action,context=self._env.context(),source='CODE',lease=lease)
+        current=np.asarray(self._env.get_observation()['robot_joint_pos'],dtype=float)
+        if np.max(np.abs(target-current))<=.002:return {'reached':True}
+        return {'reached':False,'stop_reason':'action_budget'}
 
     def get_robot_state(self):
-        """Return current EEF pose (XYZ meters + WXYZ quaternion) and joint angles."""
+        """Return measured joint angles and arm_joint_names; EEF pose only if supported.
+
+        robot_joint_pos is in radians in arm_joint_names order. If present,
+        robot_cartesian_pos contains XYZ meters followed by a WXYZ quaternion.
+        """
         obs = self._env.get_observation()
-        return {k: obs[k] for k in ("robot_cartesian_pos", "robot_joint_pos", "gripper_qpos", "context") if k in obs}
+        return {k: obs[k] for k in ("robot_cartesian_pos", "robot_joint_pos", "arm_joint_names", "gripper_qpos", "context") if k in obs}
 
     def run_vla(self, instruction: str, max_actions: int = 20):
         """Delegate a bounded local motion to the connected VLA and return to Python.

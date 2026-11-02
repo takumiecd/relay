@@ -11,7 +11,7 @@ from capx.envs.tasks.base import CodeExecEnvConfig, CodeExecutionEnvBase
 from capx.integrations.base_api import ApiBase, register_api
 from capx.extensions.vla.api import VlaApi
 
-TOOLS = {"get_robot_state", "move_to_pose", "open_gripper", "close_gripper", "run_vla"}
+TOOLS = {"get_robot_state", "move_to_pose", "move_joints", "open_gripper", "close_gripper", "run_vla"}
 
 
 def child_main(connection, code, prompt):

@@ -145,6 +145,12 @@ class RelayEnvironment:
             raise NotImplementedError('This backend does not support Cartesian tools')
         return self.backend.cartesian_delta_action(translation_m, rotation_vector_rad, gripper_command)
 
+    def joint_position_action(self, positions_rad, gripper_command):
+        self._owner()
+        if not self.capabilities.joint_control:
+            raise NotImplementedError('This backend does not support joint-position control')
+        return self.backend.joint_position_action(positions_rad, gripper_command)
+
     def gripper_action(self, command):
         self._owner()
         return self.backend.gripper_action(command)

@@ -1,0 +1,7 @@
+{
+  "action_name": "/relay_reference/follow_joint_trajectory",
+  "state_topic": "/relay_reference/joint_states",
+  "control_freq": 10,
+  "command_timeout": 0.6,
+  "feedback_timeout": 0.4
+}
