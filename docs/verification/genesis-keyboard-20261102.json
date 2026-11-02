@@ -1,0 +1,91 @@
+{
+  "branch": "feat/genesis-backend",
+  "parent_commit": "08484d62f74e985aa58b80e1dc866d9c7791301f",
+  "platform": "macOS Apple Silicon / Python 3.12 / CPU physics / offscreen rasterizer",
+  "versions": {
+    "genesis-world": "1.4.5",
+    "torch": "2.15.0",
+    "numpy": "1.26.4",
+    "scipy": "1.14.1",
+    "quadrants": "1.3.3",
+    "pillow": "11.3.0",
+    "gymnasium": "1.4.0",
+    "opencv-python": "4.10.0.84",
+    "contourpy": "1.3.2",
+    "tifffile": "2024.8.30"
+  },
+  "tests": {
+    "genesis_environment": {
+      "passed": 17,
+      "skipped": 0
+    },
+    "libero_environment_regression": {
+      "passed": 76,
+      "skipped_genesis_physics": 4,
+      "warnings": 15
+    },
+    "javascript": {
+      "passed": 12
+    },
+    "dependency_check": "all installed packages compatible"
+  },
+  "browser_qa": {
+    "session": "output/genesis-keyboard-qa-20261102-111907",
+    "steps": 63,
+    "sources": [
+      "TEST_OPERATOR"
+    ],
+    "keys": [
+      "H",
+      "Space+W",
+      "Esc",
+      "H",
+      "C",
+      "Space",
+      "Esc",
+      "H",
+      "V",
+      "Space",
+      "Esc"
+    ],
+    "first_eef_position_m": [
+      0.4107457101345062,
+      2.9101527616148815e-05,
+      0.5805436372756958
+    ],
+    "last_eef_position_m": [
+      0.4669855833053589,
+      7.525703404098749e-05,
+      0.5645943880081177
+    ],
+    "closed_gripper_positions_m": [
+      1.246714532499027e-06,
+      1.2469629382394487e-06
+    ],
+    "opened_gripper_positions_m": [
+      0.0399978943169117,
+      0.039997898042201996
+    ],
+    "all_actions_have_joint_targets": true,
+    "environment": "real Genesis physics, not kinematic reference",
+    "note": "Browser QA preceded the final PD hold-target refinement; the final implementation passed repeated-deadman physics regression."
+  },
+  "ready_session": "output/genesis-manual-20261102-112900",
+  "ready_url": "http://127.0.0.1:8877/",
+  "checkpoints": false,
+  "state_replay": false,
+  "real_vla_llm_connected": false,
+  "source_sha256": {
+    "relay/backends/genesis.py": "31f29e4125e226c95714371fd6ab7711f9ae003254c7c45e229967c3f081b6d2",
+    "relay/backends/requirements-genesis.txt": "62d2bdf732398199fb07f10c64e96b2facdccaefae7c7d1318cdaf0a83db58e7",
+    "relay/environment.py": "36808bc8c2247b80968b09d583f21b568bfbbd64447cba66fd3e0b5fe67a7b20",
+    "relay/backends/base.py": "7d927e29e7698096f21e0dc3679f2a9e90a76490911f2740880cd37c9c4c1a7b",
+    "relay/backends/loader.py": "0974361d3de851958bb3af92b6a2e3394710fc98e703594a9ca2a0028aa9a826",
+    "capx/extensions/hybrid/server.py": "401e1a3aa7f18053d13b5cfa55067e55ed00b862a2d2b562d67f44d5b038b45c",
+    "capx/extensions/hybrid/console.js": "c0ed4356a4f9b4128ad53aacdeda4fa0fa7424124e896b782f7fa56409f1b2fa",
+    "capx/extensions/hybrid/web.html": "25f96b1ece4e4b776a00b03b0db3e16c8611c28f6017db9f461fbbba16b5b3f0",
+    "capx/extensions/vla/recording.py": "0638f0a0bda214c96ab9aa86444891b056d2ed683a8014360fed0d65739741d9",
+    "tests/test_genesis_backend.py": "c29f581d4e37529b83d30c1b22babb31ef47ba1f657163d3dee3c641aeabb083",
+    "configs/relay/genesis-panda.json": "527aa011023e6767fda725c0daf0c350c3b0b7538378cf86ca1be5a1cf87b328"
+  }
+}

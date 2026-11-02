@@ -1,8 +1,10 @@
 # ROS 2・Gazebo・Genesisの接続位置（提出後の拡張案）
 
-実物理の動作確認はLIBERO／OSC。共通実行とbackendを分離し、外部のPython adapterを読み込む接続口を実装した。
-Genesis・ROS 2・Gazeboの実adapterはまだ追加していない。
-提出版は`pai-final-20261102`、開発は`feat/environment-adapters`で固定する。
+共通実行とbackendを分離し、外部のPython adapterを読み込む接続口を実装した。
+LIBERO／OSCに加え、`feat/genesis-backend`でGenesis Pandaのキーボード操作・記録を追加した。
+Genesisの巻き戻し、ROS 2・Gazeboの実adapterは未実装。
+提出版は`pai-final-20261102`に固定し、共通化はPR #1でmainへ取り込み済み。
+Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
 
 ## LIBERO依存の整理と現在の配置
 
@@ -56,7 +58,7 @@ Genesis・ROS 2・Gazeboの実adapterはまだ追加していない。
 
 LIBEROの`suite_name`・`task_id`を変更する具体例は、[操作ガイド「LIBEROのタスクを変える」](hybrid-console.md#liberoのタスクを変える)を参照。
 
-built-inは`libero`と、数値参照実装の`kinematic`。
+built-inは`libero`・`genesis`と、数値参照実装の`kinematic`。
 外部adapterは`load_backend("your_package.backend:YourBackend", config)`で読み込む。
 factoryはJSON設定をキーワード引数として受け、契約を満たすbackendを返す。
 これはローカルの信頼したPythonコードを読み込む仕組みである。
@@ -91,7 +93,7 @@ flowchart TD
     K[キーボード] --> R
     R --> A[RelayEnvironment + backend契約]
     A --> B[LIBERO + OSC: 現在の実装]
-    A --> G[GenesisのPython API: 構想]
+    A --> G[Genesis Panda: キーボード・記録、巻き戻し未対応]
     A --> N[ROS 2ノード: 構想]
     N --> T[接続先のIK・制御ノード]
     T --> Z[gz_ros2_control + Gazebo: 構想]
@@ -102,7 +104,7 @@ flowchart TD
 
 | 接続先 | 指令と観測の処理 | 検証すること |
 |---|---|---|
-| Genesis | Python APIで観測取得。手先目標からIK・関節位置制御などへ変換 | 座標系・単位・周期・制御器・状態復元 |
+| Genesis | Pandaで手先目標→IK→関節PD制御・画像／指令記録を実装 | 状態復元・別robot／scene・実モデルの接続は次段階 |
 | ROS 2 | topic／action通信で制御ノードへ指令。画像・関節状態・手先姿勢を受信 | 時刻対応・通信遅延・停止・指令の意味と制御周期 |
 | Gazebo | ROS 2経由ならgz_ros2_controlと必要な制御ノードへ接続 | 観測と指令の対応、sim固有の保存・復元 |
 | 実機 | ROS 2対応driverなど、実機の制御口へ接続 | 停止・速度／可動範囲・物理的な再開状態の準備 |

@@ -1,0 +1,7 @@
+{
+  "device": "cpu",
+  "control_freq": 20,
+  "physics_dt": 0.01,
+  "camera_size": 320,
+  "max_steps": 10000
+}

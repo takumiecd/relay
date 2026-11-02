@@ -21,18 +21,20 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 ## 使い方・検証・提出
 
 - [操作画面・起動方法](docs/hybrid-console.md)
+- [Genesis：キーボード操作と記録](docs/genesis.md)
 - [VLA／OSC接続](docs/vla-osc.md)
 - [記録とdatasetの方針](docs/dataset-design.md)
 - [ROS 2・Gazebo・Genesisの接続位置（今後の拡張案）](docs/environment-adapters.md)
 - [PAI最終課題：実装範囲・検証・提出方法](docs/pai-submission.md)
 
-提出・利用の基準は`main`です。実物理の環境対応はLIBERO／OSCのみで、操作UIはキーボード専用です。
+提出・利用の基準は`main`です。操作UIはキーボード専用です。
 提出時の版は[`pai-final-20261102`](https://github.com/takumiecd/relay/tree/pai-final-20261102)で固定しています。
-提出後の共通API分離は`feat/environment-adapters`で進めます。
-このブランチでは外部`module:Factory`のbackend接続、任意のカメラ名・台数、巻き戻し非対応の環境を扱えます。
+共通API分離はPR #1でmainへ取り込み済みです。Genesisの追加は`feat/genesis-backend`で進めます。
+外部`module:Factory`のbackend接続、任意のカメラ名・台数、巻き戻し非対応の環境を扱えます。
 付属の`kinematic`は8次元絶対手先指令を使う数値サンプルで、物理シミュレータではありません。
+このブランチのGenesis backendはPandaのキーボード操作・画像／指令の記録に対応します。巻き戻しと実モデル接続は未対応です。
 実OpenVLAの接続確認と、試験providerによる切替・分岐機能の確認を区別しています。
-ROS 2・Gazebo・Genesis・ゲームパッドは未対応です。
+ROS 2・Gazebo・ゲームパッドは未対応です。
 以下は上流CaP-Xの紹介とクレジットです。上流ベンチマークの結果を本拡張の性能とは扱いません。
 
 ## Upstream CaP-X

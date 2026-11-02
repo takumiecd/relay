@@ -65,6 +65,7 @@ class BackendTransition:
     terminated: bool = False
     truncated: bool = False
     info: dict[str, Any] | None = None
+    diagnostics: dict[str, Any] | None = None  # JSON-serializable executed-controller details.
 
 
 class EnvironmentBackend(CartesianBackend, SimulationClock, Protocol):

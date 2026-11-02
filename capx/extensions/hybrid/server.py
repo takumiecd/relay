@@ -273,7 +273,8 @@ def main():
     parser.add_argument("--vla-port", type=int, default=8896)
     parser.add_argument("--vla-public-url")
     parser.add_argument("--libero-source", default="capx/third_party/LIBERO-PRO")
-    parser.add_argument('--backend', default='libero', help='libero, kinematic, or trusted module:Factory')
+    parser.add_argument('--backend', default='libero', help='libero, genesis, kinematic, or trusted module:Factory')
+    parser.add_argument('--manual-only', action='store_true', help='Keyboard and recording without VLA/LLM connections')
     parser.add_argument('--backend-config', type=Path, help='JSON file of backend factory keyword arguments')
     parser.add_argument("--test-vla", action="store_true")
     parser.add_argument("--test-llm", action="store_true")
@@ -290,6 +291,8 @@ def main():
         parser.error("--llm-url and --llm-model must be specified together")
     if args.test_llm and args.llm_url:
         parser.error("Choose a real LLM endpoint or --test-llm")
+    if args.manual_only and (args.test_vla or args.test_llm or args.llm_url):
+        parser.error('--manual-only cannot be combined with VLA/LLM providers')
     args.output.mkdir(parents=True, exist_ok=False)
     stop = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -299,12 +302,16 @@ def main():
         config = json.loads(args.backend_config.read_text()) if args.backend_config else {}
         if not isinstance(config, dict):
             raise ValueError('Backend config must be a JSON object')
-        if args.backend in {'libero', 'kinematic'}:
+        if args.backend in {'libero', 'genesis', 'kinematic'}:
             config.setdefault('max_steps', 10000)
         if args.backend == 'libero':
             configure_libero(args.libero_source, str(args.output / 'libero-config'))
         env = BackendEnv(load_backend(args.backend, config))
-        if args.test_vla:
+        if (args.restore_session or args.restore_trajectory) and not env.capabilities.state_replay:
+            raise ValueError('This backend does not support restoring recorded sessions/routes')
+        if args.manual_only:
+            predictor = None
+        elif args.test_vla:
             # Owner-thread conversion only. This fixed test action is NOT a model policy.
             predictor = TestVla(action_contract=env.context()['action_contract'],
                                 native_action=env.teleop_action([.12, 0, 0, 0, 0, 0], -1))
