@@ -26,6 +26,7 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [GenesisでVLA・LLM・手動を切り替える](docs/genesis-vla.md)
 - [ROS 2：関節指令・状態受信・記録（参照コントローラ）](docs/ros2.md)
 - [ROS 2：URDFとRVizで関節の動きを見る](docs/ros2-rviz.md)
+- [MoveIt：手先指令をIKで関節指令へ変換する](docs/ros2-moveit.md)
 - [VLA／OSC接続](docs/vla-osc.md)
 - [記録とdatasetの方針](docs/dataset-design.md)
 - [LLMの引き継ぎ・修正・採用経路のデータ出力](docs/intervention-dataset.md)
@@ -48,7 +49,8 @@ LLMはHTTP API経由で接続し、GPU上のモデルや商用APIを差し替え
 実OpenVLAの接続確認と、試験providerによる切替・分岐機能の確認を区別しています。
 `feat/ros2-joint-backend`ではROS 2標準action／JointStateを使う関節操作・記録を追加しています。
 受信したJointStateをURDF／robot_state_publisher経由でRVizへ表示する構成も追加しています。
-付属のROS 2ノードは物理やIKのない参照コントローラです。Gazebo・ROS 2経由の手先操作・ゲームパッドは未対応です。
+`ros2-moveit` backendではMoveItのIKサービスを介した手先操作・記録も追加しています。
+付属controllerは数値補間のみで、MoveIt接続も表示用6軸モデルのIK検証です。Gazebo・物理／衝突・実機・ゲームパッドは未対応です。
 以下は上流CaP-Xの紹介とクレジットです。上流ベンチマークの結果を本拡張の性能とは扱いません。
 
 ## Upstream CaP-X

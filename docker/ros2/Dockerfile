@@ -20,4 +20,14 @@ COPY start-desktop.sh /usr/local/bin/relay-ros2-desktop
 ENV DISPLAY=:1 QT_X11_NO_MITSHM=1 LIBGL_ALWAYS_SOFTWARE=1
 CMD ["bash", "/usr/local/bin/relay-ros2-desktop"]
 
+# Optional MoveIt IK service; existing headless/view images stay unchanged.
+FROM visualization AS moveit
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ros-humble-moveit-ros-move-group ros-humble-moveit-kinematics \
+    ros-humble-moveit-planners-ompl \
+    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ros-humble-moveit-simple-controller-manager \
+    && rm -rf /var/lib/apt/lists/*
+
 FROM runtime AS headless

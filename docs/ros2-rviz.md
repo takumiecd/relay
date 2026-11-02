@@ -108,4 +108,4 @@ docker exec -e RELAY_TEST_ROS2=1 -e RELAY_TEST_ROS2_VIEW=1 \
 ブラウザの描画確認は[検証記録](verification/ros2-rviz-20261102.md)に残す。
 
 RVizは表示だけを担当し、goalを受けたコントローラとは別ノード。VLA／VLMの観測画像は引き続き明示したJointState模式表示で、RVizのスクリーンショットへ置き換えていない。
-URDFはvisualのみの表示用モデルで、接触や慣性を扱う物理モデルではない。MoveItによるIK・手先操作やGazeboでの物理制御は次の段階で、モデル・controllerの構成を別途検証する。
+URDFはvisualのみの表示用モデルで、接触や慣性を扱う物理モデルではない。[MoveItによるIK・手先操作](ros2-moveit.md)は別backendとして追加した。Gazeboでの物理制御や実機向け構成は別途検証する。

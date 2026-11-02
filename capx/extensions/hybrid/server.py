@@ -282,7 +282,7 @@ def main():
     parser.add_argument('--vla-actions', choices=['native', 'world-delta'], default='native',
                         help='Expected policy output convention; WORLD deltas are converted on the owner thread')
     parser.add_argument("--libero-source", default="capx/third_party/LIBERO-PRO")
-    parser.add_argument('--backend', default='libero', help='libero, genesis, kinematic, ros2, or trusted module:Factory')
+    parser.add_argument('--backend', default='libero', help='libero, genesis, kinematic, ros2, ros2-moveit, or trusted module:Factory')
     parser.add_argument('--manual-only', action='store_true', help='Keyboard and recording without VLA/LLM connections')
     parser.add_argument('--no-vla', action='store_true', help='Disable the VLA bridge; allow LLM and keyboard control')
     parser.add_argument('--backend-config', type=Path, help='JSON file of backend factory keyword arguments')

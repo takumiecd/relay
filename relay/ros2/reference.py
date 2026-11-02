@@ -21,9 +21,10 @@ from relay.backends.joints import JointProfile
 
 
 class ReferenceController(Node):
-    def __init__(self, namespace='/relay_reference', result_delay=0.):
+    def __init__(self, namespace='/relay_reference', result_delay=0., arm_positions=None):
         super().__init__('relay_reference_controller')
-        self.profile=JointProfile();self.q=np.r_[np.zeros(6),self.profile.gripper_open_m]
+        self.profile=JointProfile()
+        self.q=self.profile.action(np.zeros(6) if arm_positions is None else arm_positions,-1)
         self.lock=threading.Lock();self.active=False;self.result_delay=result_delay
         self.pub=self.create_publisher(JointState,namespace+'/joint_states',10)
         self.timer=self.create_timer(.02,self.publish_state)
@@ -84,8 +85,9 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--namespace',default='/relay_reference')
     parser.add_argument('--result-delay',type=float,default=0.,help='Test-only delay for deadline/cancel checks')
+    parser.add_argument('--arm-positions',type=float,nargs=6,help='Initial reference joint angles in radians')
     args=parser.parse_args();rclpy.init()
-    node=ReferenceController(args.namespace,args.result_delay)
+    node=ReferenceController(args.namespace,args.result_delay,args.arm_positions)
     executor=MultiThreadedExecutor(num_threads=3);executor.add_node(node)
     print(json.dumps({'event':'ros2_reference_ready','node':node.get_name(),'physics':False}),flush=True)
     try:executor.spin()

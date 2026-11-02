@@ -6,7 +6,7 @@ PR #3で、同じ稼働中CPU scene/reset内のGenesis巻き戻し・分岐を�
 続くLLM・採用経路のコード出力に加え、`feat/genesis-vla`ではWORLD変位を介したVLA接続を追加した。
 [Genesisの三者接続](genesis-vla.md)ではLIBERO用OpenVLAの短い実接続を確認したが、Genesisでのタスク成功評価ではない。
 `feat/ros2-joint-backend`では[ROS 2標準action／JointStateによる関節操作・記録](ros2.md)を追加した。
-付属ノードは数値参照実装で、[URDF／robot_state_publisher／RVizでの表示](ros2-rviz.md)にも対応する。物理／IKはない。Genesisの再起動後の保存セッション復元、Gazebo、ROS 2の手先操作adapterは未実装。
+付属ノードは数値参照実装で、[URDF／robot_state_publisher／RVizでの表示](ros2-rviz.md)に対応する。[MoveItのIKによる手先操作](ros2-moveit.md)も`ros2-moveit` backendで追加した。物理・衝突・実機・Gazebo、Genesisの再起動後の保存セッション復元は未実装。
 提出版は`pai-final-20261102`に固定し、共通化はPR #1でmainへ取り込み済み。
 Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
 
@@ -62,7 +62,7 @@ Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
 
 LIBEROの`suite_name`・`task_id`を変更する具体例は、[操作ガイド「LIBEROのタスクを変える」](hybrid-console.md#liberoのタスクを変える)を参照。
 
-built-inは`libero`・`genesis`・`ros2`と、数値参照実装の`kinematic`。
+built-inは`libero`・`genesis`・`ros2`・`ros2-moveit`と、数値参照実装の`kinematic`。
 外部adapterは`load_backend("your_package.backend:YourBackend", config)`で読み込む。
 factoryはJSON設定をキーワード引数として受け、契約を満たすbackendを返す。
 これはローカルの信頼したPythonコードを読み込む仕組みである。
@@ -99,7 +99,7 @@ flowchart TD
     A --> B[LIBERO + OSC: 現在の実装]
     A --> G[Genesis Panda: キーボード・記録、CPUの同一scene内の巻き戻し]
     A --> N[ROS 2: 関節trajectory + JointState参照接続]
-    N --> T[接続先のIK・物理制御ノード: 今後]
+    N --> T[MoveIt IK参照接続 / 物理制御は今後]
     T --> Z[gz_ros2_control + Gazebo: 構想]
     T --> H[対応driver + 実機: 構想]
 ```
@@ -109,7 +109,7 @@ flowchart TD
 | 接続先 | 指令と観測の処理 | 検証すること |
 |---|---|---|
 | Genesis | PandaでIK→関節PD制御・画像／指令記録・CPU同一scene内の状態復元と分岐 | WORLD変位で実VLA・LLMとの短い接続を確認。再起動後の復元・別robot／scene・policy適応評価は次段階 |
-| ROS 2 | FollowJointTrajectory＋JointStateによる関節操作・記録。URDF／TF／RVizで表示。参照ノードは数値補間のみ | 実DDSで操作・記録・timeoutと、測定角度からのTFを検証。物理・画像topic・IKは次段階 |
+| ROS 2 | FollowJointTrajectory＋JointStateによる関節操作・記録。URDF／TF／RViz表示。MoveIt IKによる手先操作。参照ノードは数値補間のみ | 実DDSの操作・記録・TF・期限と、実MoveItのIK／FKを検証。物理・衝突・画像topic・実機は次段階 |
 | Gazebo | ROS 2経由ならgz_ros2_controlと必要な制御ノードへ接続 | 観測と指令の対応、sim固有の保存・復元 |
 | 実機 | ROS 2対応driverなど、実機の制御口へ接続 | 停止・速度／可動範囲・物理的な再開状態の準備 |
 

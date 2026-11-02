@@ -18,10 +18,13 @@ def load_backend(name, config=None):
     elif name == 'ros2':
         from .ros2 import Ros2JointBackend
         factory = Ros2JointBackend
+    elif name == 'ros2-moveit':
+        from .ros2_moveit import Ros2MoveItBackend
+        factory = Ros2MoveItBackend
     else:
         module, separator, symbol = name.partition(':')
         if not separator or not module or not symbol:
-            raise ValueError('Expected libero, genesis, kinematic, ros2, or a trusted module:Factory')
+            raise ValueError('Expected libero, genesis, kinematic, ros2, ros2-moveit, or a trusted module:Factory')
         factory = getattr(import_module(module), symbol)
     backend = factory(**config)
     try:

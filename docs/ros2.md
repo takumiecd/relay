@@ -96,7 +96,7 @@ ros2 interface show control_msgs/action/FollowJointTrajectory
 
 ## 次の段階
 
-[表示用URDFとrobot_state_publisher／RViz](ros2-rviz.md)まで実装しました。手先操作にはMoveIt Servo／IKを行う別adapter、Gazeboでの物理動作にはモデル・ros2_control controller・state publisherの構成が必要です。Genesisは既存の直接backendで動き、このROS 2接続を必須にしません。共通の権限・記録・コード実行層は維持します。
+[表示用URDFとRViz](ros2-rviz.md)、[MoveItのIKサービスによる手先操作](ros2-moveit.md)を実装しました。元の`ros2` backendは関節操作のまま維持し、手先操作は`ros2-moveit`を選びます。MoveIt Servo／経路計画、Gazeboでの物理動作は別途検証が必要です。Genesisは既存の直接backendで動き、このROS 2接続を必須にしません。
 
 ## テスト
 

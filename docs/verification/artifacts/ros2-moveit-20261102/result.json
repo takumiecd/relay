@@ -1,0 +1,69 @@
+{
+  "test_only": true,
+  "base_commit": "b5edf635ac4ef74c7ae07f134fe7d3d93a395eb9",
+  "backend": "ros2.moveit_ik_reference",
+  "ros_distro": "humble",
+  "architecture": "arm64",
+  "domain_id": 76,
+  "moveit_version": "2.5.10",
+  "solver": "kdl_kinematics_plugin/KDLKinematicsPlugin",
+  "ik_service": "/relay_reference/compute_ik",
+  "physics": false,
+  "collision_checking": false,
+  "moveit_trajectory_execution": false,
+  "native_action_units": [
+    "rad",
+    "rad",
+    "rad",
+    "rad",
+    "rad",
+    "rad",
+    "m"
+  ],
+  "eef_pose_origin": "reference URDF FK from measured JointState",
+  "tests": {
+    "ros2_joint_view_moveit": "20 passed on final code with bounded joint-command fixture positioning",
+    "host_backend_policy_llm": "59 passed, 7 opt-in skips",
+    "ros2_junit_xml": "output/ros2-moveit-20261102/ros2-moveit-tests.xml",
+    "repeated_test_fix": "Cumulative +Z motions exhausted workspace; each test now repositions to ready through bounded joint commands, saved separately as joint-setup.json. No snapshot/reset capability was added."
+  },
+  "browser_verification": {
+    "program": "s=get_robot_state(); p=s[\"robot_cartesian_pos\"][:3]; RESULT=move_to_pose([p[0],p[1],p[2]+.03], max_actions=30)",
+    "keyboard": "speed 100%, H -> Space+W (1.8s) -> Escape",
+    "steps": 18,
+    "sources": {
+      "CODE": 4,
+      "TEST_OPERATOR": 14
+    },
+    "outcomes": {
+      "succeeded": 18
+    },
+    "eef_before_m": [
+      0.49182441685667105,
+      0.0,
+      0.5729944511350543
+    ],
+    "eef_after_code_m": [
+      0.49182440637459657,
+      0.0,
+      0.6029944374899674
+    ],
+    "eef_after_keyboard_m": [
+      0.5338242716107606,
+      0.0,
+      0.6029943232906476
+    ],
+    "all_ik_diagnostics": true,
+    "all_goal_ids": true,
+    "steps_jsonl_sha256": "7aaf53d4d734315b1a775d58aa78fa1d2c0c74fbd3b765f5efa2ab2481c65baa",
+    "rviz_global_status": "Ok",
+    "rviz_before_sha256": "2d134301bf9270632459c09526174225a41e001784a56d44531ba0c4a85de3b5",
+    "rviz_after_sha256": "6b2d7819f967800731a7f8b3884ed629b887f9901d7f44a7365948eaad58febc"
+  },
+  "limitations": [
+    "Reference six-axis model only; checked URDF/SRDF/solver handshake",
+    "No physics, contact, collision avoidance, MoveIt Servo or motion planning",
+    "No reset, rewind, hardware or trained VLA/LLM ROS evaluation",
+    "RViz image is not substituted for a policy scene camera"
+  ]
+}
