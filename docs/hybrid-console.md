@@ -1,8 +1,8 @@
 # VLA・LLMコード・人間を同じ環境で切り替える
 
-CaP-Xを拡張したRelayの機能。提出版は`pai-final-20261102`、共通化の開発branchは`feat/environment-adapters`。
+CaP-Xを拡張したRelayの機能。提出版は`pai-final-20261102`、共通化はPR #1でmainへ取り込み済み。
 [既存のVLA/OSC起動手順](vla-osc.md)と同じsim専用venv・LIBERO-PRO submoduleを使う。
-ROS 2は使わず、一つのMuJoCo環境と共通の実行済み記録を共有する。
+以下の既定起動はLIBERO／MuJoCo環境を使う。Genesisは[専用ガイド](genesis.md)を参照。
 
 ## 起動
 

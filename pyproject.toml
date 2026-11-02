@@ -197,6 +197,7 @@ extend-exclude = [
 
 
 [tool.setuptools.package-data]
+"relay.backends" = ["*.txt"]
 "capx.extensions.hybrid" = ["*.html", "*.css", "*.js", "*.mjs"]
 "capx.extensions.vla" = ["*.txt"]
 "capx.envs" = [

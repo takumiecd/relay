@@ -105,6 +105,7 @@ def export_views(directory):
                     'action_contract': row['context']['action_contract'], 'source': row['source'],
                     'policy': policy if row['source'] in {'VLA','TEST_VLA'} else None,
                     'provenance': row.get('provenance', {}),
+                    'backend_diagnostics': row.get('backend_diagnostics', {}),
                     'reward': row.get('reward'), 'terminated': row.get('terminated'),
                     'truncated': row.get('truncated'), 'training_admitted': False})
     with (root / 'vla-candidates.jsonl').open('w') as stream:

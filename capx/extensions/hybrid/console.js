@@ -243,6 +243,7 @@ $("history-branch").onchange = () => {
 $("resume-here").onclick = () => { focusWorkspace(); mode("HUMAN"); };
 function renderHistory(busy) {
   const history = state.timeline;
+  $("history-panel").hidden = state.capabilities?.checkpoints === false;
   const unavailable = !history || busy;
   for (const id of ["history-step", "step-number", "history-branch", "history-head"])
     $(id).disabled = unavailable;
@@ -396,7 +397,10 @@ function render() {
       (button.dataset.mode === "VLA" && !state.vla_ready) ||
       (button.dataset.mode === "LLM" && !state.llm_ready);
   }
-  $("new-trial").disabled = $("next-trial").disabled = busy || state.epoch < 0;
+  $("new-trial").disabled = $("next-trial").disabled = busy || state.epoch < 0 || state.capabilities?.reset === false;
+  $("recording-note-text").textContent = state.capabilities?.checkpoints === false
+    ? "操作と画像を記録します。この環境は巻き戻し未対応です。"
+    : "すべての経路を残しながら操作できます。";
   $("run-code").disabled = busy || !!state.ended;
   $("control-focus").disabled = !!state.ended || busy;
   $("stop").disabled = false;

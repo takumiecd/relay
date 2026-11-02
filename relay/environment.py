@@ -237,6 +237,7 @@ class RelayEnvironment:
                 eef_after_m=np.asarray(after)[:3].tolist() if after is not None else None,
                 task_completed=success, environment_done=bool(transition.terminated),
                 reward=float(transition.reward), provenance=provenance or {},
+                backend_diagnostics=copy.deepcopy(transition.diagnostics or {}),
                 terminated=terminated, truncated=truncated))
             if self.recorder is not None:
                 self.recorder.record_step(self, self.trace[-1])

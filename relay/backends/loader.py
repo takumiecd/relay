@@ -12,10 +12,13 @@ def load_backend(name, config=None):
     elif name == 'kinematic':
         from .kinematic import KinematicBackend
         factory = KinematicBackend
+    elif name == 'genesis':
+        from .genesis import GenesisBackend
+        factory = GenesisBackend
     else:
         module, separator, symbol = name.partition(':')
         if not separator or not module or not symbol:
-            raise ValueError('Expected libero, kinematic, or a trusted module:Factory')
+            raise ValueError('Expected libero, genesis, kinematic, or a trusted module:Factory')
         factory = getattr(import_module(module), symbol)
     backend = factory(**config)
     try:

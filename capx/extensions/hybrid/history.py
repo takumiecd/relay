@@ -163,6 +163,7 @@ class Timeline:
                 observation=relative(row["observation"]), next_observation=relative(row["next_observation"]),
                 action=row["native_action"], action_contract=row["context"]["action_contract"],
                 source=row["source"], provenance=row.get("provenance", {}), program=program,
+                backend_diagnostics=row.get('backend_diagnostics', {}),
                 policy=policy_cache[root] if row["source"] in {"VLA", "TEST_VLA"} else None,
                 reward=row.get("reward"), terminated=row.get("terminated"), truncated=row.get("truncated"),
                 selected_for_dataset=True, training_admitted=False,

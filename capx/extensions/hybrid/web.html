@@ -89,7 +89,7 @@
 p = s['robot_cartesian_pos'][:3]
 RESULT = move_to_pose([p[0], p[1], p[2] + 0.02])</textarea><button id="run-code" class="button primary">このコードを実行 <span aria-hidden="true">↗</span></button><p class="small">入力したコードとLLM生成コードは区別して記録します。</p></details>
         <details class="panel help-panel"><summary><span>操作ガイド</span><span class="details-plus" aria-hidden="true">＋</span></summary><p>Hで手動操作へ。Spaceを押している間は静止中もstepが進みます。Cで閉じ、Vで開きます。Escで停止します。</p><p>W/S ±X、A/D ±Y、R/F ±Z。カメラを変えても操作の座標系は変わりません。</p></details>
-        <div class="recording-note"><i></i>すべての経路を残しながら操作できます。</div>
+        <div class="recording-note"><i></i><span id="recording-note-text">すべての経路を残しながら操作できます。</span></div>
       </aside>
     </main>
   </body>
