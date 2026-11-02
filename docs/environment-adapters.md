@@ -1,4 +1,4 @@
-# ROS 2・Gazebo・Genesisの接続位置（提出後の拡張案）
+# 環境backendの対応状況と接続位置
 
 共通実行とbackendを分離し、外部のPython adapterを読み込む接続口を実装した。
 LIBERO／OSCに加え、PR #2でGenesis Pandaのキーボード操作・記録を追加した。
@@ -7,7 +7,9 @@ PR #3で、同じ稼働中CPU scene/reset内のGenesis巻き戻し・分岐を�
 [Genesisの三者接続](genesis-vla.md)ではLIBERO用OpenVLAの短い実接続を確認したが、Genesisでのタスク成功評価ではない。
 PR #7で[ROS 2標準action／JointStateによる関節操作・記録](ros2.md)を追加した。
 付属ノードは数値参照実装で、[URDF／robot_state_publisher／RVizでの表示](ros2-rviz.md)に対応する。[MoveItのIKによる手先操作](ros2-moveit.md)も`ros2-moveit` backendで追加した。物理・衝突・実機・Gazebo、Genesisの再起動後の保存セッション復元は未実装。
-提出版は`pai-final-20261102`に固定し、共通化はPR #1でmainへ取り込み済み。
+初期提出版は`pai-final-20261102`に保持し、今回の把持修正デモ版は`pai-grasp-repair-20261103`で固定する。
+Runtime・policy接続・UIは`relay/`へ分離し、CaP-X実行器は任意の連携アダプタとして扱う。
+追加する環境や実機、着手順序は未決定。以下の未対応接続は実装候補であり、決定済みの開発計画ではない。
 Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
 
 ## LIBERO依存の整理と現在の配置
@@ -22,14 +24,16 @@ Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。
 | 時計・診断／再実行用状態ベクトル | 各backend | `simulation_time()`・`physics_state()` |
 | 物理・制御器・乱数・描画の復元 | 各backend | optional `capture_checkpoint()`・`restore_checkpoint()` |
 | 数値／JSONのcheckpoint保存形式 | `relay/checkpoints.py` | backend固有のpayloadをpickleなしで保存 |
-| CaP-Xコード実行・API登録 | `capx/extensions/vla/api.py` | 共通環境をCaP-X実行器につなぐ |
-| 制御主体の切替・分岐図・経路採用・Web配信 | `capx/extensions/hybrid/` | 共通環境を利用し、LIBEROのhandleを参照しない |
+| 共通robot tool | `relay/runtime/tools.py` | 実行器からのtool呼び出しを環境契約へ委譲 |
+| CaP-X実行器との連携 | `relay/integrations/capx.py` | 選択時にだけCaP-Xを読み込む任意アダプタ |
+| 制御主体の切替・分岐図・経路採用・Web配信 | `relay/runtime/`・`relay/server.py`・`relay/web/` | 共通環境を利用し、LIBEROのhandleを参照しない |
 | LIBERO生成・初期化・OSC・画像向き・MuJoCo状態 | `relay/backends/libero.py` | `LiberoBackend`だけに集約 |
 
 `capx/extensions/vla/env.py`には既存呼出し用の`OscLiberoEnv`と、CaP-X用の`BackendEnv`を残す。
 古い診断コードの`env.handle`等も互換用に残すが、新しい共通処理からは使わない。
 上流CaP-Xの既存シミュレータ実装やOpenVLA固有の画像前処理まで移動したものではない。
-切替・記録・UIのモジュールもまだCaP-X拡張内にあり、独立パッケージ化は未完了。
+切替・記録・UIはCaP-Xなしで利用できるRuntimeとして分離済み。
+`capx/extensions/hybrid/`等には互換入口を残す。配布手順と境界は[Runtimeガイド](runtime.md)を参照。
 
 ## backendの契約
 
@@ -118,7 +122,7 @@ ROS 2はシミュレータではなく、起動したノード間の通信・制
 VLAのactionを関節指令へそのまま流すのではなく、指令の座標系・単位・制御の意味を合わせる。
 また、APIの接続ができても、学習済みVLAが別環境へ汎化するかは別途評価する。
 
-共通APIを通して接続先を一つ追加 → キーボードで確認 → VLA・コードを接続 → 状態復元を検証、の順で進める。
+新しい接続先を実装する場合は、キーボード・観測・指令の意味を確認し、VLA／コード接続と状態復元を個別に検証する。
 実機では物体も含む過去の状態を瞬時に復元できないため、ログの分岐と物理的な再開準備を分ける。
 
 ## 共通backend分離時の検証（PR #1、2026-11-02）

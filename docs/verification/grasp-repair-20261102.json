@@ -1,0 +1,54 @@
+{
+  "steps": 106,
+  "branch": "0003",
+  "every_replayed_physics_state_exact": true,
+  "state_shape": [
+    92
+  ],
+  "source_counts": {
+    "VLA": 68,
+    "TEST_OPERATOR": 38
+  },
+  "final_reward": 1.0,
+  "final_task_completed": true,
+  "guard_1mm_pass": true,
+  "refresh_success_differences": [],
+  "training_admitted": false,
+  "schema": "relay.local-grasp-repair-verification.v1",
+  "model": "openvla/openvla-7b-finetuned-libero-spatial",
+  "model_revision": "962318cec55ac10993ff0f5f43eda9a270b4c873",
+  "code_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+  "torch": "2.2.2+cu121",
+  "suite": "libero_spatial",
+  "task_id": 0,
+  "initial_index": 41,
+  "fork_step": 38,
+  "baseline": {
+    "screened_steps": 180,
+    "fresh_steps": 179,
+    "reward": 0.0,
+    "goal": false,
+    "both_trajectories_exact": true,
+    "target_contact_steps": 0
+  },
+  "local_correction": {
+    "steps": 38,
+    "actor": "agent_state_assisted_keyboard_API",
+    "not_human_demonstration": true,
+    "target_lift_after_m": 0.04355110646822602
+  },
+  "after_return": {
+    "vla_steps": 30,
+    "target_translation_m": 0.13710086527534956
+  },
+  "goal_scope": "LIBERO predicate at plate contact; release and subsequent stability not independently verified",
+  "video": {
+    "file": "Relay_local_grasp_repair.mp4",
+    "seconds": 63.0,
+    "sha256": "8678545284ebe4a6c962ac74538de1a303acd4b05ed392eac5c0435e90c949e3"
+  },
+  "gpu_job": "l4job-55e44490b3e1439fa9a05132ad615c56",
+  "prediction_count": 209,
+  "runtime_base_commit": "7142ab4292d262b399bcd82f7f6f050a08db10f5",
+  "experiment_source_note": "Runtime base commit plus archived, then-uncommitted experiment scripts under source/."
+}

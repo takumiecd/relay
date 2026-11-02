@@ -1,0 +1,8 @@
+{
+  "libero_source": "capx/third_party/LIBERO-PRO",
+  "config_dir": ".local/grasp-demo-libero-config",
+  "task_id": 0,
+  "initial_index": 41,
+  "camera_size": 256,
+  "max_steps": 300
+}

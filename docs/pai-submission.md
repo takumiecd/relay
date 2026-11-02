@@ -3,7 +3,39 @@
 作品名：Relay - 自律操作の「ここだけ」を直し、経路を残す。
 OmniCampusの提出名：takumiecd。
 
-## 締切延長後の改良版
+## 今回の提出版：把持修正デモ（デモ2026-11-02／資料2026-11-03改訂）
+
+今回採用するのは、公開OpenVLAの把持ミスへ局所的に介入してVLAへ返す63秒の動画。
+LIBERO Spatial task0/init41で、VLA単独は探索時180stepまでgoalなし。
+step38へ戻って代理キー操作38stepで把持を修正し、VLAの再開後30stepでgoal判定に到達した。
+採用経路は106step（VLA68、TEST_OPERATOR38）。全106stepの92要素の物理状態は独立再実行で完全一致した。
+
+操作はエージェントが位置の数値情報も参考にして行い、人間のテレオペ実演とは区別する。
+LIBERO goal判定時点を終点とし、グリッパー解放後の安定性・成功率向上・学習効果は未検証。
+実行記録と制約は[把持修正の確認記録](verification/grasp-screen-20261102.md)、
+数値は[検証JSON](verification/grasp-repair-20261102.json)を参照。
+
+PDFは現在の共通Runtime・ブラウザ／CLI・任意のCaP-Xコード実行器という構成へ更新した。
+Genesisの実LLM接続とROS 2／MoveIt／RVizの数値参照版は、別試験として記載している。
+今回の63秒動画でLLMコードを実行した、またはROS 2やGenesisでも同じ把持を達成したという主張ではない。
+PDFでは「今回の到達点と残る検証」として範囲を記載し、未決定の環境拡張や実機への着手順序を開発計画とは扱わない。
+mainへ統合した提出版を`pai-grasp-repair-20261103`で固定し、以前の提出・参照タグも保持する。
+
+```bash
+python scripts/build_pai_grasp_submission.py
+```
+
+- 新PDF：`output/pdf/grasp-repair/説明資料_PAI最終課題_takumiecd.pdf`（5ページ）。
+- 提出セット：`output/submission-grasp-repair-takumiecd/`。
+- 同梱動画：`PAI最終課題_takumiecd.mp4`（63秒、1920×1080、H.264）。
+- YouTubeタイトル：`PAI最終課題_takumiecd`。概要欄と提出手順も同梱する。
+- PDF内の固定commitリンクから、この版のコードを参照できるよう保存する。
+
+ビルドにはローカルの実記録と独立再実行の検証結果、reportlab・Pillow・pypdf・ffprobeが必要。
+素材と動画のhash、採用範囲、操作の出所を検査してから生成する。
+以前のPDF・動画・提出タグを保持する。ファイルの準備とYouTube／OmniCampusへの送信は別操作。
+
+## 以前の改良版：Genesis・ROS参照デモ
 
 利用者から最終課題の締切延長が伝えられたため、2026-11-02に資料を更新した。
 新しい締切の時刻は未確認。元の提出タグ`pai-final-20261102`とPDF・動画は保持する。
