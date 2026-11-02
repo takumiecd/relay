@@ -37,8 +37,9 @@ SHA256は`a4432dbdd07617ffaf9d9434f48a2f30e912ba4df48c123ef64f76fc5cfc049f`。
 - PDF：`説明資料_PAI最終課題_takumiecd.pdf`。
 - 動画タイトル：`PAI最終課題_takumiecd`。1〜3分のMP4をYouTubeへアップロードし、URLを提出する。
 - YouTubeは限定公開以上。「子ども向け」「年齢制限」はいいえ。プレミア公開は使わない。
-- GitHub：<https://github.com/takumiecd/cap-x/tree/codex/vla-integration>。
-  公開設定はPUBLICを確認。defaultのmainは上流なので、提出時は追加実装があるブランチURLを指定する。
+- GitHub：<https://github.com/takumiecd/relay>。
+  公開設定はPUBLIC。mainへ追加実装を統合し、提出時はリポジトリのトップURLを指定する。
+  このリポジトリはCaP-Xを拡張したforkであり、独立した環境共通基盤への分離は今後の作業。
 - 氏名・所属・メールアドレスは掲載しない。OmniCampusアカウント名のみ使用する。
 - 課題PDF記載の締切：2026-11-02 AM10:00。提出受付の状態は別途OmniCampusで確認する。
 

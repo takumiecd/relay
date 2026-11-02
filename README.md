@@ -1,17 +1,35 @@
+# Relay
 
+VLA・コード・キーボード操作を切り替え、途中へ戻って修正した経路を残す、ロボット操作データ収集の試作です。
 
+**現在の実装は[CaP-X](https://github.com/capgym/cap-x)を拡張したforkです。**
+CaP-Xのコード実行器とLIBERO／MuJoCo／robosuite OSCを利用しています。
+複数シミュレータやROS 2に接続する独立した共通基盤への分離は今後の開発範囲です。
 
-# CaP-X
+## 今回追加した機能
 
-This fork extends [capgym/cap-x](https://github.com/capgym/cap-x) with
-[VLA adapters over LIBERO OSC (Japanese)](docs/vla-osc.md).
-Development branch: `codex/vla-integration`.
-[Hybrid console: VLA / code / human switching (Japanese)](docs/hybrid-console.md).
-Goal: [collect aligned VLA / code / human trajectories](docs/dataset-design.md).
-This extension is under development and is separate from the upstream benchmark results.
+- VLA共通adapterと、OpenVLAを使った実モデル接続。
+- VLA・コード・キーボードの制御主体の切替、停止、遅延した指令の無効化。
+- 制御器・グリッパーを含むcheckpointと、途中からの修正・分岐。
+- 分岐図、採用する経路の固定、観測・操作・出所をそろえた学習候補の書き出し。
 
-[PAI final project: scope, evidence, and submission guide (Japanese)](docs/pai-submission.md).
-The console uses keyboard input; ROS 2 and gamepad support are outside this submission.
+追加実装は`capx/extensions/vla/`と`capx/extensions/hybrid/`にあります。
+CaP-X本体にも依存読込・API登録・実行器の小さな変更を加えています。
+事前学習済みモデル、物理エンジン、既存のOSCを新規開発した作品ではありません。
+
+## 使い方・検証・提出
+
+- [操作画面・起動方法](docs/hybrid-console.md)
+- [VLA／OSC接続](docs/vla-osc.md)
+- [記録とdatasetの方針](docs/dataset-design.md)
+- [PAI最終課題：実装範囲・検証・提出方法](docs/pai-submission.md)
+
+提出・利用の基準は`main`です。現在の環境対応はLIBERO／OSCのみで、操作UIはキーボード専用です。
+実OpenVLAの接続確認と、試験providerによる切替・分岐機能の確認を区別しています。
+ROS 2・Gazebo・Genesis・ゲームパッドは未対応です。
+以下は上流CaP-Xの紹介とクレジットです。上流ベンチマークの結果を本拡張の性能とは扱いません。
+
+## Upstream CaP-X
 
 ### A Framework for Benchmarking and Improving Coding Agents for Robot Manipulation
 

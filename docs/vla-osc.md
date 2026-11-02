@@ -41,9 +41,9 @@ HTTP threadやGPU workerは物理を進めず、作成threadだけがstep/観測
 標準のAPI/task検索・一覧取得時には従来の登録を読み込む。
 動的なAPI再登録ではfactory cacheも無効化し、別taskへ古いpolicy接続を流用しない。
 
-2026-11-02にGitHub fork [takumiecd/cap-x](https://github.com/takumiecd/cap-x)を作成した。
-開発branchは`codex/vla-integration`。`origin`は自分のfork、`upstream`は`capgym/cap-x`。
-forkの`main`は上流を保持し、追加実装は開発branchで管理する。
+2026-11-02にCaP-Xのforkで開発し、提出前に[takumiecd/relay](https://github.com/takumiecd/relay)へ改名した。
+追加実装を`main`へ統合し、`origin`は自分のfork、`upstream`は`capgym/cap-x`を参照する。
+上流の履歴とクレジットを保持する。環境に依存しない独立したRelayへの分離は今後の開発範囲。
 本実装には小さなcore変更も含むため、「上流を全く変更していないplugin」とは扱わない。
 
 ## VLA共通部分とモデル固有部分

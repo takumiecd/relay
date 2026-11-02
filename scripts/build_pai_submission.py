@@ -22,7 +22,7 @@ from reportlab.lib.utils import ImageReader
 ROOT = Path(__file__).resolve().parents[1]
 FONT = Path('/System/Library/Fonts/Supplemental/Arial Unicode.ttf')
 BG, INK, BLUE, MUTED = '#f2f5fa', '#20344c', '#366bc0', '#64758b'
-REPO = 'https://github.com/takumiecd/cap-x/tree/codex/vla-integration'
+REPO = 'https://github.com/takumiecd/relay'
 
 
 def verify_sources(output):
@@ -229,6 +229,10 @@ def main():
     pdf=args.pdf_output/f'説明資料_PAI最終課題_{args.account}.pdf'
     create_report(pdf,output,args.account,info,commit)
     result=dict(pdf=str(pdf),code_commit=commit,github_url=REPO,training_admitted=False)
+    if args.no_video and (output/'deliverables.json').exists():
+        previous=json.loads((output/'deliverables.json').read_text())
+        for key in ('video','video_seconds'):
+            if key in previous:result[key]=previous[key]
     if not args.no_video:
         video,duration=create_video(output,args.account)
         result.update(video=str(video),video_seconds=duration)
