@@ -11,7 +11,7 @@ from pathlib import Path
 import uuid
 
 from relay.checkpoints import load_checkpoint, save_checkpoint
-from capx.extensions.vla.recording import TrajectoryRecorder, export_views, write_json
+from capx.extensions.vla.recording import TrajectoryRecorder, export_views, selected_program_views, write_json
 
 
 class Timeline:
@@ -168,7 +168,10 @@ class Timeline:
                 reward=row.get("reward"), terminated=row.get("terminated"), truncated=row.get("truncated"),
                 selected_for_dataset=True, training_admitted=False,
             ))
-        for filename, rows in (("route.jsonl", route), ("vla-candidates.jsonl", candidates)):
+        code_candidates, program_coverage = selected_program_views(lineage, self.root, selection_id)
+        for filename, rows in (("route.jsonl", route), ("vla-candidates.jsonl", candidates),
+                               ('vlm-code-candidates.jsonl', code_candidates),
+                               ('program-coverage.jsonl', program_coverage)):
             with (directory / filename).open("x") as stream:
                 for row in rows:
                     stream.write(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n")
@@ -180,6 +183,11 @@ class Timeline:
             route_sha256=hashlib.sha256((directory / "route.jsonl").read_bytes()).hexdigest(),
             route=os.path.relpath(directory / "route.jsonl", self.root),
             candidates=os.path.relpath(directory / "vla-candidates.jsonl", self.root),
+            code_candidates=os.path.relpath(directory / 'vlm-code-candidates.jsonl', self.root),
+            code_candidates_sha256=hashlib.sha256((directory/'vlm-code-candidates.jsonl').read_bytes()).hexdigest(),
+            program_coverage=os.path.relpath(directory / 'program-coverage.jsonl', self.root),
+            program_coverage_sha256=hashlib.sha256((directory/'program-coverage.jsonl').read_bytes()).hexdigest(),
+            code_candidate_count=len(code_candidates), excluded_program_count=sum(not r['code_candidate_exported'] for r in program_coverage),
             selection=os.path.relpath(directory / "selection.json", self.root),
             paths_relative_to="trial_root", selected_for_dataset=True,
             training_admitted=False, quality_review_required=True,

@@ -270,7 +270,8 @@ function renderHistory(busy) {
   const adopted = history.adopted;
   const adoptedBranch = adopted && history.branches.find((branch) => branch.id === adopted.branch);
   $("adopted-route").textContent = adopted
-    ? `${branchName(adoptedBranch)} · step ${adopted.end_step}までを採用済み`
+    ? `${branchName(adoptedBranch)} · step ${adopted.end_step}までを採用済み` +
+      (Number.isInteger(adopted.code_candidate_count) ? ` · コード候補 ${adopted.code_candidate_count}件` : "")
     : "まだ経路を採用していません";
   $("adopted-route").classList.toggle("selected", !!adopted);
   const sameSelection = adopted?.branch === history.branch && adopted?.end_step === history.head;

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import time
 
@@ -169,3 +170,73 @@ def read_lineage(directory, _seen=None):
             raise ValueError('Invalid parent trajectory step')
         prefix = parent[:cut]
     return prefix + local
+
+
+def selected_program_views(lineage, trial_root, selection_id):
+    """Export whole executed programs only; audit interrupted/cut executions separately.
+
+    Paths are relative to trial_root, including inherited programs on parent branches.
+    Program completion is execution evidence, not semantic success or training approval.
+    """
+    trial_root = Path(trial_root)
+    groups, original = {}, {}
+    for step, (root, row) in enumerate(lineage):
+        program_id = row.get('provenance', {}).get('program_id')
+        if program_id:
+            groups.setdefault((root, program_id), []).append((step, row))
+    candidates, coverage = [], []
+    for (root, program_id), selected in groups.items():
+        if root not in original:
+            original[root] = {}
+            for line in (root/'steps.jsonl').read_text().splitlines():
+                row = json.loads(line)
+                key = row.get('provenance', {}).get('program_id')
+                if key:
+                    original[root].setdefault(key, []).append(row['timestep'])
+        recorded = original[root].get(program_id, [])
+        selected_steps = [row['timestep'] for _, row in selected]
+        complete = bool(recorded) and selected_steps == recorded
+        directory = root/'programs'/program_id
+        paths = {name: os.path.relpath(directory/name, trial_root)
+                 for name in ('code.py', 'metadata.json', 'result.json')
+                 if (directory/name).is_file()}
+        metadata = json.loads((directory/'metadata.json').read_text()) if 'metadata.json' in paths else {}
+        result = json.loads((directory/'result.json').read_text()) if 'result.json' in paths else {}
+        reasons = []
+        if len(paths) != 3:
+            reasons.append('missing_program_artifacts')
+        if not complete:
+            reasons.append('partial_program_selected')
+        if result.get('reason') != 'program_completed':
+            reasons.append('execution_not_completed')
+        if result.get('applied_actions') != len(recorded):
+            reasons.append('action_count_mismatch')
+        observation_path = metadata.get('observation')
+        if not observation_path or not (root/observation_path).is_file():
+            reasons.append('missing_start_observation')
+        hashes = {name: hashlib.sha256((directory/name).read_bytes()).hexdigest() for name in paths}
+        audit = dict(program_id=program_id, selection_id=selection_id,
+            trajectory=os.path.relpath(root, trial_root), instruction=metadata.get('instruction'),
+            generator=metadata.get('generator'), model=metadata.get('model'),
+            selected_steps=[step for step, _ in selected], original_timesteps=selected_steps,
+            recorded_actions=len(recorded), complete_execution_selected=complete,
+            execution_result=result.get('reason'), artifacts=paths, artifact_sha256=hashes,
+            code_candidate_exported=not reasons, exclusion_reasons=reasons,
+            selected_for_dataset=True, training_admitted=False, quality_review_required=True)
+        coverage.append(audit)
+        if reasons:
+            continue
+        observation = json.loads((root/observation_path).read_text())
+        candidates.append(dict(program_id=program_id, episode_id=f'selection:{selection_id}',
+            instruction=metadata.get('instruction', selected[0][1]['instruction']),
+            observation=os.path.relpath(root/observation_path, trial_root),
+            images={name: os.path.relpath(root/path, trial_root) for name, path in observation['images'].items()},
+            state=observation['state'], image_convention=observation['image_convention'],
+            code=paths['code.py'], code_sha256=hashes['code.py'],
+            metadata=paths['metadata.json'], result=paths['result.json'], artifact_sha256=hashes,
+            target_kind='executed_program', first_step=selected[0][0], last_step=selected[-1][0],
+            executed_actions=len(recorded), generator=metadata.get('generator'), model=metadata.get('model'),
+            sources=sorted({row['source'] for _, row in selected}),
+            complete_execution_selected=True, execution_result='program_completed',
+            selected_for_dataset=True, training_admitted=False, quality_review_required=True))
+    return candidates, coverage

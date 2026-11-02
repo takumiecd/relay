@@ -59,6 +59,8 @@ LIBERO用OpenVLAの7次元相対指令をGenesisの8次元絶対目標へ直接�
 生成に失敗した場合は停止してエラーを表示する。自動で再試行して動かすことはしない。
 手入力したPythonの実行欄は従来どおり別に残し、`operator_code`として区別する。
 
+採用した経路からVLAとVLM-codeの候補を取り出す手順は、[引き継ぎと採用経路のデータ出力](intervention-dataset.md)を参照。
+
 ## ツールと範囲
 
 - `get_robot_state()`：現在の手先XYZ＋WXYZ、関節角、グリッパー状態。

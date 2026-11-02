@@ -1,0 +1,218 @@
+{
+  "selection": {
+    "schema": "capx.route-selection.v1",
+    "id": "dce1d831126e4897ba7b60adfdf94131",
+    "branch": "0002",
+    "end_step": 11,
+    "selected_by": "qa",
+    "wall_time_ns": 1793592548667739000,
+    "endpoint_checkpoint": "history/checkpoints/1e0dc4a6fdba4ef8bc8599fc1c57d2cc.npz",
+    "endpoint_sha256": "627c508c7c1ab7dcfd647290d87dcae9ec02a18eae69cc76fa867922108aa4c5",
+    "route_sha256": "b1d1c64b06f1d26b6fd1af1114195c8bc6925e67eb3fa083e7191ea6dee7a760",
+    "route": "history/adoptions/dce1d831126e4897ba7b60adfdf94131/route.jsonl",
+    "candidates": "history/adoptions/dce1d831126e4897ba7b60adfdf94131/vla-candidates.jsonl",
+    "code_candidates": "history/adoptions/dce1d831126e4897ba7b60adfdf94131/vlm-code-candidates.jsonl",
+    "code_candidates_sha256": "40a3affbfd5c03719557f654c3dfc4a564cb44b1e53f380e51797ff169bd8b18",
+    "program_coverage": "history/adoptions/dce1d831126e4897ba7b60adfdf94131/program-coverage.jsonl",
+    "program_coverage_sha256": "c0885ad5567f2283576582b3faecec8ba0d646d6e9184c8082e8a9d654d99fad",
+    "code_candidate_count": 1,
+    "excluded_program_count": 1,
+    "selection": "history/adoptions/dce1d831126e4897ba7b60adfdf94131/selection.json",
+    "paths_relative_to": "trial_root",
+    "selected_for_dataset": true,
+    "training_admitted": false,
+    "quality_review_required": true
+  },
+  "selected_actions": 11,
+  "raw_actions": 14,
+  "source_sequence": [
+    "CODE",
+    "CODE",
+    "CODE",
+    "CODE",
+    "TEST_OPERATOR",
+    "TEST_OPERATOR",
+    "CODE",
+    "CODE",
+    "CODE",
+    "CODE",
+    "CODE"
+  ],
+  "original_steps_sha256": "da99c134faf6af3cc687942fe0151d9c23874b966192a40a87d327f5a30b2115",
+  "rejected_future_preserved": true,
+  "candidates": [
+    {
+      "program_id": "5c0c854382024ff28f41338ceb6aab3b",
+      "episode_id": "selection:dce1d831126e4897ba7b60adfdf94131",
+      "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)を使ってください。",
+      "observation": "branches/0002/trajectory/observations/0008-000006.json",
+      "images": {
+        "wrist": "branches/0002/trajectory/observations/0008-000006-wrist.png",
+        "overview": "branches/0002/trajectory/observations/0008-000006-overview.png"
+      },
+      "state": {
+        "joint_positions_rad": [
+          -0.0013308358611539006,
+          -0.4944840669631958,
+          -0.0027052778750658035,
+          -2.211960792541504,
+          -0.0016820396995171905,
+          1.7977699041366577,
+          0.7961694002151489
+        ],
+        "eef_pose_xyz_wxyz": [
+          0.4108799397945404,
+          -0.0019795014522969723,
+          0.5761928558349609,
+          4.333350373528708e-05,
+          0.9991689758787171,
+          -0.007105319645795144,
+          0.040135647452283096
+        ],
+        "gripper_positions_m": [
+          0.039999883621931076,
+          0.03999971225857735
+        ],
+        "cube_position_m": [
+          0.44999998807907104,
+          -2.3957833980570165e-11,
+          0.019972695037722588
+        ]
+      },
+      "image_convention": "rgb_top_left",
+      "code": "branches/0002/trajectory/programs/5c0c854382024ff28f41338ceb6aab3b/code.py",
+      "code_sha256": "7297a800fbc6d0acefbee3419a980af1e3538dfb8b174fb7c586d3572d5f4e53",
+      "metadata": "branches/0002/trajectory/programs/5c0c854382024ff28f41338ceb6aab3b/metadata.json",
+      "result": "branches/0002/trajectory/programs/5c0c854382024ff28f41338ceb6aab3b/result.json",
+      "artifact_sha256": {
+        "code.py": "7297a800fbc6d0acefbee3419a980af1e3538dfb8b174fb7c586d3572d5f4e53",
+        "metadata.json": "95372d802f73752de688fd0c98fa9a250e45da4dfb02c2383d09a0bd2035629b",
+        "result.json": "6919e26eefba65913f4d5815b8ff60b807a8c5d92033a59228f93e53817cc38c"
+      },
+      "target_kind": "executed_program",
+      "first_step": 6,
+      "last_step": 10,
+      "executed_actions": 5,
+      "generator": "llm_http",
+      "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+      "sources": [
+        "CODE"
+      ],
+      "complete_execution_selected": true,
+      "execution_result": "program_completed",
+      "selected_for_dataset": true,
+      "training_admitted": false,
+      "quality_review_required": true
+    }
+  ],
+  "coverage": [
+    {
+      "program_id": "ac659ebb5cac403dbea6bbbe63fe86ec",
+      "selection_id": "dce1d831126e4897ba7b60adfdf94131",
+      "trajectory": "trajectory",
+      "instruction": "Open the gripper for 40 actions, then close it for 40 actions. Use open_gripper(steps=40) and close_gripper(steps=40).",
+      "generator": "llm_http",
+      "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+      "selected_steps": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "original_timesteps": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "recorded_actions": 4,
+      "complete_execution_selected": true,
+      "execution_result": "interrupted",
+      "artifacts": {
+        "code.py": "trajectory/programs/ac659ebb5cac403dbea6bbbe63fe86ec/code.py",
+        "metadata.json": "trajectory/programs/ac659ebb5cac403dbea6bbbe63fe86ec/metadata.json",
+        "result.json": "trajectory/programs/ac659ebb5cac403dbea6bbbe63fe86ec/result.json"
+      },
+      "artifact_sha256": {
+        "code.py": "c10ec2096b8e0e62501fdc2d9712f06293af1af52ca56f4a65d80773c41c56a9",
+        "metadata.json": "7eb9780b9e11706e383733002d4c3941d03d8da33a8bdbaf18805237fbf60fa3",
+        "result.json": "5cdff5b0aefab26764ea2e58787361cae92c46a2b7db53a2bdc345912bc3fe2c"
+      },
+      "code_candidate_exported": false,
+      "exclusion_reasons": [
+        "execution_not_completed"
+      ],
+      "selected_for_dataset": true,
+      "training_admitted": false,
+      "quality_review_required": true
+    },
+    {
+      "program_id": "5c0c854382024ff28f41338ceb6aab3b",
+      "selection_id": "dce1d831126e4897ba7b60adfdf94131",
+      "trajectory": "branches/0002/trajectory",
+      "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)を使ってください。",
+      "generator": "llm_http",
+      "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+      "selected_steps": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "original_timesteps": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "recorded_actions": 5,
+      "complete_execution_selected": true,
+      "execution_result": "program_completed",
+      "artifacts": {
+        "code.py": "branches/0002/trajectory/programs/5c0c854382024ff28f41338ceb6aab3b/code.py",
+        "metadata.json": "branches/0002/trajectory/programs/5c0c854382024ff28f41338ceb6aab3b/metadata.json",
+        "result.json": "branches/0002/trajectory/programs/5c0c854382024ff28f41338ceb6aab3b/result.json"
+      },
+      "artifact_sha256": {
+        "code.py": "7297a800fbc6d0acefbee3419a980af1e3538dfb8b174fb7c586d3572d5f4e53",
+        "metadata.json": "95372d802f73752de688fd0c98fa9a250e45da4dfb02c2383d09a0bd2035629b",
+        "result.json": "6919e26eefba65913f4d5815b8ff60b807a8c5d92033a59228f93e53817cc38c"
+      },
+      "code_candidate_exported": true,
+      "exclusion_reasons": [],
+      "selected_for_dataset": true,
+      "training_admitted": false,
+      "quality_review_required": true
+    }
+  ],
+  "training_admitted": false,
+  "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+  "operator_source": "TEST_OPERATOR",
+  "validation_only": true,
+  "generations": [
+    {
+      "instruction": "Open the gripper for 40 actions, then close it for 40 actions. Use open_gripper(steps=40) and close_gripper(steps=40).",
+      "status": "received",
+      "code": "open_gripper(steps=40)\nclose_gripper(steps=40)",
+      "metadata": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true
+      }
+    },
+    {
+      "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)を使ってください。",
+      "status": "received",
+      "code": "close_gripper(steps=5)",
+      "metadata": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true
+      }
+    }
+  ]
+}
