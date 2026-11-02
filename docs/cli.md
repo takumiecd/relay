@@ -98,6 +98,7 @@ JSONではstatusはAPIの状態snapshot、history listはtimelineを返す。
 変更要求は`action/accepted/completed/client_id/sequence/response/state`のreceiptを返す。
 `completed`はその管理操作の完了であり、LLMのプログラム完了やタスク成功とは異なる。
 エラーは`error.code/message`、受理後のエラーには既知のreceiptを付ける。
+CLI構文エラーはargparseの通常のエラー表示になる。
 
 | 終了コード | 意味 |
 |---|---|
@@ -123,3 +124,4 @@ client.stop()
 一つのclientでは操作を順番に呼ぶ。ブラウザ・CLI・Notebookの物理実行先は同じサーバーのowner thread。
 `relay/client.py`がHTTP、認証、epoch、完了確認を担当し、`relay/cli.py`は引数と表示を担当する。
 Runtime自体のCaP-Xからの独立は、このCLIの次の変更として扱う。
+[CLIとブラウザ・Genesisでの検証結果](verification/relay-cli-20261102.md)も参照。
