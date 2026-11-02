@@ -199,6 +199,11 @@ class ControlSession:
             return True
 
     def human_action(self):
+        """Return normalized six-axis intent + gripper, NOT a native robot action.
+
+        The owner-thread runner asks the backend to perform the native mapping.
+        HTTP input threads never call a simulator/controller conversion.
+        """
         with self.lock:
             item = self.input
             if (

@@ -20,7 +20,7 @@ let lastKey = "—",
 let flashMessage = null,
   lastFrameKey = null,
   connected = false;
-const frameURLs = {};
+const frameURLs = Object.create(null);
 let seekPreview = null, draggingHistory = false;
 const owned = () => state.mode === "HUMAN" && state.client_id === client;
 function focusWorkspace() {
@@ -480,23 +480,26 @@ setInterval(update, 120);
 update();
 async function frames() {
   if (frameBusy) return;
+  const names = Array.isArray(state.cameras) ? state.cameras : [];
+  if (!names.length) return;
+  syncCameras(names);
   const key = [
     state.context?.session_id,
     state.epoch,
     state.context?.observation_id,
   ].join(":");
-  if (key === lastFrameKey && frameURLs.wrist && frameURLs.agentview) return;
+  if (key === lastFrameKey && names.every((name) => frameURLs[name])) return;
   frameBusy = true;
   try {
-    for (const name of ["wrist", "agentview"]) {
-      const response = await fetch("/camera/" + name + ".png", {
+    for (const name of names) {
+      const response = await fetch("/camera/" + encodeURIComponent(name) + ".png", {
         headers: { "X-CapX-Token": token },
         cache: "no-store",
       });
       if (!response.ok) continue;
       const url = URL.createObjectURL(await response.blob()),
         old = frameURLs[name];
-      $(name).src = url;
+      cameraPanel(name).querySelector("img").src = url;
       frameURLs[name] = url;
       if (old) URL.revokeObjectURL(old);
     }
@@ -509,17 +512,52 @@ async function frames() {
 setInterval(frames, 120);
 frames();
 function primary(name) {
-  const panel = document.querySelector('[data-camera="' + name + '"]');
+  const panel = cameraPanel(name);
+  if (!panel) return;
   $("cameras").prepend(panel);
   localStorage.setItem("capx.camera", name);
   focusWorkspace();
 }
-for (const button of document.querySelectorAll("[data-primary]"))
-  button.onclick = () => primary(button.dataset.primary);
-const preference = localStorage.getItem("capx.camera");
-if (["wrist", "agentview"].includes(preference)) primary(preference);
 let dragged = null;
-for (const panel of document.querySelectorAll(".camera")) {
+let cameraCatalog = null;
+function cameraPanel(name) {
+  return [...$("cameras").children].find((panel) => panel.dataset.camera === name);
+}
+function syncCameras(names) {
+  const catalog = JSON.stringify(names);
+  if (catalog === cameraCatalog) return;
+  cameraCatalog = catalog;
+  $("cameras").dataset.count = String(names.length);
+  $("cameras").dataset.multi = String(names.length > 2);
+  $("cameras").style.setProperty("--camera-rows", String(Math.max(1, names.length - 1)));
+  for (const panel of [...$("cameras").children]) {
+    if (!names.includes(panel.dataset.camera)) {
+      const name = panel.dataset.camera;
+      if (frameURLs[name]) URL.revokeObjectURL(frameURLs[name]);
+      delete frameURLs[name];
+      panel.remove();
+    }
+  }
+  for (const name of names) {
+    let panel = cameraPanel(name);
+    if (!panel) {
+      panel = document.createElement("article");
+      panel.className = "camera";
+      panel.draggable = true;
+      panel.dataset.camera = name;
+      panel.innerHTML = '<div class="camera-head"><span></span><button>主表示にする ↗</button></div><div class="viewport"><img></div><div class="camera-caption">ドラッグで配置を変更</div>';
+      panel.querySelector(".camera-head span").textContent = state.camera_labels?.[name] || name;
+      panel.querySelector("img").alt = state.camera_labels?.[name] || name;
+      $("cameras").append(panel);
+    }
+    panel.querySelector("button").onclick = () => primary(name);
+    bindCameraDrag(panel);
+  }
+  const preference = localStorage.getItem("capx.camera");
+  if (names.includes(preference)) $("cameras").prepend(cameraPanel(preference));
+  lastFrameKey = null;
+}
+function bindCameraDrag(panel) {
   panel.ondragstart = () => {
     dragged = panel;
     panel.classList.add("dragging");

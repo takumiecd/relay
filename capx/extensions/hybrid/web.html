@@ -32,18 +32,7 @@
           <div><strong id="episode-title">この試行は終了しました</strong><p>履歴から途中へ戻るか、新しい試行を始められます。</p></div>
           <button id="next-trial" class="button primary">新しい試行を始める</button>
         </div>
-        <div id="cameras" class="cameras">
-          <article class="camera" draggable="true" data-camera="wrist">
-            <div class="camera-head"><span><i class="camera-dot"></i>手首カメラ <small>WRIST</small></span><button data-primary="wrist" title="手首カメラを主表示にする">主表示にする <span aria-hidden="true">↗</span></button></div>
-            <div class="viewport"><img id="wrist" alt="手首カメラの映像" /></div>
-            <div class="camera-caption">ドラッグで配置を変更</div>
-          </article>
-          <article class="camera" draggable="true" data-camera="agentview">
-            <div class="camera-head"><span><i class="camera-dot"></i>全体カメラ <small>OVERVIEW</small></span><button data-primary="agentview" title="全体カメラを主表示にする">主表示にする <span aria-hidden="true">↗</span></button></div>
-            <div class="viewport"><img id="agentview" alt="全体カメラの映像" /></div>
-            <div class="camera-caption">ドラッグで配置を変更</div>
-          </article>
-        </div>
+        <div id="cameras" class="cameras" aria-label="環境のカメラ映像"></div>
         <section id="history-panel" class="timeline" aria-label="記録の巻き戻し">
           <div class="timeline-heading">
             <div class="history-title"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5v10m0-7c0 4 10 0 10 4"/><circle cx="5" cy="4" r="2"/><circle cx="5" cy="16" r="2"/><circle cx="15" cy="14" r="2"/></svg><h2>操作の履歴</h2></div>

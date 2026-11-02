@@ -339,3 +339,65 @@ def test_real_replay_rejects_initial_state_mismatch(real_osc):
     with pytest.raises(ValueError, match='state mismatch'):
         VlaApi(env, None).replay_actions([[0]*7], ACTION_CONTRACT, state)
     assert env.applied_steps == 0
+
+
+def test_real_backend_conversion_preserves_osc_actions_and_physics(real_osc):
+    """Compare extracted conversion against the submitted formula from one checkpoint."""
+    env = real_osc
+    env.reset(seed=0)
+    checkpoint = env.capture_checkpoint()
+    requests = [([.005, -.002, .001], [0, .01, 0], -1),
+                ([-.003, .001, .002], [.01, 0, -.01], 1)]
+    native_actions, states, clocks = [], [], []
+    for translation, rotation, gripper in requests:
+        c = env.controller
+        if c.action_scale is None:
+            c.scale_action(np.zeros(6))
+        # Exact scaling previously embedded in VlaApi.move_to_pose.
+        native = np.r_[np.r_[translation, rotation] / c.action_scale, gripper]
+        env.apply_native(native, context=env.context(), source='TEST')
+        native_actions.append(native)
+        states.append(env.physics_state())
+        clocks.append(float(env.handle.env.sim.data.time))
+    env.restore_checkpoint(checkpoint)
+    env.paused = False
+    for request, native, state, clock in zip(requests, native_actions, states, clocks):
+        steps = env.applied_steps
+        actual = env.cartesian_delta_action(*request)
+        assert env.applied_steps == steps  # Conversion never executes the action.
+        np.testing.assert_array_equal(actual, native)
+        env.apply_native(actual, context=env.context(), source='TEST')
+        np.testing.assert_array_equal(env.physics_state(), state)
+        assert env.simulation_time() == clock
+    np.testing.assert_array_equal(env.gripper_action(-1), [0, 0, 0, 0, 0, 0, -1])
+
+
+def test_real_backend_preserves_distinct_policy_display_and_code_image_conventions(real_osc):
+    env = real_osc
+    env.reset(seed=0)
+    policy, code, display = env.policy_observation(), env.code_observation(), env.display_images()
+    assert policy['image_convention'] == 'libero_raw'
+    assert code['image_convention'] == 'rgb_top_left'
+    assert list(display) == ['wrist', 'agentview']
+    for name, raw in [('agentview', 'agentview_image'), ('wrist', 'robot0_eye_in_hand_image')]:
+        np.testing.assert_array_equal(policy['images'][name], env.raw_obs[raw])
+        np.testing.assert_array_equal(code['images'][name], env.raw_obs[raw][::-1, ::-1])
+    np.testing.assert_array_equal(display['wrist'], env.raw_obs['robot0_eye_in_hand_image'][::-1])
+    np.testing.assert_array_equal(display['agentview'], env.raw_obs['agentview_image'][::-1, ::-1])
+
+
+@pytest.mark.parametrize('translation,rotation,gripper', [
+    ([0, 0], [0, 0, 0], -1),
+    ([float('nan'), 0, 0], [0, 0, 0], -1),
+    ([10, 0, 0], [0, 0, 0], -1),
+    ([0, 0, 0], [0, 0, 0], 2),
+])
+def test_real_backend_rejects_unrepresentable_requests_before_physics(
+        real_osc, translation, rotation, gripper):
+    env = real_osc
+    env.reset(seed=0)
+    before = env.physics_state()
+    with pytest.raises(ValueError):
+        env.cartesian_delta_action(translation, rotation, gripper)
+    assert env.applied_steps == 0
+    np.testing.assert_array_equal(env.physics_state(), before)

@@ -31,6 +31,7 @@ class FakeEnv:
                         action_contract=ACTION_CONTRACT)
     def policy_observation(self):
         return dict(images={'agentview':np.zeros((8,8,3),np.uint8)},state={},image_convention='test')
+    code_observation = policy_observation
     def get_observation(self):
         return {'context':self.context()}
     def compute_reward(self):
@@ -38,6 +39,8 @@ class FakeEnv:
     def task_completed(self):
         return False
     validate_chunk = staticmethod(OscLiberoEnv.validate_chunk)
+    def teleop_action(self, axes, gripper_command):
+        return list(axes) + [gripper_command]
     def apply_native(self, action, *, context, source, lease, provenance=None):
         assert context==self.context()
         self.control.authorize(lease,source)
@@ -233,7 +236,7 @@ def test_gpu_api_request_includes_state_views_and_parses_python(monkeypatch):
                                     'test-local-model',images=True,key_env='CAPX_TEST_LLM_KEY')
         observation=dict(images={'agentview':np.zeros((8,8,3),np.uint8),
                                  'wrist':np.full((8,8,3),128,np.uint8)},
-                         state={'joint_positions_rad':[0.]*7},image_convention='libero_raw')
+                         state={'joint_positions_rad':[0.]*7},image_convention='rgb_top_left')
         result=generator.generate(observation,'test instruction','get_robot_state()')
         assert result['code']=='RESULT = get_robot_state()'
         payload,authorization=requests[0]
@@ -269,6 +272,8 @@ def test_console_checks_origin_and_never_runs_simulator_in_http_thread(tmp_path)
             assert threading.current_thread() is threading.main_thread()
             return {'robot0_eye_in_hand':{'images':{'rgb':np.zeros((8,8,3),np.uint8)}}}
         def render(self):return np.zeros((8,8,3),np.uint8)
+        def display_images(self):
+            return {'inspection_camera': self.get_observation()['robot0_eye_in_hand']['images']['rgb']}
     runner=HybridRunner(SnapshotEnv(),tmp_path,realtime=False)
     console=Console(runner,port=0)
     url=f'http://127.0.0.1:{console.port}'

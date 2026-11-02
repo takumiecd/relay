@@ -1,4 +1,4 @@
-"""CaP-X tool functions for one shared OSC environment."""
+"""CaP-X tool functions using backend-owned native action conversion."""
 from __future__ import annotations
 
 import numpy as np
@@ -6,6 +6,7 @@ from scipy.spatial.transform import Rotation
 
 from capx.integrations.base_api import ApiBase, register_api
 from capx.envs.tasks.base import CodeExecEnvConfig, CodeExecutionEnvBase
+from relay.backends.base import CartesianBackend
 
 
 class VlaApi(ApiBase):
@@ -25,7 +26,7 @@ class VlaApi(ApiBase):
     def get_robot_state(self):
         """Return current EEF pose (XYZ meters + WXYZ quaternion) and joint angles."""
         obs = self._env.get_observation()
-        return {k: obs[k] for k in ("robot_cartesian_pos", "robot_joint_pos", "gripper_qpos", "context")}
+        return {k: obs[k] for k in ("robot_cartesian_pos", "robot_joint_pos", "gripper_qpos", "context") if k in obs}
 
     def run_vla(self, instruction: str, max_actions: int = 20):
         """Delegate a bounded local motion to the connected VLA and return to Python.
@@ -90,6 +91,9 @@ class VlaApi(ApiBase):
         Sources remain CODE_REPLAY with original provenance, never fresh human input.
         """
         lease = self._lease("CODE_REPLAY")
+        capabilities = getattr(self._env, 'capabilities', None)
+        if capabilities is not None and not capabilities.state_replay:
+            raise NotImplementedError('This backend does not support verified state replay')
         if action_contract != self._env.context()["action_contract"]:
             raise ValueError("Replay action contract mismatch")
         chunk = self._env.validate_chunk(actions)
@@ -111,7 +115,7 @@ class VlaApi(ApiBase):
         return {"applied_actions": applied, "task_completed": self._env.task_completed()}
 
     def move_to_pose(self, position_m, quaternion_wxyz=None, max_actions=80):
-        """Move EEF toward an absolute WORLD pose through relative OSC (not joint IK).
+        """Move EEF toward an absolute WORLD pose through the connected backend.
 
         position_m: XYZ meters, at most 0.20 m from the current EEF.
         quaternion_wxyz: Optional unit quaternion; omit to preserve current orientation.
@@ -121,8 +125,9 @@ class VlaApi(ApiBase):
         lease = self._lease("CODE")
         if type(max_actions) is not int or not 1 <= max_actions <= 100:
             raise ValueError("Invalid move budget")
+        backend: CartesianBackend = self._env
         target = np.asarray(position_m, dtype=float)
-        p, initial_r = self._env._pose()
+        p, initial_r = backend.eef_pose()
         if target.shape != (3,) or not np.isfinite(target).all() or np.linalg.norm(target-p) > .20:
             raise ValueError("Expected a finite target within 0.20 meters")
         r_target = initial_r
@@ -135,19 +140,13 @@ class VlaApi(ApiBase):
         for _ in range(max_actions):
             if self._env.ended or self._env.paused or self._env.context()["epoch"] != epoch:
                 return {"reached": False, "stop_reason": "interrupted_or_ended"}
-            p, r = self._env._pose()
+            p, r = backend.eef_pose()
             dp = target - p
             dr = Rotation.from_matrix(r_target @ r.T).as_rotvec()
             if np.linalg.norm(dp) <= .003 and np.linalg.norm(dr) <= .03:
                 return {"reached": True}
-            # Match the native controller scaling, limiting the requested target increments.
-            delta = np.r_[np.clip(dp, -.01, .01), np.clip(dr, -.05, .05)]
-            c = self._env.controller
-            if c.action_scale is None:
-                c.scale_action(np.zeros(6))
-            if not np.allclose(c.action_output_transform, 0):
-                raise ValueError("Nonzero controller action offset is unsupported")
-            native = np.r_[delta / c.action_scale, self._env.gripper]
+            native = backend.cartesian_delta_action(
+                np.clip(dp, -.01, .01), np.clip(dr, -.05, .05), self._env.gripper)
             self._env.apply_native(native, context=self._env.context(), source="CODE", lease=lease)
         return {"reached": False, "stop_reason": "action_budget"}
 
@@ -155,12 +154,14 @@ class VlaApi(ApiBase):
         lease = self._lease("CODE")
         if type(steps) is not int or not 1 <= steps <= 40:
             raise ValueError("Gripper steps must be in [1,40]")
+        backend: CartesianBackend = self._env
         epoch = self._env.context()["epoch"]
         applied = 0
         for _ in range(steps):
             if self._env.ended or self._env.paused or self._env.context()["epoch"] != epoch:
                 break
-            self._env.apply_native([0]*6 + [command], context=self._env.context(), source="CODE", lease=lease)
+            self._env.apply_native(backend.gripper_action(command), context=self._env.context(),
+                                   source="CODE", lease=lease)
             applied += 1
         return {"applied_actions": applied}
 
@@ -174,13 +175,13 @@ class VlaApi(ApiBase):
 
 
 class VlaCodeEnv(CodeExecutionEnvBase):
-    """Use CaP-X's actual Python executor and one existing OSC low-level env."""
+    """Use CaP-X's actual Python executor with one Relay environment."""
     def __init__(self, low_level, predictor):
         name = "VlaOscApi"
         # Runs in every worker that constructs this environment, not just its parent.
         register_api(name, lambda env: VlaApi(env, predictor))
         super().__init__(CodeExecEnvConfig(
             low_level=low_level, apis=[name], privileged=False,
-            prompt=f"{low_level.instruction}\nUse only the documented OSC APIs. "
+            prompt=f"{low_level.instruction}\nUse only the documented robot APIs. "
                    "All positions are WORLD-frame meters. Return executable Python.",
         ))

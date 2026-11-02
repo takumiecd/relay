@@ -48,15 +48,11 @@ class HttpCodeGenerator:
             }
         ]
         if self.images:
+            if observation.get('image_convention') != 'rgb_top_left':
+                raise ValueError('Use backend.code_observation() with rgb_top_left images')
             for name, pixels in observation["images"].items():
-                # Convert raw simulator orientation to an operator-view image for the VLM.
-                image = (
-                    pixels[::-1, ::-1].copy()
-                    if observation["image_convention"] == "libero_raw"
-                    else pixels
-                )
                 buffer = io.BytesIO()
-                Image.fromarray(image).save(buffer, format="PNG")
+                Image.fromarray(pixels).save(buffer, format="PNG")
                 content.extend(
                     [
                         {"type": "text", "text": f"Camera: {name}"},
