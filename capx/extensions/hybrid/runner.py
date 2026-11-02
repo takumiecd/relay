@@ -156,6 +156,8 @@ class HybridRunner:
         tools = set(TOOLS)
         if capabilities is not None and not capabilities.cartesian_control:
             tools.discard('move_to_pose')
+        if not getattr(capabilities, 'joint_control', False):
+            tools.discard('move_joints')
         if self.predictor is None or not bool(getattr(self.predictor, 'ready', True)):
             tools.discard('run_vla')
         return tools

@@ -1,0 +1,11 @@
+{
+  "move_group_node": "/relay_reference/move_group",
+  "action_name": "/relay_reference/follow_joint_trajectory",
+  "state_topic": "/relay_reference/joint_states",
+  "control_freq": 10,
+  "command_timeout": 0.6,
+  "feedback_timeout": 0.4,
+  "service_timeout": 0.4,
+  "translation_m_per_step": 0.003,
+  "rotation_rad_per_step": 0.015
+}

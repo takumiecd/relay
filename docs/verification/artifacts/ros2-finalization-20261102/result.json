@@ -1,0 +1,45 @@
+{
+  "milestone": "ROS 2 joint / MoveIt IK / RViz / provenance recording reference",
+  "tag": "ros2-reference-20261102",
+  "submitted_tag_preserved": "pai-final-20261102",
+  "submitted_commit": "ec5fcd4c97a357b5950efdab63f80d1f8271bfb8",
+  "test_domain_id": 78,
+  "test_container": "relay-ros2-milestone-check",
+  "live_user_domain_id_preserved": 76,
+  "tests": {
+    "ros2_moveit": "21 passed",
+    "genesis_cpu": "82 passed",
+    "libero": "104 passed, 2 skipped, 15 upstream warnings",
+    "javascript": "12 passed",
+    "ruff": "pass; scoped ROS modules, base, loader",
+    "format": "11 files pass",
+    "package_resources": {
+      "scope": "isolated relay resource wheel using repository package-data configuration; not a full CaP-X distribution build",
+      "wheel": "relay_resource_smoke-0.0.0-py3-none-any.whl",
+      "verified_files": [
+        "relay/ros2/assets/reference_arm.urdf",
+        "relay/ros2/assets/reference_arm.srdf",
+        "relay/ros2/assets/reference.rviz",
+        "relay/ros2/reference_view.launch.py",
+        "relay/ros2/reference_moveit.launch.py",
+        "relay/ros2/reference_ik.launch.py"
+      ],
+      "installed_model_urdf_sha256": "9e34e0f520691a099829a2d4ac79834564019ef24b5d01b3da2bf212a91071c1",
+      "wheel_sha256": "b35f75167dcd63318721383c5643b2720e09e8344a108282fc7591879c15e86e"
+    }
+  },
+  "shutdown": {
+    "reference_controller": "exit 0 after SIGINT; no Traceback",
+    "robot_state_publisher": "finished cleanly",
+    "move_group": "exit -11 after SIGINT observed in this configuration (MoveIt 2.5.10); unresolved limitation",
+    "launch": "exit 0; does not imply all child processes finished cleanly"
+  },
+  "limitations": [
+    "Reference six-axis model and numerical controller only",
+    "No physics/contact/collision avoidance, Servo, path planning or hardware validation",
+    "No trained VLA/LLM ROS task evaluation or full upstream benchmark evaluation",
+    "No reset/checkpoint/rewind/replay",
+    "MoveIt process teardown crash remains; save Relay recording before stopping launch",
+    "Package verification is an isolated resource wheel, not a full CaP-X distribution build"
+  ]
+}

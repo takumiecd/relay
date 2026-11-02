@@ -1,0 +1,59 @@
+{
+  "test_only": true,
+  "branch_base": "f39c2b65575f6810762c2ac4cfcc90c65db491f0",
+  "ros_distro": "humble",
+  "architecture": "arm64",
+  "domain_id": 75,
+  "physics": false,
+  "moveit_ik": false,
+  "rviz_model": "relay_reference_arm (illustrative six-axis visual model)",
+  "nodes": [
+    "relay_reference_controller",
+    "/relay_reference/state_publisher",
+    "/relay_reference_rviz"
+  ],
+  "joint_state_publishers": 1,
+  "joint_state_subscribers": 2,
+  "robot_description_publishers": 1,
+  "robot_description_subscribers": 1,
+  "urdf_check": "check_urdf successfully parsed world-rooted tree",
+  "tests": "13 passed: test_ros2_backend.py + test_ros2_view.py",
+  "tf_verification": {
+    "oracle": "Independent URDF forward kinematics",
+    "absolute_tolerance": 1e-08,
+    "arm_translation_change_m": ">0.01",
+    "finger_translation_change_m": ">0.03"
+  },
+  "browser_verification": {
+    "keys": "H -> Space+A (1.8s) -> Space+V (0.6s) -> Escape; speed 100%",
+    "joint2_before_rad": 0.04,
+    "joint2_after_rad": 0.3,
+    "steps": 17,
+    "sources": {
+      "TEST_OPERATOR": 17
+    },
+    "outcomes": {
+      "succeeded": 17
+    },
+    "all_goal_ids": true,
+    "all_feedback_timestamps": true,
+    "final_feedback": [
+      0.03,
+      0.3,
+      0.0,
+      0.0,
+      0.04,
+      0.0,
+      0.04
+    ],
+    "steps_jsonl_sha256": "3624c3b3b3a444923a349326d431a1bd457077c41c0ec8d7a3a172a132477764",
+    "rviz_global_status": "Ok",
+    "rviz_before_png_sha256": "0e3957ab1f994f7ad5f1ebc83a964f49db528e17defd7cdd8a1dda4b145dc90f",
+    "rviz_after_png_sha256": "0a2973f7e2c222f0c8cb3870e1be6de10ca08967f4376fddcfd3684a18c52914"
+  },
+  "limits": [
+    "No physics, contact, MoveIt/IK, Cartesian control, hardware or trained VLA/LLM ROS evaluation",
+    "No reset, checkpoint, rewind or state replay",
+    "RViz screenshot is not substituted for policy observation"
+  ]
+}

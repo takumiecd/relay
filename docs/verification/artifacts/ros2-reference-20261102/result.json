@@ -1,0 +1,43 @@
+{
+  "test_only": true,
+  "backend": "ros2.joint_trajectory",
+  "ros_distro": "humble",
+  "domain_id": 74,
+  "physics": false,
+  "inverse_kinematics": false,
+  "browser_verified": {
+    "keyboard": "Space+W then Escape",
+    "program": "q[0] += .04; RESULT=move_joints(q)",
+    "steps": 8,
+    "sources": [
+      "TEST_OPERATOR",
+      "CODE"
+    ],
+    "controller_outcomes": [
+      "succeeded"
+    ],
+    "final_feedback": [
+      0.13000000000000003,
+      0.0,
+      0.0,
+      0.0,
+      0.04,
+      0.0,
+      0.04
+    ],
+    "all_have_goal_id": true,
+    "all_have_source_timestamp": true,
+    "steps_jsonl_sha256": "44ce129880fed9b3afbb72933cc190a28cc80911f0a305b34662fb778fb42a5e"
+  },
+  "pytest_ros2": "11 passed (7 pure contract checks + 4 real DDS integration checks)",
+  "pytest_genesis": "82 passed",
+  "pytest_backend_policy_llm": "64 passed, 6 skipped (ROS and other runtime opt-ins)",
+  "javascript": "12 passed",
+  "limitations": [
+    "Numerical reference controller only; no dynamics, robot rendering or scene camera",
+    "No MoveIt, Cartesian IK, RViz, Gazebo, hardware or trained joint-policy validation",
+    "No physical reset, checkpoints, rewind or replay",
+    "Web command steps are bounded trajectory attempts, not physics integration ticks"
+  ],
+  "pytest_libero_regression": "104 passed, 2 skipped, 15 upstream warnings"
+}

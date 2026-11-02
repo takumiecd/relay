@@ -194,10 +194,12 @@ extend-exclude = [
 
 [tool.ruff.lint.per-file-ignores]
 "capx/third_party/**" = ["ALL"]
+"relay/ros2/*.launch.py" = ["N999"]  # Standard ROS launch filename convention.
 
 
 [tool.setuptools.package-data]
 "relay.backends" = ["*.txt"]
+"relay.ros2" = ["assets/*.urdf", "assets/*.srdf", "assets/*.rviz"]
 "capx.extensions.hybrid" = ["*.html", "*.css", "*.js", "*.mjs"]
 "capx.extensions.vla" = ["*.txt"]
 "capx.envs" = [

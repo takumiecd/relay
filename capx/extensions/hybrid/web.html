@@ -29,7 +29,7 @@
           <span id="mode-chip" class="mode-chip">停止中</span>
         </div>
         <div id="episode-banner" class="episode-banner" hidden>
-          <div><strong id="episode-title">この試行は終了しました</strong><p>履歴から途中へ戻るか、新しい試行を始められます。</p></div>
+          <div><strong id="episode-title">この試行は終了しました</strong><p id="episode-help">履歴から途中へ戻るか、新しい試行を始められます。</p></div>
           <button id="next-trial" class="button primary">新しい試行を始める</button>
         </div>
         <div id="cameras" class="cameras" aria-label="環境のカメラ映像"></div>
@@ -57,7 +57,7 @@
         </section>
         <div class="workspace-footer">
           <div class="metric"><span>step</span><strong id="steps">0 / 0</strong></div>
-          <div class="metric position"><span>手先 XYZ <small>m</small></span><strong id="position">— <em>/</em> — <em>/</em> —</strong></div>
+          <div class="metric position"><span id="position-label">手先 XYZ <small>m</small></span><strong id="position">— <em>/</em> — <em>/</em> —</strong></div>
           <div class="camera-hint"><i></i>操作・画像・コードを記録中</div>
         </div>
         <div id="notice" class="notice" role="status" aria-live="polite"></div>
@@ -89,15 +89,16 @@
           <div class="range-labels"><span>精密</span><span>高速</span></div>
           <div class="keyboard-guide">
             <div class="wasd"><div></div><kbd data-key="KeyW">W</kbd><div></div><kbd data-key="KeyA">A</kbd><kbd data-key="KeyS">S</kbd><kbd data-key="KeyD">D</kbd></div>
-            <div class="key-pairs"><div><kbd data-key="KeyR">R</kbd><kbd data-key="KeyF">F</kbd><span>上下</span></div><div><kbd data-key="KeyQ">Q</kbd><kbd data-key="KeyE">E</kbd><span>回転</span></div><div><kbd data-key="KeyC">C</kbd><kbd data-key="KeyV">V</kbd><span>閉 / 開</span></div></div>
+            <div class="key-pairs"><div><kbd data-key="KeyR">R</kbd><kbd data-key="KeyF">F</kbd><span id="rf-label">上下</span></div><div><kbd data-key="KeyQ">Q</kbd><kbd data-key="KeyE">E</kbd><span id="qe-label">回転</span></div><div><kbd data-key="KeyC">C</kbd><kbd data-key="KeyV">V</kbd><span>閉 / 開</span></div></div>
           </div>
           <p class="precision"><kbd>Shift</kbd> を押すと速度が1/5</p>
+          <p id="control-space" class="small">WORLD座標の手先操作</p>
           <div class="input-state"><span id="input-state">入力を待っています</span><span id="last-key">キー：—</span></div>
         </section>
         <details class="panel code-panel"><summary><span>Pythonコード</span><span class="details-plus" aria-hidden="true">＋</span></summary><textarea id="code" spellcheck="false" aria-label="Pythonコード">s = get_robot_state()
 p = s['robot_cartesian_pos'][:3]
 RESULT = move_to_pose([p[0], p[1], p[2] + 0.02])</textarea><button id="run-code" class="button primary">このコードを実行 <span aria-hidden="true">↗</span></button><p class="small">入力したコードとLLM生成コードは区別して記録します。</p></details>
-        <details class="panel help-panel"><summary><span>操作ガイド</span><span class="details-plus" aria-hidden="true">＋</span></summary><p>Hで手動操作へ。Spaceを押している間は静止中もstepが進みます。Cで閉じ、Vで開きます。Escで停止します。</p><p>W/S ±X、A/D ±Y、R/F ±Z。カメラを変えても操作の座標系は変わりません。</p></details>
+        <details class="panel help-panel"><summary><span>操作ガイド</span><span class="details-plus" aria-hidden="true">＋</span></summary><p>Hで手動操作へ。Spaceを押している間は静止中もstepが進みます。Cで閉じ、Vで開きます。Escで停止します。</p><p id="motion-help">W/S ±X、A/D ±Y、R/F ±Z。カメラを変えても操作の座標系は変わりません。</p></details>
         <div class="recording-note"><i></i><span id="recording-note-text">すべての経路を残しながら操作できます。</span></div>
       </aside>
     </main>
