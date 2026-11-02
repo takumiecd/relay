@@ -56,11 +56,12 @@
           </div>
         </section>
         <div class="workspace-footer">
-          <div class="metric"><span>step</span><strong id="steps">0 / 0</strong></div>
+          <div class="metric"><span id="step-label">記録済み指令</span><strong id="steps">0</strong></div>
           <div class="metric position"><span id="position-label">手先 XYZ <small>m</small></span><strong id="position">— <em>/</em> — <em>/</em> —</strong></div>
           <div class="camera-hint"><i></i>操作・画像・コードを記録中</div>
         </div>
         <div id="notice" class="notice" role="status" aria-live="polite"></div>
+        <details id="diagnostic-details" class="diagnostic-details" hidden><summary>実行・接続の詳細</summary><pre id="diagnostic-error"></pre></details>
       </section>
       <aside>
         <section class="panel modes-panel">

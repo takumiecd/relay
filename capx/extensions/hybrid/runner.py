@@ -14,6 +14,7 @@ import uuid
 from capx.extensions.vla.api import VlaApi
 from capx.extensions.vla.actions import PolicyActions
 from capx.extensions.vla.recording import TrajectoryRecorder, export_views, write_json
+from relay.backends.base import PreflightRejectedError, PreflightTimeoutError
 from .code_worker import CodeProcess, TOOLS
 from .control import AuthorityLost, ControlSession
 from .llm import extract_code
@@ -121,6 +122,8 @@ class HybridRunner:
         self.pending_code = None
         self.llm_request = None
         self.last_generation = None
+        self.manual_rejection = None
+        self._blocked_manual_signature = None
         self.vla_instruction = env.instruction
         self.pending_reset = False
         self.pending_seek = None
@@ -371,6 +374,8 @@ class HybridRunner:
                         recorder.record_event(self.env, event)
         if self.current_epoch != self.env.epoch:
             self.current_epoch = self.env.epoch
+            self.manual_rejection = None
+            self._blocked_manual_signature = None
             if self.control.last_reason not in {
                 "vla_error",
                 "llm_error",
@@ -543,7 +548,26 @@ class HybridRunner:
             item = self.control.human_action()
             if item:
                 command, lease, provenance = item
-                action = self.env.teleop_action(command[:6], command[-1])
+                signature = (lease.epoch, provenance.get('client_id'), tuple(command))
+                if signature == self._blocked_manual_signature:
+                    return  # Do not repeat a refused computation on every heartbeat.
+                try:
+                    action = self.env.teleop_action(command[:6], command[-1])
+                except (PreflightRejectedError, PreflightTimeoutError) as error:
+                    self.env.hold()
+                    with self.control.lock:
+                        if self.control.valid(lease):
+                            self._blocked_manual_signature = signature
+                            self.manual_rejection = dict(
+                                code='preflight_timeout' if isinstance(error, PreflightTimeoutError) else 'preflight_rejected',
+                                message='この方向への移動を計算できませんでした。反対方向のキーを押すか、Spaceを離して操作を変えてください。',
+                                details=str(error)[:500],
+                            )
+                            self.message = 'この方向には進めません。手動モードは継続しています。'
+                            self.control._event('manual_input_rejected', **self.manual_rejection)
+                    return
+                self.manual_rejection = None
+                self._blocked_manual_signature = None
                 self.env.apply_native(
                     action,
                     context=self.env.context(),
@@ -554,6 +578,10 @@ class HybridRunner:
                 if self.control.valid(lease):
                     self.message = "操作を受付中"
             else:
+                with self.control.lock:
+                    if self.control.input is not None and not self.control.input['deadman']:
+                        self.manual_rejection = None
+                        self._blocked_manual_signature = None
                 hold = getattr(self.env, 'hold', None)
                 if hold is not None:
                     hold()
@@ -663,6 +691,7 @@ class HybridRunner:
             program_running=self.program is not None,
             llm_generating=bool(self.llm_job and self.control.valid(self.llm_job.lease)),
             generation=self.last_generation,
+            manual_rejection=self.manual_rejection,
             llm_provider=getattr(self.generator, 'metadata', {}).get('model'),
             vla_instruction=self.vla_instruction,
             policy_control=self.policy_actions.metadata,

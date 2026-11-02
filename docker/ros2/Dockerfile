@@ -21,7 +21,7 @@ ENV DISPLAY=:1 QT_X11_NO_MITSHM=1 LIBGL_ALWAYS_SOFTWARE=1
 CMD ["bash", "/usr/local/bin/relay-ros2-desktop"]
 
 # Optional MoveIt IK service; existing headless/view images stay unchanged.
-FROM visualization AS moveit
+FROM visualization AS moveit-upstream
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ros-humble-moveit-ros-move-group ros-humble-moveit-kinematics \
     ros-humble-moveit-planners-ompl \
@@ -29,5 +29,13 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ros-humble-moveit-simple-controller-manager \
     && rm -rf /var/lib/apt/lists/*
+
+FROM moveit-upstream AS moveit
+# Keep the SDK libraries intact; rebuild only the pinned upstream entry point.
+COPY move_group_lifecycle /opt/relay-moveit-src
+ADD --checksum=sha256:e5149cf2f3fd8d8006e33373b70f435bf3edec69b2744ea492bbcfba34f9a5e6 https://raw.githubusercontent.com/moveit/moveit2/2.5.10/moveit_ros/move_group/src/move_group.cpp /opt/relay-moveit-src/upstream_move_group.cpp
+RUN python3 /opt/relay-moveit-src/prepare_upstream.py /opt/relay-moveit-src \
+    && bash -c 'source /opt/ros/humble/setup.bash && cmake -S /opt/relay-moveit-src -B /opt/relay-moveit-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/relay-moveit && cmake --build /opt/relay-moveit-build -j2 && cmake --install /opt/relay-moveit-build'
+ENV AMENT_PREFIX_PATH=/opt/relay-moveit
 
 FROM runtime AS headless

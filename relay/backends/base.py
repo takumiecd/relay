@@ -15,6 +15,18 @@ if TYPE_CHECKING:
     from numpy.typing import ArrayLike, NDArray
 
 
+class PreflightRejectedError(ValueError):
+    """A conversion refused a request BEFORE sending any robot command.
+
+    Manual control may retain its mode and allow a different intent. Never use
+    this for an uncertain execution/action result or invalid controller state.
+    """
+
+
+class PreflightTimeoutError(TimeoutError):
+    """A pure computation timed out BEFORE any robot command was submitted."""
+
+
 class CartesianBackend(Protocol):
     """Translate WORLD-frame physical requests to this backend's native actions.
 

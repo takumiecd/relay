@@ -44,7 +44,8 @@ class HttpCodeGenerator:
         content = [
             {
                 "type": "text",
-                "text": instruction + "\nRobot state:\n" + json.dumps(observation["state"]),
+                "text": instruction + "\nInput observation snapshot (NOT the get_robot_state() return schema):\n"
+                + json.dumps(observation["state"]),
             }
         ]
         if self.images:
@@ -72,6 +73,9 @@ class HttpCodeGenerator:
                 "Use short local motions in the units and order declared by the available tools. "
                 "At most 100 executed actions total; do not import, reset, launch processes or access files. "
                 "Call only functions listed below; a VLA may be unavailable. "
+                "The input observation and tool returns have different schemas. "
+                "Never copy snapshot keys into get_robot_state(): its Cartesian key is "
+                "'robot_cartesian_pos', NOT 'eef_pose_xyz_wxyz'. "
                 "RESULT may contain a final return value.\n" + api_docs +
                 ("\nWORLD XYZ meters; quaternion WXYZ. Read get_robot_state() before motion; "
                  "robot_cartesian_pos is [x,y,z,qw,qx,qy,qz]. move_to_pose position_m takes "

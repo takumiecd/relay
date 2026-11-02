@@ -4,6 +4,20 @@ const $ = (id) => document.getElementById(id);
 const token = document.querySelector('meta[name="capx-token"]').content;
 const client = crypto.randomUUID();
 const MODE_NAMES = { STOPPED: "停止中", HUMAN: "手動", VLA: "VLA", LLM: "LLM" };
+function executionNotice(value) {
+  const raw = String(value.error || "");
+  if (raw) {
+    const ik = /MoveIt|IK solution|IK failed/.test(raw);
+    return { message: ik ? "手先の位置・姿勢を計算できず停止しました。目標を近づけるか、Hで手動へ戻して逆方向を試してください。" : "実行を停止しました。詳細を確認し、コードまたは接続先を確認してください。", details: raw, error: true };
+  }
+  if (value.manual_rejection)
+    return { message: value.manual_rejection.message, details: value.manual_rejection.details, error: false };
+  if (value.feedback_fresh === false)
+    return { message: "関節状態の更新が止まっています。新しい指令は送れません。接続先を確認してください。", details: "JointState feedback is stale", error: true };
+  if (value.controller_outcome && value.controller_outcome !== "succeeded")
+    return { message: "指令の結果を確認できなかったため、この試行を停止しました。記録を保存し、接続先の状態を確認してください。", details: value.controller_outcome, error: true };
+  return null;
+}
 let state = {
   mode: "STOPPED",
   epoch: -1,
@@ -379,6 +393,8 @@ function render() {
   const busy = pendingCommand !== null || state.resetting || state.seeking || state.adopting;
   const localHeld = keyboard?.held.has("Space");
   const receiving = owned() && localHeld && state.input_fresh && state.deadman;
+  const blocked = owned() && !!state.manual_rejection;
+  const notice = executionNotice(state);
   $("connection").lastChild.textContent = connected
     ? "接続済み"
     : "接続を確認中";
@@ -387,11 +403,14 @@ function render() {
   $("trial").textContent =
     "· TRIAL " + String(state.trial_index || 1).padStart(2, "0");
   renderHistory(busy);
-  $("steps").textContent = `${state.timeline?.cursor ?? state.applied_steps ?? 0} / ${state.timeline?.head ?? state.applied_steps ?? 0}`;
+  $("step-label").textContent = state.timeline ? "経路step" : "記録済み指令";
+  $("steps").textContent = state.timeline ? `${state.timeline.cursor} / ${state.timeline.head}` : String(state.applied_steps ?? 0);
   $("mode-chip").textContent = state.adopting ? "採用を保存中" : state.seeking ? "移動中" : state.resetting
     ? "準備中"
     : state.ended
       ? "試行終了"
+      : state.mode === "LLM" && state.llm_generating ? "LLM生成中"
+      : state.mode === "LLM" && state.program_running && state.generation?.generator === "operator_code" ? "Pythonコード"
       : MODE_NAMES[state.mode];
   $("mode-chip").dataset.mode = state.mode;
   $("message").textContent = state.resetting
@@ -402,6 +421,7 @@ function render() {
         ? "この試行は終了しました"
         : state.mode === "HUMAN" && !owned()
           ? "Space / Hでこの画面へ引き継ぎ"
+          : blocked ? "この方向は一旦停止。別のキーで再開できます。"
           : state.mode === "HUMAN"
             ? "手動モードを継続しています"
             : state.mode === "STOPPED"
@@ -409,7 +429,7 @@ function render() {
               : state.message || "停止中";
   $("status-dot").classList.toggle(
     "active",
-    state.mode !== "STOPPED" && !state.ended,
+    state.mode !== "STOPPED" && !state.ended && !blocked,
   );
   $("episode-banner").hidden = !state.ended || state.resetting;
   $("episode-title").textContent = state.task_completed
@@ -440,7 +460,7 @@ function render() {
   const generation = state.generation;
   const stageNames = { running: "コード実行中", program_completed: "コード完了", interrupted: "引き継ぎにより中断", program_error: "コードエラー", program_timeout: "実行時間の上限", route_adoption: "経路の採用で停止", timeline_seek: "履歴の移動で停止", new_trial: "新しい試行で停止" };
   $("generation-status").textContent = state.llm_generating ? "生成中です。Escで停止、Hで手動に引き継げます。"
-    : state.error ? state.error
+    : state.error ? "コード実行を停止しました。画面下の詳細を確認してください。"
     : generation ? `${stageNames[generation.stage] || generation.stage} · ${generation.applied_actions ?? 0} actions`
     : "画像と状態からPythonコードを生成します。Escで停止できます。";
   $("generated-code").textContent = generation?.code || "まだ生成していません";
@@ -463,8 +483,9 @@ function render() {
       ? "引継ぎできます"
       : "Hで開始";
   $("owner").classList.toggle("active", owned());
-  $("control-focus").classList.toggle("on", receiving);
-  $("deadman-text").textContent = receiving
+  $("control-focus").classList.toggle("on", receiving && !blocked);
+  $("control-focus").classList.toggle("blocked", blocked);
+  $("deadman-text").textContent = blocked ? "この方向は一旦停止しています" : receiving
     ? "操作を受け付けています"
     : localHeld && owned()
       ? "入力を確認しています"
@@ -472,7 +493,7 @@ function render() {
   $("input-state").textContent = state.ended
     ? "試行終了"
     : owned()
-      ? localHeld
+      ? blocked ? "別のキー・速度で操作し直せます" : localHeld
         ? receiving
           ? "入力を受信しました"
           : "入力を確認中"
@@ -485,8 +506,11 @@ function render() {
     flashMessage && performance.now() < flashMessage.until
       ? flashMessage
       : null;
-  $("notice").textContent = state.error || current?.text || (state.feedback_fresh === false ? "関節状態の更新が止まっています。指令は送れません。" : "");
-  $("notice").classList.toggle("error", !!state.error || !!current?.error);
+  $("notice").textContent = notice?.message || current?.text || "";
+  $("notice").classList.toggle("error", !!notice?.error || !!current?.error);
+  $("notice").classList.toggle("warning", !!notice && !notice.error);
+  $("diagnostic-details").hidden = !notice?.details;
+  $("diagnostic-error").textContent = notice?.details || "";
   const positionValues = jointControl ? state.joint_positions_rad?.slice(0,3) : state.eef_position_m;
   if (positionValues) {
     $("position").replaceChildren(

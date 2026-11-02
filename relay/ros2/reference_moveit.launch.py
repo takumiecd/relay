@@ -18,6 +18,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("start_rviz", default_value="true"),
+            DeclareLaunchArgument("move_group_package", default_value="relay_moveit_runtime"),
             ExecuteProcess(
                 cmd=[
                     sys.executable,
@@ -41,7 +42,10 @@ def generate_launch_description():
                 }.items(),
             ),
             IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(str(root / "reference_ik.launch.py"))
+                PythonLaunchDescriptionSource(str(root / "reference_ik.launch.py")),
+                launch_arguments={
+                    "move_group_package": LaunchConfiguration("move_group_package")
+                }.items(),
             ),
         ]
     )
