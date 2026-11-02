@@ -3,7 +3,33 @@
 作品名：Relay - 自律操作の「ここだけ」を直し、経路を残す。
 OmniCampusの提出名：takumiecd。
 
-## 課題条件と今回の選択
+## 締切延長後の改良版
+
+利用者から最終課題の締切延長が伝えられたため、2026-11-02に資料を更新した。
+新しい締切の時刻は未確認。元の提出タグ`pai-final-20261102`とPDF・動画は保持する。
+以下の「元の提出版」の範囲と、改良版を混同しない。
+
+改良版は、LIBERO／OSC、Genesis CPU、ROS 2／MoveIt／RViz参照モデルに対応する。
+Genesisで実LLMの生成・物理動作・手動引き継ぎ・巻き戻し・分岐採用を撮り直し、
+各環境の実VLA接続は検証済みの記録と出所を明示して示す。
+ROSは数値参照controllerと表示用6軸モデルで、物理・接触・衝突回避はない。
+Gazebo・実機・ゲームパッドは未対応。
+
+[改良内容と実測](verification/submission-polish-20261102.md)に失敗例と検査範囲を残す。
+
+```bash
+python scripts/build_pai_polished.py
+```
+
+このscriptはローカルの実測記録・実画面・動画を必要とする。Git cloneだけで映像を合成できるものではない。
+出力は`output/pdf/polished/説明資料_PAI最終課題_takumiecd.pdf`、
+`output/submission-polished-takumiecd/PAI最終課題_takumiecd.mp4`。
+`deliverables.json`へ検証値と素材／完成物のhashを保存する。
+アップロード／提出は別操作。元のYouTube URLが新しい映像に差し替わることはない。
+
+## 元の提出版（pai-final-20261102）
+
+### 課題条件と当初の選択
 
 10/19改訂版ではROS・Gazebo・Genesisを想定しつつ、他のツールと実機も使用可。
 AIの利用は必須で、推論のみでもよく、学習は任意。

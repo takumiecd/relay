@@ -88,7 +88,7 @@ source /opt/ros/humble/setup.bash
 
 [操作画面8883](http://127.0.0.1:8883/)と[RViz 6084](http://127.0.0.1:6084/vnc.html?autoconnect=1&resize=scale)を並べる。キーは操作画面側で押す。
 終了時はRelayをCtrl+Cで止めて保存し、次にlaunchをCtrl+Cで終了する。他のGenesis／ROS 2コンテナは操作しない。
-MoveIt 2.5.10の終了処理でクラッシュするケースが残っているため、[参照版の既知制限](ros2-milestone.md)を参照。launchの終了コードだけで全プロセスの正常終了を判断しない。
+改良版のDockerイメージは、MoveIt 2.5.10の上流ソースをハッシュ照合して入口だけ再ビルドする。capabilityライブラリを通常のリンク依存として保持し、終了時のcallback解放クラッシュを回避する。既存イメージは上のbuildコマンドで作り直す。比較用に`move_group_package:=moveit_ros_move_group`を指定するとaptの上流実行ファイルを使える。class_loaderの解放警告は残る。[検証と範囲](verification/submission-polish-20261102.md)を参照。
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -121,6 +121,7 @@ native actionは引き続き絶対関節rad×6＋グリッパーmで、手先変
 
 IKのservice待ちは複数の小さい要求を含めて既定0.4秒。タイムアウトすると未処理の返答を外し、後から返っても指令に使わない。IK失敗・上下限違反・seedが変わった場合も関節指令を送らない。
 同じ方向へ移動を重ねて可動域を出た場合もIKは失敗する。それまでに実行した操作を取り消す処理ではなく、各stepの記録を残してその要求を停止する。
+手動操作で、指令送信前のIK失敗または計算期限切れだけが起きた場合は、手動モードを継続する。画面に理由を表示し、同じ入力の繰り返し計算を抑止する。反対方向へ変えるか、Spaceを離して操作し直せる。通信のheartbeat失効だけでは拒否した入力を再実行しない。送信後の結果不明・古い測定状態・不正な解はこの回復対象ではなく、従来どおり停止する。
 送信後のaction期限・測定結果の記録は前段と同じ。Escや入力失効は共通層で扱い、実行中の有限時間呼出しの処理後に停止する。実機の即時安全停止を保証するものではない。
 
 物理・接触・衝突モデルがなく、IKには明示的に`avoid_collisions=False`を指定する。URDFで対応する手先姿勢になっても、物体との接触やタスク成功を意味しない。
@@ -134,6 +135,6 @@ docker exec -e RELAY_TEST_ROS2=1 -e RELAY_TEST_ROS2_VIEW=1 -e RELAY_TEST_MOVEIT=
   'source /opt/ros/humble/setup.bash; /opt/relay-venv/bin/python -m pytest tests/test_ros2_backend.py tests/test_ros2_view.py tests/test_ros2_moveit.py -q --disable-warnings'
 ```
 
-20件通過。実MoveItのIK／FK、変換だけでは関節が動かないこと、コード／キー操作、実TF、記録、存在しないサービス、期限後に返答するテストサービス、IKエラー時に前の解を使わないことを確認した。
+最新の件数と改良版の結果は[検証記録](verification/submission-polish-20261102.md)に記載する。実MoveItのIK／FK、変換だけでは関節が動かないこと、コード／キー操作、実TF、記録、存在しないサービス、期限後に返答するテストサービス、IKエラー時に前の解を使わないことを確認した。
 試験前の姿勢合わせも有限の関節指令で実行し、`joint-setup.json`へ本試験と別に保存する。backendにresetやsnapshotを追加したものではない。
 [検証記録](verification/ros2-moveit-20261102.md)と機械可読の結果を参照。
