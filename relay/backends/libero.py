@@ -15,7 +15,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from relay.backends.base import BackendCapabilities, BackendTransition
-from capx.extensions.vla.contracts import LIBERO_OSC
+from relay.policy.contracts import LIBERO_OSC
 
 ACTION_CONTRACT = LIBERO_OSC
 
@@ -75,7 +75,7 @@ class LiberoBackend:
         self.closed = False
         self.gripper = -1.0
         import_mujoco()
-        from capx.integrations.libero import load_libero_task
+        from .libero_task import load_libero_task
         self.handle = load_libero_task(
             suite_name, int(task_id), cam_w=int(camera_size), cam_h=int(camera_size),
             controller="OSC_POSE", horizon=self.max_steps + self.settle_steps,

@@ -58,6 +58,7 @@ dependencies = [
 
 [project.scripts]
 relay = "relay.cli:main"
+relay-serve = "relay.server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -203,6 +204,7 @@ extend-exclude = [
 [tool.setuptools.package-data]
 "relay.backends" = ["*.txt"]
 "relay.ros2" = ["assets/*.urdf", "assets/*.srdf", "assets/*.rviz"]
+"relay.web" = ["*.html", "*.css", "*.js", "*.mjs"]
 "capx.extensions.hybrid" = ["*.html", "*.css", "*.js", "*.mjs"]
 "capx.extensions.vla" = ["*.txt"]
 "capx.envs" = [

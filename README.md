@@ -2,10 +2,10 @@
 
 VLA・コード・キーボード操作を切り替え、途中へ戻って修正した経路を残す、ロボット操作データ収集の試作です。
 
-**現在の実装は[CaP-X](https://github.com/capgym/cap-x)を拡張したforkです。**
-CaP-Xのコード実行器とLIBERO／MuJoCo／robosuite OSCを利用しています。
-共通実行部分は`relay/environment.py`、LIBERO固有処理は`relay/backends/libero.py`に分離しています。
-複数シミュレータやROS 2に接続する独立した共通基盤への分離は開発中です。
+**このリポジトリは[CaP-X](https://github.com/capgym/cap-x)を拡張したforkです。**
+操作権の切替・停止・記録・分岐を扱うRuntimeは`relay/`へ分離し、CaP-Xなしでも利用できます。
+LIBERO・Genesis・ROS 2は環境アダプタ、CaP-XのPythonコード実行器は任意の連携アダプタとして接続します。
+[Runtimeの構成・独立した配布物の作り方](docs/runtime.md)を参照してください。
 
 ## 今回追加した機能
 
@@ -14,7 +14,8 @@ CaP-Xのコード実行器とLIBERO／MuJoCo／robosuite OSCを利用してい�
 - 制御器・グリッパーを含むcheckpointと、途中からの修正・分岐。
 - 分岐図、採用する経路の固定、観測・操作・出所をそろえた学習候補の書き出し。
 
-CaP-X連携は`capx/extensions/vla/`と`capx/extensions/hybrid/`、共通実行・backend契約は`relay/`にあります。
+共通実行・backend契約・UI・policy接続は`relay/`、CaP-X実行器との連携は`relay/integrations/capx.py`にあります。
+`capx/extensions/vla/`と`capx/extensions/hybrid/`には既存利用向けの互換入口も残しています。
 CaP-X本体にも依存読込・API登録・実行器の小さな変更を加えています。
 事前学習済みモデル、物理エンジン、既存のOSCを新規開発した作品ではありません。
 
@@ -22,6 +23,7 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 
 - [操作画面・起動方法](docs/hybrid-console.md)
 - [CLI：状態確認・切替・停止・巻き戻し・経路採用](docs/cli.md)
+- [Runtime：構成・CaP-Xとの境界・独立配布](docs/runtime.md)
 - [Genesis：キーボード操作・記録・巻き戻し](docs/genesis.md)
 - [GenesisをLLMのPythonコードから操作する](docs/genesis-llm.md)
 - [GenesisでVLA・LLM・手動を切り替える](docs/genesis-vla.md)

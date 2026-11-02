@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "relay-runtime"
+version = "0.1.0"
+description = "Shared control, history and recording for robot environment adapters"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = {file = "LICENSE"}
+dependencies = ["numpy>=1.26", "scipy>=1.11", "Pillow>=10"]
+
+[project.scripts]
+relay = "relay.cli:main"
+relay-serve = "relay.server:main"
+
+[tool.setuptools.packages.find]
+include = ["relay*"]
+
+[tool.setuptools.package-data]
+"relay" = ["_source_manifest.json"]
+"relay.web" = ["*.html", "*.css", "*.js", "*.mjs"]
+"relay.backends" = ["*.txt"]
+"relay.ros2" = ["assets/*.urdf", "assets/*.srdf", "assets/*.rviz"]
