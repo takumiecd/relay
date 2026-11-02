@@ -1,0 +1,1031 @@
+{
+  "real_vla_steps": 3,
+  "test_operator_steps": 2,
+  "code_steps": 5,
+  "trace": [
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 2,
+        "observation_id": 0,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "VLA",
+      "native_action": [
+        0.4198237148619049,
+        0.0034520008088935257,
+        0.5796370196132099,
+        0.0028416740317542353,
+        0.9987133313469805,
+        -0.007787015414705098,
+        0.05002968188430419,
+        -1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 2,
+        "observation_id": 1,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.4107457101345062,
+        2.9101527616148815e-05,
+        0.5805436372756958
+      ],
+      "eef_after_m": [
+        0.41422590613365173,
+        0.0013497326290234923,
+        0.5785431861877441
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "request_id": "8ecace467af0472a814870e8d15d4e11",
+        "chunk_index": 0,
+        "chunk_size": 1,
+        "policy_action": [
+          0.009078004727398649,
+          0.003422899281277377,
+          -0.0009066176624859081,
+          -0.006037605080534431,
+          -0.009472268708780701,
+          -0.001410924555624235,
+          -1.0
+        ],
+        "policy_action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+        "policy_control": {
+          "policy_action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+          "native_action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1",
+          "conversion": "world_delta_to_backend",
+          "frame": "WORLD",
+          "translation_units": "meters",
+          "rotation": "axis_angle_radians",
+          "rotation_composition": "R_delta @ R_current",
+          "gripper": "-1=open,+1=close",
+          "max_translation_norm_m": 0.02,
+          "max_rotation_norm_rad": 0.2,
+          "reference": "current_measured_EEF_at_each_executed_action"
+        },
+        "policy_diagnostics": {
+          "proposed_action": [
+            0.9078004727398646,
+            0.3422899281277376,
+            -0.09066176624859079,
+            -0.060376050805344306,
+            -0.09472268708780701,
+            -0.01410924555624235,
+            0.996078431372549
+          ],
+          "inference_seconds": 0.9177775220000512,
+          "policy_image_sha256": "dde80e8641ce27052e25882896c7c1038811c90eb541704dede3d8573ba5af8a",
+          "camera": "overview",
+          "input_image_convention": "rgb_top_left",
+          "action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+          "model_output_contract": "libero.osc_pose.relative.fixed.7.v1",
+          "action_decoder": "openvla_libero_osc_to_world_delta.v1",
+          "osc_action_scale": [
+            0.05,
+            0.05,
+            0.05,
+            0.5,
+            0.5,
+            0.5
+          ],
+          "motion_gain": 0.2,
+          "gripper_decoding": "-sign(2*model_gripper-1)"
+        }
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          0.0008048405288718641,
+          -0.47258564829826355,
+          0.007173965685069561,
+          -2.19054913520813,
+          -0.003787829540669918,
+          1.8180179595947266,
+          0.8089502453804016,
+          0.04,
+          0.04
+        ],
+        "ik_error_xyz_rotvec": [
+          2.35140323638916e-05,
+          -6.115296855568886e-05,
+          9.822845458984375e-05,
+          -0.00023799246991984546,
+          3.833323353319429e-05,
+          -0.0001528123248135671
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 0,
+      "instruction": "Genesis Panda sandbox: move the arm and open/close the gripper around the cube.",
+      "observation": "observations/0002-000000.json",
+      "next_observation": "observations/0002-000001.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 2,
+        "observation_id": 1,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "VLA",
+      "native_action": [
+        0.4154500358744813,
+        0.002541749522765623,
+        0.5774166105424656,
+        0.0011257498908979467,
+        0.9989382889829114,
+        -0.008382190422250755,
+        0.04528538809375299,
+        -1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 2,
+        "observation_id": 2,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.41422590613365173,
+        0.0013497326290234923,
+        0.5785431861877441
+      ],
+      "eef_after_m": [
+        0.41486039757728577,
+        0.001898086629807949,
+        0.5761202573776245
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "request_id": "a25da949ab0f431da6ef13a70f417bdb",
+        "chunk_index": 0,
+        "chunk_size": 1,
+        "policy_action": [
+          0.0012241297408295607,
+          0.0011920168937421308,
+          -0.0011265756452784827,
+          4.83198200955104e-06,
+          -0.0007478992436446424,
+          -0.0019285716116428375,
+          -1.0
+        ],
+        "policy_action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+        "policy_control": {
+          "policy_action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+          "native_action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1",
+          "conversion": "world_delta_to_backend",
+          "frame": "WORLD",
+          "translation_units": "meters",
+          "rotation": "axis_angle_radians",
+          "rotation_composition": "R_delta @ R_current",
+          "gripper": "-1=open,+1=close",
+          "max_translation_norm_m": 0.02,
+          "max_rotation_norm_rad": 0.2,
+          "reference": "current_measured_EEF_at_each_executed_action"
+        },
+        "policy_diagnostics": {
+          "proposed_action": [
+            0.12241297408295604,
+            0.11920168937421305,
+            -0.11265756452784825,
+            4.831982009551039e-05,
+            -0.007478992436446424,
+            -0.019285716116428375,
+            0.996078431372549
+          ],
+          "inference_seconds": 0.484488865000003,
+          "policy_image_sha256": "69eecb27b62177c202b0ff299cddfaa6005b6ce50b7d01c990c5a04571e253f6",
+          "camera": "overview",
+          "input_image_convention": "rgb_top_left",
+          "action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+          "model_output_contract": "libero.osc_pose.relative.fixed.7.v1",
+          "action_decoder": "openvla_libero_osc_to_world_delta.v1",
+          "osc_action_scale": [
+            0.05,
+            0.05,
+            0.05,
+            0.5,
+            0.5,
+            0.5
+          ],
+          "motion_gain": 0.2,
+          "gripper_decoding": "-sign(2*model_gripper-1)"
+        }
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          0.0006540257018059492,
+          -0.4834356904029846,
+          0.004923905245959759,
+          -2.202457904815674,
+          -0.0012086592614650726,
+          1.8095901012420654,
+          0.807528555393219,
+          0.04,
+          0.04
+        ],
+        "ik_error_xyz_rotvec": [
+          4.857778549194336e-06,
+          -9.406358003616333e-08,
+          1.3113021850585938e-06,
+          -7.911701686680317e-06,
+          -3.5762786865234375e-07,
+          -1.948326826095581e-06
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 1,
+      "instruction": "Genesis Panda sandbox: move the arm and open/close the gripper around the cube.",
+      "observation": "observations/0002-000001.json",
+      "next_observation": "observations/0002-000002.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 2,
+        "observation_id": 2,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "VLA",
+      "native_action": [
+        0.42380640440575046,
+        0.0020048093890734755,
+        0.5738938918183831,
+        0.0023234644562263778,
+        0.9989965819501595,
+        -0.007658123000047709,
+        0.044065677311658835,
+        -1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 2,
+        "observation_id": 3,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.41486039757728577,
+        0.001898086629807949,
+        0.5761202573776245
+      ],
+      "eef_after_m": [
+        0.41837748885154724,
+        0.001982035581022501,
+        0.5735012292861938
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "request_id": "9493372b104d496985e5299b9a9cfe66",
+        "chunk_index": 0,
+        "chunk_size": 1,
+        "policy_action": [
+          0.008946006828464715,
+          0.00010672275926552624,
+          -0.0022263655592413517,
+          -0.002230042000027263,
+          -0.0025529412019486527,
+          1.2604848426930882e-05,
+          -1.0
+        ],
+        "policy_action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+        "policy_control": {
+          "policy_action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+          "native_action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1",
+          "conversion": "world_delta_to_backend",
+          "frame": "WORLD",
+          "translation_units": "meters",
+          "rotation": "axis_angle_radians",
+          "rotation_composition": "R_delta @ R_current",
+          "gripper": "-1=open,+1=close",
+          "max_translation_norm_m": 0.02,
+          "max_rotation_norm_rad": 0.2,
+          "reference": "current_measured_EEF_at_each_executed_action"
+        },
+        "policy_diagnostics": {
+          "proposed_action": [
+            0.8946006828464713,
+            0.010672275926552621,
+            -0.22263655592413512,
+            -0.02230042000027263,
+            -0.025529412019486525,
+            0.00012604848426930881,
+            0.996078431372549
+          ],
+          "inference_seconds": 0.4829624120000062,
+          "policy_image_sha256": "a62c89527c1e4e33b4271c8d9fe55406360a195773ec62092dfac144502d826d",
+          "camera": "overview",
+          "input_image_convention": "rgb_top_left",
+          "action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+          "model_output_contract": "libero.osc_pose.relative.fixed.7.v1",
+          "action_decoder": "openvla_libero_osc_to_world_delta.v1",
+          "osc_action_scale": [
+            0.05,
+            0.05,
+            0.05,
+            0.5,
+            0.5,
+            0.5
+          ],
+          "motion_gain": 0.2,
+          "gripper_decoding": "-sign(2*model_gripper-1)"
+        }
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          4.6731409383937716e-05,
+          -0.45744451880455017,
+          0.004712528083473444,
+          -2.1897482872009277,
+          -0.0037050859536975622,
+          1.8204060792922974,
+          0.8058193325996399,
+          0.04,
+          0.04
+        ],
+        "ik_error_xyz_rotvec": [
+          1.3262033462524414e-05,
+          -4.323665052652359e-06,
+          0.00011348724365234375,
+          -2.6905443519353867e-05,
+          9.909272193908691e-07,
+          -3.477931022644043e-05
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 2,
+      "instruction": "Genesis Panda sandbox: move the arm and open/close the gripper around the cube.",
+      "observation": "observations/0002-000002.json",
+      "next_observation": "observations/0002-000003.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 4,
+        "observation_id": 3,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "TEST_OPERATOR",
+      "native_action": [
+        0.42380640440575046,
+        0.0020048093890734755,
+        0.5758938918183831,
+        0.002323464456226378,
+        0.9989965819501595,
+        -0.007658123000047709,
+        0.044065677311658835,
+        -1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 4,
+        "observation_id": 4,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.41837748885154724,
+        0.001982035581022501,
+        0.5735012292861938
+      ],
+      "eef_after_m": [
+        0.4206600785255432,
+        0.002001086249947548,
+        0.5723968744277954
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "client_id": "validation",
+        "input_sequence": 0,
+        "input_device": "browser",
+        "speed": 0.2
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          4.09038329962641e-05,
+          -0.4570763111114502,
+          0.004709513857960701,
+          -2.1841540336608887,
+          -0.003724621143192053,
+          1.8151803016662598,
+          0.8058262467384338,
+          0.04,
+          0.04
+        ],
+        "ik_error_xyz_rotvec": [
+          3.606081008911133e-06,
+          -9.273644536733627e-07,
+          3.9577484130859375e-05,
+          -8.103437721729279e-06,
+          1.475214958190918e-06,
+          -4.061497747898102e-06
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 3,
+      "instruction": "Genesis Panda sandbox: move the arm and open/close the gripper around the cube.",
+      "observation": "observations/0004-000003.json",
+      "next_observation": "observations/0004-000004.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 4,
+        "observation_id": 4,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "TEST_OPERATOR",
+      "native_action": [
+        0.42380640440575046,
+        0.0020048093890734755,
+        0.5778938918183831,
+        0.0023234644562263773,
+        0.9989965819501595,
+        -0.007658123000047708,
+        0.04406567731165883,
+        -1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 4,
+        "observation_id": 5,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.4206600785255432,
+        0.002001086249947548,
+        0.5723968744277954
+      ],
+      "eef_after_m": [
+        0.42200642824172974,
+        0.0020127124153077602,
+        0.5726158022880554
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "client_id": "validation",
+        "input_sequence": 1,
+        "input_device": "browser",
+        "speed": 0.2
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          4.3310472392477095e-05,
+          -0.4567962884902954,
+          0.0047024916857481,
+          -2.178753137588501,
+          -0.0037308079190552235,
+          1.8100595474243164,
+          0.8058115839958191,
+          0.04,
+          0.04
+        ],
+        "ik_error_xyz_rotvec": [
+          3.0338764190673828e-05,
+          1.862645149230957e-08,
+          1.33514404296875e-05,
+          -2.0144505015196046e-06,
+          1.6763804069341859e-06,
+          2.4754551759542665e-06
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 4,
+      "instruction": "Genesis Panda sandbox: move the arm and open/close the gripper around the cube.",
+      "observation": "observations/0004-000004.json",
+      "next_observation": "observations/0004-000005.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 5,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "CODE",
+      "native_action": [
+        0.42380640440575046,
+        0.0020048093890734755,
+        0.5778938918183831,
+        0.002323464456226377,
+        0.9989965819501595,
+        -0.007658123000047706,
+        0.044065677311658814,
+        1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 6,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.42200642824172974,
+        0.0020127124153077602,
+        0.5726158022880554
+      ],
+      "eef_after_m": [
+        0.4227989614009857,
+        0.0020197525154799223,
+        0.5728372931480408
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true,
+        "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+        "client_id": "validation",
+        "request_epoch": 5,
+        "program_id": "318f5fb1b57544408d886bbf70fdee1d"
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          4.845233343075961e-05,
+          -0.4567941129207611,
+          0.004698283039033413,
+          -2.178722858428955,
+          -0.0037341639399528503,
+          1.8100308179855347,
+          0.8058118224143982,
+          0.0,
+          0.0
+        ],
+        "ik_error_xyz_rotvec": [
+          3.0428171157836914e-05,
+          1.7974525690078735e-07,
+          2.205371856689453e-06,
+          -5.261972546577454e-07,
+          1.0132789611816406e-06,
+          9.899958968162537e-07
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 5,
+      "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+      "observation": "observations/0005-000005.json",
+      "next_observation": "observations/0005-000006.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 6,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "CODE",
+      "native_action": [
+        0.42380640440575046,
+        0.0020048093890734755,
+        0.5778938918183831,
+        0.002323464456226377,
+        0.9989965819501595,
+        -0.007658123000047705,
+        0.04406567731165881,
+        1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 7,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.4227989614009857,
+        0.0020197525154799223,
+        0.5728372931480408
+      ],
+      "eef_after_m": [
+        0.42327040433883667,
+        0.0020243017934262753,
+        0.5729739665985107
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true,
+        "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+        "client_id": "validation",
+        "request_epoch": 5,
+        "program_id": "318f5fb1b57544408d886bbf70fdee1d"
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          5.288144893711433e-05,
+          -0.4567883610725403,
+          0.004694685805588961,
+          -2.1787097454071045,
+          -0.0037364885210990906,
+          1.8100228309631348,
+          0.8058122396469116,
+          0.0,
+          0.0
+        ],
+        "ik_error_xyz_rotvec": [
+          2.8818845748901367e-05,
+          2.2980384528636932e-07,
+          -9.5367431640625e-07,
+          -1.4435499906539917e-08,
+          4.470348358154297e-07,
+          -2.39349901676178e-07
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 6,
+      "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+      "observation": "observations/0005-000006.json",
+      "next_observation": "observations/0005-000007.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 7,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "CODE",
+      "native_action": [
+        0.42380640440575046,
+        0.0020048093890734755,
+        0.5778938918183831,
+        0.002323464456226377,
+        0.9989965819501595,
+        -0.007658123000047704,
+        0.044065677311658814,
+        1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 8,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.42327040433883667,
+        0.0020243017934262753,
+        0.5729739665985107
+      ],
+      "eef_after_m": [
+        0.4235510230064392,
+        0.00202720589004457,
+        0.5730578303337097
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true,
+        "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+        "client_id": "validation",
+        "request_epoch": 5,
+        "program_id": "318f5fb1b57544408d886bbf70fdee1d"
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          5.728125324822031e-05,
+          -0.45678409934043884,
+          0.004691062495112419,
+          -2.178703546524048,
+          -0.00373811274766922,
+          1.8100208044052124,
+          0.8058131337165833,
+          0.0,
+          0.0
+        ],
+        "ik_error_xyz_rotvec": [
+          2.7477741241455078e-05,
+          3.2549723982810974e-07,
+          -1.9073486328125e-06,
+          8.195638656616211e-08,
+          2.0116567611694336e-07,
+          -5.355104804039001e-07
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 7,
+      "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+      "observation": "observations/0005-000007.json",
+      "next_observation": "observations/0005-000008.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 8,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "CODE",
+      "native_action": [
+        0.42380640440575046,
+        0.0020048093890734755,
+        0.5778938918183831,
+        0.002323464456226377,
+        0.9989965819501595,
+        -0.007658123000047704,
+        0.044065677311658814,
+        1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 9,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.4235510230064392,
+        0.00202720589004457,
+        0.5730578303337097
+      ],
+      "eef_after_m": [
+        0.42371809482574463,
+        0.0020290324464440346,
+        0.5731092691421509
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true,
+        "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+        "client_id": "validation",
+        "request_epoch": 5,
+        "program_id": "318f5fb1b57544408d886bbf70fdee1d"
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          6.163721991470084e-05,
+          -0.45678141713142395,
+          0.004687548149377108,
+          -2.178701162338257,
+          -0.003739806590601802,
+          1.810020923614502,
+          0.8058144450187683,
+          0.0,
+          0.0
+        ],
+        "ik_error_xyz_rotvec": [
+          2.664327621459961e-05,
+          3.41096892952919e-07,
+          -2.0265579223632812e-06,
+          2.9802322387695312e-08,
+          1.2665987014770508e-07,
+          -7.152557373046875e-07
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 8,
+      "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+      "observation": "observations/0005-000008.json",
+      "next_observation": "observations/0005-000009.json"
+    },
+    {
+      "context": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 9,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "source": "CODE",
+      "native_action": [
+        0.42380640440575046,
+        0.0020048093890734755,
+        0.5778938918183831,
+        0.002323464456226377,
+        0.9989965819501595,
+        -0.007658123000047703,
+        0.044065677311658814,
+        1.0
+      ],
+      "next": {
+        "session_id": "15e3cbc48a4a44a7a06274aa67d20006",
+        "epoch": 5,
+        "observation_id": 10,
+        "action_contract": "genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1"
+      },
+      "eef_before_m": [
+        0.42371809482574463,
+        0.0020290324464440346,
+        0.5731092691421509
+      ],
+      "eef_after_m": [
+        0.42381757497787476,
+        0.002030270639806986,
+        0.5731405019760132
+      ],
+      "task_completed": false,
+      "environment_done": false,
+      "reward": 0.0,
+      "provenance": {
+        "generator": "llm_http",
+        "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+        "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+        "images": true,
+        "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+        "client_id": "validation",
+        "request_epoch": 5,
+        "program_id": "318f5fb1b57544408d886bbf70fdee1d"
+      },
+      "backend_diagnostics": {
+        "joint_position_target": [
+          6.60690784570761e-05,
+          -0.45677974820137024,
+          0.004684037528932095,
+          -2.1786999702453613,
+          -0.0037415314000099897,
+          1.8100214004516602,
+          0.8058156371116638,
+          0.0,
+          0.0
+        ],
+        "ik_error_xyz_rotvec": [
+          2.60770320892334e-05,
+          2.8172507882118225e-07,
+          -1.9669532775878906e-06,
+          2.3283064365386963e-09,
+          1.564621925354004e-07,
+          -1.2526288628578186e-06
+        ],
+        "physics_steps": 5
+      },
+      "terminated": false,
+      "truncated": false,
+      "timestep": 9,
+      "instruction": "グリッパーを5ステップ閉じてください。close_gripper(steps=5)だけを使ってください。",
+      "observation": "observations/0005-000009.json",
+      "next_observation": "observations/0005-000010.json"
+    }
+  ],
+  "policy": {
+    "model": "openvla/openvla-7b-finetuned-libero-spatial",
+    "revision": "962318cec55ac10993ff0f5f43eda9a270b4c873",
+    "code_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+    "adapter": "openvla",
+    "unnorm_key": "libero_spatial",
+    "action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+    "model_output_contract": "libero.osc_pose.relative.fixed.7.v1",
+    "action_decoder": "openvla_libero_osc_to_world_delta.v1",
+    "osc_action_scale": [
+      0.05,
+      0.05,
+      0.05,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "motion_gain": 0.2,
+    "gripper_decoding": "-sign(2*model_gripper-1)",
+    "device": "NVIDIA L4",
+    "torch": "2.2.2+cu121",
+    "center_crop_area": 0.9,
+    "attention": "sdpa",
+    "quantized": false,
+    "seed": 7,
+    "required_views": [
+      "overview"
+    ],
+    "input_image_convention": "rgb_top_left",
+    "uses_robot_state": false,
+    "deployment_note": "Camera/control conversion does not establish policy transfer to another domain",
+    "protocol_version": 1
+  },
+  "selection": {
+    "schema": "capx.route-selection.v1",
+    "id": "d3caab9060194a608ee76eed49178060",
+    "branch": "0001",
+    "end_step": 10,
+    "selected_by": "validation",
+    "wall_time_ns": 1793595599576100000,
+    "endpoint_checkpoint": "history/checkpoints/552ef5693a8f49c29bc747ad93f4052b.npz",
+    "endpoint_sha256": "36667c29d3b73294c3b90dd3844b8f22097bbec9839b4533e12a855d00ebaf71",
+    "route_sha256": "a2de70c06c370c8985c7cb3b381e5668f881e7d974993c4c7a1b63f97e769703",
+    "route": "history/adoptions/d3caab9060194a608ee76eed49178060/route.jsonl",
+    "candidates": "history/adoptions/d3caab9060194a608ee76eed49178060/vla-candidates.jsonl",
+    "code_candidates": "history/adoptions/d3caab9060194a608ee76eed49178060/vlm-code-candidates.jsonl",
+    "code_candidates_sha256": "f01f528e41b146aedf779583a5294416f4741eb577f3ff6a4cbebe3b4a679af9",
+    "program_coverage": "history/adoptions/d3caab9060194a608ee76eed49178060/program-coverage.jsonl",
+    "program_coverage_sha256": "3d9802f0dad2fb09ca7c13b5d00c85acbeb52f3109e14d8c3661f8792125e7d0",
+    "code_candidate_count": 1,
+    "excluded_program_count": 0,
+    "selection": "history/adoptions/d3caab9060194a608ee76eed49178060/selection.json",
+    "paths_relative_to": "trial_root",
+    "selected_for_dataset": true,
+    "training_admitted": false,
+    "quality_review_required": true
+  },
+  "delta_physics": [
+    0.5,
+    6.662953093439228e-05,
+    0.043407589197158813,
+    0.004694804301834665,
+    0.019931554794311523,
+    -0.003734548983629793,
+    0.010056734085083008,
+    0.005803048610687256,
+    -0.03667017933912575,
+    -0.0366701022721827,
+    -8.827361558161329e-06,
+    0.0011294935829937458,
+    -5.908488674322143e-05,
+    0.014743270352482796,
+    -1.36044982355088e-05,
+    -0.00014309142716228962,
+    0.00012897021815660992,
+    -0.035967959992980525,
+    -0.03596800780012899,
+    0.0,
+    -7.895018840076151e-12,
+    1.862645149230957e-09,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    5.6972405959587746e-11,
+    7.157618595043935e-11,
+    -1.7430448906452511e-07,
+    -9.575334969369464e-10,
+    2.349144989644003e-09,
+    -3.882488552875429e-09
+  ],
+  "training_admitted": false,
+  "restore_exact": true,
+  "trace_origin": "immutable raw trajectory/steps.jsonl; independent of rewound live cursor",
+  "gpu_job_id": "l4job-4ba9f575a09b4b2aa495b035ebe08632",
+  "worker_model": {
+    "model": "openvla/openvla-7b-finetuned-libero-spatial",
+    "revision": "962318cec55ac10993ff0f5f43eda9a270b4c873",
+    "code_revision": "47a0ec7fc4ec123775a391911046cf33cf9ed83f",
+    "adapter": "openvla",
+    "unnorm_key": "libero_spatial",
+    "action_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+    "model_output_contract": "libero.osc_pose.relative.fixed.7.v1",
+    "action_decoder": "openvla_libero_osc_to_world_delta.v1",
+    "osc_action_scale": [
+      0.05,
+      0.05,
+      0.05,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "motion_gain": 0.2,
+    "gripper_decoding": "-sign(2*model_gripper-1)",
+    "device": "NVIDIA L4",
+    "torch": "2.2.2+cu121",
+    "center_crop_area": 0.9,
+    "attention": "sdpa",
+    "quantized": false,
+    "seed": 7,
+    "required_views": [
+      "overview"
+    ],
+    "input_image_convention": "rgb_top_left",
+    "uses_robot_state": false,
+    "deployment_note": "Camera/control conversion does not establish policy transfer to another domain",
+    "protocol_version": 1
+  },
+  "worker_result": {
+    "predictions": 3
+  },
+  "source_sha256": "d82af8dc610341b245b51d4dd5b5365280a08e865f39f4dcc24290480ae6ae30",
+  "raw_steps_sha256": "155e6ffc8370aa9c091053430ed383566c47fd2a6c4fc270fbb4a5a5f3da4f07",
+  "test_operator_is_human_demo": false
+}

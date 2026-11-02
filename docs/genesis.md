@@ -94,7 +94,8 @@ owner threadで復元した後、epochを更新して古い推論・キー入力
 native actionは8次元：`[x_m, y_m, z_m, qw, qx, qy, qz, gripper]`。
 action契約は`genesis.panda.eef_world.absolute.xyz_wxyz.grip.8.v1`。
 LIBEROの7次元相対OSC指令とは異なる。OpenVLAをこのまま接続した結果とは扱わない。
-今回VLA／LLMの実モデル推論は接続・検証していない。
+このガイドの`--manual-only`ではモデル推論を使わない。
+実LLM接続は[genesis-llm.md](genesis-llm.md)、VLAのWORLD変位接続と短い実モデル試験は[genesis-vla.md](genesis-vla.md)を参照。
 
 通常操作で関節状態を直接書き換えず、IK→PD→物理stepを使う。
 `set_dofs_position`を使うのはresetの初期配置だけ。

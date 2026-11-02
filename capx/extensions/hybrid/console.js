@@ -107,14 +107,14 @@ function mode(value, options = {}) {
     return;
   }
   const body = { mode: value };
-  if (value === "LLM") {
+  if (value === "LLM" || value === "VLA") {
     const instruction = $("llm-instruction").value.trim();
-    if (!instruction) {
-      flash("LLMへの操作指示を入力してください");
+    if (!instruction && value === "LLM") {
+      flash("操作指示を入力してください");
       $("llm-instruction").focus();
       return;
     }
-    body.instruction = instruction;
+    body.instruction = instruction || state.instruction;
   }
   return command("/api/mode", body, options);
 }

@@ -1,0 +1,7 @@
+{
+  "camera": "overview",
+  "image_convention": "rgb_top_left",
+  "output_contract": "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1",
+  "osc_action_scale": [0.05, 0.05, 0.05, 0.5, 0.5, 0.5],
+  "motion_gain": 0.2
+}

@@ -7,12 +7,14 @@ from scipy.spatial.transform import Rotation
 from capx.integrations.base_api import ApiBase, register_api
 from capx.envs.tasks.base import CodeExecEnvConfig, CodeExecutionEnvBase
 from relay.backends.base import CartesianBackend
+from .actions import PolicyActions
 
 
 class VlaApi(ApiBase):
-    def __init__(self, env, predictor):
+    def __init__(self, env, predictor, policy_actions=None):
         super().__init__(env)
         self.predictor = predictor
+        self.policy_actions = policy_actions
 
     def _lease(self, source):
         control = getattr(self._env, "control", None)
@@ -43,6 +45,7 @@ class VlaApi(ApiBase):
             raise ValueError("A bounded, non-empty instruction is required")
         if type(max_actions) is not int or not 1 <= max_actions <= 100:
             raise ValueError("max_actions must be an integer in [1,100]")
+        policy_actions = self.policy_actions or PolicyActions(self._env)
         source = "TEST_VLA" if getattr(self.predictor, "is_test", False) else "VLA"
         lease = self._lease(source)
         epoch = self._env.context()["epoch"]
@@ -57,13 +60,13 @@ class VlaApi(ApiBase):
                 reason = "cancelled"
                 break
             reply = self.predictor.predict(self._env.policy_observation(), instruction.strip(), context)
-            if reply.get("context") != context or reply.get("action_contract") != context["action_contract"]:
+            if reply.get("context") != context or reply.get("action_contract") != policy_actions.action_contract:
                 raise ValueError("VLA response context or action contract mismatch")
             if self._env.context() != context or self._env.paused:
                 reason = "cancelled"
                 break
             # Validate the entire chunk before committing its first action.
-            chunk = self._env.validate_chunk(reply["native_actions"])
+            chunk = policy_actions.validate_chunk(reply["native_actions"], reply['action_contract'])
             source = "TEST_VLA" if getattr(self.predictor, "is_test", False) else "VLA"
             interrupted = False
             for chunk_index, action in enumerate(chunk):
@@ -73,10 +76,12 @@ class VlaApi(ApiBase):
                 if (current["epoch"] != epoch or current != context or self._env.paused):
                     reason, interrupted = "cancelled", True
                     break
-                self._env.apply_native(action.tolist(), context=current, source=source, lease=lease,
+                self._env.apply_native(policy_actions.to_native(action).tolist(), context=current, source=source, lease=lease,
                                        provenance={"primitive": "run_vla", "instruction": instruction.strip(),
                                                    "request_id": reply.get("request_id"),
-                                                   "chunk_index": chunk_index, "chunk_size": len(chunk)})
+                                                   "chunk_index": chunk_index, "chunk_size": len(chunk),
+                                                   **policy_actions.provenance(action.tolist(), reply.get('diagnostics'),
+                                                       getattr(self.predictor, 'ready', None))})
                 # This primitive owns the cursor; its own applied action advances it.
                 context = dict(current, observation_id=current["observation_id"] + 1)
             if interrupted:

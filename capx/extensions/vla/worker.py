@@ -6,6 +6,7 @@ import json
 import time
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 from .adapters import load_adapter
@@ -16,6 +17,8 @@ def run(connection_file, output, seconds=600, adapter="openvla", adapter_config=
     connection = json.loads(Path(connection_file).read_text())
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
+    worker_id = uuid.uuid4().hex
+    registered = False
 
     def request(path, body=None):
         req = urllib.request.Request(connection["url"].rstrip("/") + path,
@@ -26,9 +29,10 @@ def run(connection_file, output, seconds=600, adapter="openvla", adapter_config=
 
     try:
         model = load_adapter(adapter, adapter_config)
-        metadata = dict(model.metadata, protocol_version=1)
+        metadata = dict(model.metadata, protocol_version=1, worker_id=worker_id)
         (output / "model.json").write_text(json.dumps(metadata, indent=2))
         request("/ready", metadata)
+        registered = True
         print(json.dumps({"event": "policy_ready", "adapter": adapter,
                           "device": metadata.get("device")}), flush=True)
         end = time.monotonic() + seconds
@@ -47,7 +51,7 @@ def run(connection_file, output, seconds=600, adapter="openvla", adapter_config=
                 raise ValueError("Adapter changed its declared action contract")
             reply = {key: item[key] for key in ("request_id", "context", "observation_sha256")}
             reply.update(native_actions=chunk.actions, action_contract=chunk.action_contract,
-                         diagnostics=chunk.diagnostics)
+                         diagnostics=chunk.diagnostics, worker_id=worker_id)
             try:
                 request("/result", reply)
             except urllib.error.HTTPError as error:
@@ -59,10 +63,15 @@ def run(connection_file, output, seconds=600, adapter="openvla", adapter_config=
         (output / "result.json").write_text(json.dumps({"predictions": len(records)}))
     except BaseException as error:
         try:
-            request("/error", {"error": str(error)})
+            request("/error", {"error": str(error), 'worker_id': worker_id if registered else None})
         except Exception:
             pass
         raise
+    finally:
+        try:
+            request('/detach', {'worker_id': worker_id if registered else None})
+        except Exception:
+            pass  # The owner may have closed the bridge first.
 
 
 if __name__ == "__main__":

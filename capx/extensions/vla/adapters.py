@@ -8,7 +8,7 @@ from typing import Any, Protocol
 
 @dataclass
 class ActionChunk:
-    """Decoded actions in an explicitly named environment control convention."""
+    """Decoded actions in a declared native or portable physical control convention."""
     actions: list[list[float]]
     action_contract: str
     diagnostics: dict[str, Any] = field(default_factory=dict)

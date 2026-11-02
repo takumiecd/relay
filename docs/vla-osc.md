@@ -102,7 +102,8 @@ run_worker(connection, root, output, adapter="my_package.my_adapter:MyVlaAdapter
 Python 3.11等が必要なモデルは、自分の環境で`python -m capx.extensions.vla.worker`を起動できる。
 OpenVLA用の既定依存ファイルは`requirements-openvla.txt`である。
 
-**現在の実環境backendはLIBEROのrelative OSC、実モデル確認はOpenVLAのみ。**
+**このページの実OpenVLA動作確認はLIBEROのrelative OSCを対象とする。**
+GenesisへのWORLD変位経由の接続と短い実モデル試験は[genesis-vla.md](genesis-vla.md)を参照。
 関節角を出すVLAなどには別の制御adapter/backendが必要で、同じ7要素でも接続可能とは限らない。
 Pi0/SmolVLA等のモデル別adapter・学習済みcheckpointの互換性はまだ検証していない。
 
