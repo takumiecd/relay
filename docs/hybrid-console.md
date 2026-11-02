@@ -1,6 +1,6 @@
 # VLA・LLMコード・人間を同じ環境で切り替える
 
-CaP-Xの追加branch `codex/vla-integration` の機能。
+CaP-Xを拡張したRelayの機能。提出版は`pai-final-20261102`、共通化の開発branchは`feat/environment-adapters`。
 [既存のVLA/OSC起動手順](vla-osc.md)と同じsim専用venv・LIBERO-PRO submoduleを使う。
 ROS 2は使わず、一つのMuJoCo環境と共通の実行済み記録を共有する。
 
@@ -33,6 +33,42 @@ VLA workerの接続情報は`output/hybrid-live-01/connection.json`に生成さ�
 実VLAを接続していない間も、手動と入力したPythonコードは使える。
 API URL・model名を省略すればLLM自動生成は無効になる。
 `--llm-images`を付ける場合、接続先は画像を受け取れるVLMが必要。
+
+## LIBEROのタスクを変える
+
+現在は**起動時のJSON設定**で選ぶ。画面のタスク選択UIは未実装で、
+「新しい試行」は選択中の同じタスクを初期状態へ戻す操作。
+
+リポジトリ直下に`libero-task.json`を作り、例えば次の内容を書く。
+このファイルは各自で作成する設定例で、リポジトリには同梱していない。
+
+```json
+{
+  "suite_name": "libero_spatial",
+  "task_id": 1
+}
+```
+
+- `suite_name`：LIBEROのタスク群。既定値は`libero_spatial`。
+- `task_id`：その群のタスク番号。0始まりで、`1`は2番目のタスク。既定値は`0`。
+
+作成したファイルを`--backend-config`で渡す。以下は入力・切替を確認する試験用の起動例。
+既存画面の8876と重ならないよう、8877を使う。
+
+```bash
+.local/openvla-sim/bin/python -m capx.extensions.hybrid.server \
+  --backend libero --backend-config libero-task.json \
+  --port 8877 --output output/hybrid-task1-01 \
+  --test-vla --test-llm --test-operator
+```
+
+`http://127.0.0.1:8877/`を開き、画面上部のタスク説明を確認する。
+出力先には未使用のフォルダ名を指定し、別タスクの記録と分ける。
+実VLA・実LLMを使う場合も同じ`--backend-config`を渡し、上記「実VLA・実LLMを接続する場合」の起動オプションを使う。
+タスクを切り替えられることと、接続した学習済みVLAがそのタスクを解けることは、別に確認する。
+
+設定を受け取る実装は`relay/backends/libero.py`の`LiberoBackend.__init__()`、
+JSON読込は`capx/extensions/hybrid/server.py`の`main()`にある。
 画像なしではロボット状態と指示・API仕様を送る。物体位置の認識APIはまだない。
 
 LLMはOpenAI互換のChat Completions endpointを使う。GPU上のvLLMなどを接続できる。

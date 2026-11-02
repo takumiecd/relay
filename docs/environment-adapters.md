@@ -54,6 +54,8 @@ Genesis・ROS 2・Gazeboの実adapterはまだ追加していない。
 
 ## 追加と起動
 
+LIBEROの`suite_name`・`task_id`を変更する具体例は、[操作ガイド「LIBEROのタスクを変える」](hybrid-console.md#liberoのタスクを変える)を参照。
+
 built-inは`libero`と、数値参照実装の`kinematic`。
 外部adapterは`load_backend("your_package.backend:YourBackend", config)`で読み込む。
 factoryはJSON設定をキーワード引数として受け、契約を満たすbackendを返す。
