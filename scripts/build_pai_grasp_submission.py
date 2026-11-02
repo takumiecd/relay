@@ -11,6 +11,7 @@ import argparse
 from collections import Counter
 import hashlib
 import json
+import math
 from pathlib import Path
 import shutil
 import subprocess
@@ -57,6 +58,8 @@ def audit(capture):
     parent = rows(scene/'trajectory/steps.jsonl')
     repair_root = scene/'branches'/adopted['branch']/'trajectory'
     repair = rows(repair_root/'steps.jsonl')
+    episode = read(scene/'trajectory/episode.json')
+    model = read(capture/'gpu-results/results/artifacts/worker/model.json')
     assert evidence['task_id'] == 0 and evidence['initial_index'] == 41
     assert len(parent) == 179 and len(repair) == 68 and len(candidates) == 106
     assert Counter(x['source'] for x in candidates) == {'VLA': 68, 'TEST_OPERATOR': 38}
@@ -71,6 +74,19 @@ def audit(capture):
     assert baseline['steps'] == 180 and baseline['every_replayed_physics_state_exact'] is True
     assert baseline['final_reward'] == 0 and baseline['final_task_completed'] is False
     assert evidence['local_correction']['not_human_demonstration'] is True
+    assert episode['metadata']['test_vla'] is False
+    assert model['model'] == evidence['model'] and model['revision'] == evidence['model_revision']
+    assert model['code_revision'] == evidence['code_revision'] and model['device'] == 'NVIDIA L4'
+    assert model['required_views'] == ['agentview'] and model['uses_robot_state'] is False
+    assert model['seed'] == 7 and model['center_crop_area'] == .9 and model['quantized'] is False
+    assert all(not x['backend_diagnostics']['target_contact_geoms'] for x in parent)
+    assert math.isclose(repair[37]['backend_diagnostics']['target_lift_m'],
+                        evidence['local_correction']['target_lift_after_m'], abs_tol=1e-12)
+    displacement = math.dist(repair[37]['backend_diagnostics']['target_xyz_m'],
+                             repair[-1]['backend_diagnostics']['target_xyz_m'])
+    assert math.isclose(displacement, evidence['after_return']['target_translation_m'], abs_tol=1e-12)
+    non_target = repair[-1]['backend_diagnostics']['non_target_max_initial_L1_m']
+    assert len(non_target) == 3 and max(non_target.values()) <= .001
     a = read(scene/'trajectory'/parent[37]['next_observation'])
     b = read(repair_root/repair[0]['observation'])
     assert (scene/'trajectory'/a['physics_state']).read_bytes() == (repair_root/b['physics_state']).read_bytes()
@@ -221,7 +237,7 @@ def make_report(path, assets, evidence, source_commit):
     add('ブラウザとCLIから同じAPIで状態確認・切替・停止・巻き戻し・経路採用を行う。RuntimeをCaP-Xから分離し、コード実行が必要な場合にCaP-Xの実行器を接続する。')
     story.append(Diagram('architecture'))
     add('遅れて届いた指示を、そのまま適用しない', 'h2')
-    add('実行入口を一つにし、操作主体とepoch・実行権限を照合する。切替前の推論結果や古いキー入力は失効させる。Hで手動、PでVLA、Escで停止。Spaceを押す間だけ進み、Cで閉じ、Vで開く。')
+    add('実行入口を一つにし、操作主体とepoch・実行権限を照合する。切替前の推論結果や古いキー入力は失効させる。ブラウザではHで手動、PでVLA、Escで停止。Spaceを押す間だけ進み、Cで閉じ、Vで開く。')
     add('元の未来を保存し、修正後の経路を採用する', 'h2')
     story.append(Diagram('history'))
     add('図は比較対象の2経路を抜粋。step38の状態を復元し、共通区間を参照した新しい分岐を作る。採用した終点は、後から別の地点を表示しても自動では変わらない。全分岐は記録に保持する。', 'small')
@@ -237,7 +253,7 @@ def make_report(path, assets, evidence, source_commit):
     table([
         ['モデルとGPU', 'LIBERO Spatial向け公開微調整済みOpenVLA 7B / NVIDIA L4 / BF16 / Torch 2.2.2+cu121'],
         ['シミュレータ', 'LIBERO-PRO標準Spatial / MuJoCo 2.3.7 / robosuite 1.4.1 / OSC_POSE / 20 Hz'],
-        ['入力と初期化', 'VLAはagentview 1枚（256pxから既存前処理）＋指示。推論seed=7。表示・記録には手首カメラも使用。'],
+        ['入力と初期化', 'VLAはagentview 1枚＋指示。256px観測を224pxへ前処理（中心crop面積0.9）。推論seed=7。表示・記録には手首カメラも使用。'],
     ], [94, 417], padding=7)
     pictures([('failed-agentview.png', 'VLA単独 step85 / 空の手で移動'),
               ('grasp-agentview.png', '修正後 step76 / ボウルを把持'),
@@ -246,12 +262,12 @@ def make_report(path, assets, evidence, source_commit):
         ['区間', 'step数', '実行した動き'],
         ['VLAの共通部分', '38', '対象付近まで接近。ここへ巻き戻して分岐。'],
         ['代理キー操作', '38', '開く、位置合わせ、閉じる、約4.4cm持ち上げる。'],
-        ['再開後のVLA', '30', 'ボウルを約13.7cm移動し、LIBERO goal判定へ到達。'],
+        ['再開後のVLA', '30', '皿まで移動し、LIBERO goalへ到達。ボウルの始終点間距離は約13.7cm。'],
     ], [113, 48, 350], padding=7)
     add('確認できた結果', 'h2')
-    add('VLA単独は探索時180 stepでgoalなし、対象への接触0回。撮り直した179 stepも、対応する全指令と物理状態が探索記録に一致した。修正経路は106 step（VLA計68、TEST_OPERATOR計38）でreward=1・goal=trueとなった。')
-    add('初期状態と全106 step後の92要素の物理状態を、独立した再実行で完全一致と確認。非対象物体の初期位置からの最大L1変位も1mm以内だった。画像や全SDK内部配列の一致を保証する指標ではない。', 'small')
-    add('特定の一例を選んだデモで、成功率向上の統計評価ではない。goalは皿への接触条件で成立しており、グリッパー解放後の安定性、学習効果、未知環境への汎化は未検証。', 'small')
+    add('VLA単独は探索時180 stepでgoalなし。制御step末尾の接触ログでは、グリッパーと対象物の接触は0回だった。撮り直した179 stepも、対応する全指令と物理状態が探索記録に一致した。修正経路は106 step（VLA計68、TEST_OPERATOR計38）でreward=1・goal=trueとなった。')
+    add('初期状態と全106 step後の92要素の物理状態を、独立した再実行で完全一致と確認。記録した非対象3物体（別のボウル・箱・ラメキン）の初期位置からの最大L1変位も1mm以内だった。画像や全SDK内部配列の一致を保証する指標ではない。', 'small')
+    add('特定の一例を選んだデモで、成功率向上の統計評価ではない。goalはLIBEROのOn(ボウル, 皿)条件（接触と位置関係）で判定。グリッパー解放後の安定性、学習効果、未知環境への汎化は未検証。', 'small')
 
     page('03  対応範囲と、データとして残すもの')
     table([
@@ -270,7 +286,7 @@ def make_report(path, assets, evidence, source_commit):
     add('LLMとGPUの位置付け', 'h2')
     add('今回のL4はVLA推論用。実LLMの別試験にはMac MLXのQwen2.5-VL-7Bを使用した。LLMのHTTP接続口とCaP-X実行器を使うことで、API提供モデルやGPUサーバー上のモデルを差し替える構成にしている。', 'small')
     add('今回の到達点と残る検証', 'h2')
-    add('今回の到達点は、制御の切替・分岐・採用と、選定した1配置での局所修正・VLA再開を記録し、再実行できたこと。VLA用の操作データと、VLM／コード生成用の実行コードの候補を扱う基盤とした。人による修正の収集、学習への投入と効果の評価は未実施。追加する環境や実機、開発の順序は未決定。')
+    add('今回の到達点は、制御の切替・分岐・採用と、選定した1配置での局所修正・VLA再開を記録し、再実行できたこと。VLA用の操作データと、VLM／コード生成用の実行コードの候補を扱う基盤とした。今回のデモは代理操作の1例で、人間のデータによる有効性や学習効果は評価していない。追加する環境や実機、開発の順序は未決定。')
     add('GENIAC Prize等でのCode as Policy利用は開発動機であり、特定の大会SDKへの対応済みという意味ではない。', 'small')
     add('状態復元は対応する同一scene／reset内の能力。ROS 2や実機に、シミュレータと同じ物理的な巻き戻しや即時安全停止を保証するものではない。', 'small')
 

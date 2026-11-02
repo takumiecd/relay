@@ -125,6 +125,13 @@ task0/init41で、ボウル付近まで進んでから指を早く閉じ、空�
 全データは `training_admitted=false`。
 終了はLIBEROのgoal条件で判定しており、グリッパー解放後の安定性を独立検証したとは主張しない。
 
+測定値の定義：接触0回は制御step末尾で記録したグリッパーと対象物の接触で、
+物理substep全ての接触を監視した値ではない。約13.7cmはVLA再開時と終点の
+ボウル位置の3次元距離であり、移動軌跡の弧長ではない。1mm guardは記録した
+非対象3物体の位置のL1変位であり、回転角の制約ではない。
+task0のgoalは`On(akita_black_bowl_1, plate_1)`で、SDKの接触・高さ・水平距離による配置条件。
+グリッパー開放はgoal条件に含まれない。
+
 検証要約: [grasp-repair-20261102.json](grasp-repair-20261102.json)。
 記録と63秒の比較動画: `output/grasp-miss-repair-20261102/`。
 GPU job: `l4job-55e44490b3e1439fa9a05132ad615c56`。
