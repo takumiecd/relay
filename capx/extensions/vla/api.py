@@ -60,6 +60,8 @@ class VlaApi(ApiBase):
 
         robot_joint_pos is in radians in arm_joint_names order. If present,
         robot_cartesian_pos contains XYZ meters followed by a WXYZ quaternion.
+        Use s['robot_cartesian_pos'][:3] for XYZ; observation snapshot keys such
+        as eef_pose_xyz_wxyz are not keys in this tool's return dictionary.
         """
         obs = self._env.get_observation()
         return {k: obs[k] for k in ("robot_cartesian_pos", "robot_joint_pos", "arm_joint_names", "gripper_qpos", "context") if k in obs}

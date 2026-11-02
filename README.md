@@ -53,7 +53,7 @@ PR #7でROS 2標準action／JointStateを使う関節操作・記録を追加し
 `ros2-moveit` backendではMoveItのIKサービスを介した手先操作・記録も追加しています。
 付属controllerは数値補間のみで、MoveIt接続も表示用6軸モデルのIK検証です。Gazebo・物理／衝突・実機・ゲームパッドは未対応です。
 ROS 2参照版は`ros2-reference-20261102`タグで固定し、ここを一区切りとします。次の物理／実機対応は別の変更として扱います。
-MoveIt 2.5.10の終了時クラッシュを含む既知の制限は[一区切りの記録](docs/ros2-milestone.md)を参照してください。
+参照版からの改良と、MoveIt終了時の修正・手動操作の復帰・資料の更新は[改良版の確認記録](docs/verification/submission-polish-20261102.md)を参照してください。元の提出・参照タグは保持します。
 以下は上流CaP-Xの紹介とクレジットです。上流ベンチマークの結果を本拡張の性能とは扱いません。
 
 ## Upstream CaP-X

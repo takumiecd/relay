@@ -3,6 +3,8 @@
 from pathlib import Path
 
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
@@ -11,8 +13,9 @@ def generate_launch_description():
     assets = Path(__file__).resolve().parent / "assets"
     return LaunchDescription(
         [
+            DeclareLaunchArgument("move_group_package", default_value="relay_moveit_runtime"),
             Node(
-                package="moveit_ros_move_group",
+                package=LaunchConfiguration("move_group_package"),
                 executable="move_group",
                 namespace="relay_reference",
                 name="move_group",

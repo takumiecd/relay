@@ -66,6 +66,8 @@ def test_http_instruction_images_execution_and_dataset_provenance(env, tmp_path)
         assert len(endpoint.requests) == 1
         content = endpoint.requests[0]['messages'][1]['content']
         assert content[0]['text'].startswith(instruction)
+        assert 'NOT the get_robot_state() return schema' in content[0]['text']
+        assert "'robot_cartesian_pos', NOT 'eef_pose_xyz_wxyz'" in endpoint.requests[0]['messages'][0]['content']
         assert any(c['type']=='image_url' for c in content)
         assert all(row['source']=='CODE' and row['provenance']['instruction']==instruction for row in env.trace)
         generation = runner.status()['generation']

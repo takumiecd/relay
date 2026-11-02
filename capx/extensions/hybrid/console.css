@@ -129,7 +129,6 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: -.02em; }
 .adoption-row strong.selected { color: #4b7c56; }
 .adoption-row .button { min-height: 31px; padding: 6px 10px; font-size: 11px; }
 .workspace-footer { display: flex; align-items: center; gap: 20px; flex-shrink: 0; padding: 0 3px; color: #8b939b; min-height: 20px; }
-.metric:first-child { display: none; }
 .metric { display: flex; align-items: center; gap: 10px; }
 .metric > span { font-size: 10px; white-space: nowrap; }
 .metric small { color: #9ba3ab; font-size: 9px; margin-left: 4px; }
@@ -138,6 +137,10 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: -.02em; }
 .camera-hint { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 9px; }
 .notice { flex-shrink: 0; font-size: 11px; color: #64727f; line-height: 1.4; }
 .notice:empty { display: none; }.notice.error { color: #ad514a; }
+.notice.warning { color: #876927; background: #f8f1df; border: 1px solid #e8d9ad; padding: 9px 12px; border-radius: 7px; }
+.deadman.blocked { color: #876927; background: #f8f1df; border-color: #ddc98e; }
+.diagnostic-details { flex-shrink: 0; font-size: 10px; color: #66737f; }
+.diagnostic-details pre { max-height: 140px; overflow: auto; white-space: pre-wrap; padding: 10px; background: #eef1f5; border-radius: 6px; margin: 6px 0 0; }
 .episode-banner { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid #ced6de; border-radius: 8px; background: #e1e6ec; padding: 11px 14px; flex-shrink: 0; }
 .episode-banner strong { color: #51606f; font-size: 13px; }.episode-banner p { color: #78838d; font-size: 10px; margin: 4px 0 0; }.episode-banner .button { font-size: 11px; }
 aside { min-height: 0; overflow: auto; scrollbar-width: thin; padding: 0 1px 8px; }

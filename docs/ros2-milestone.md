@@ -33,7 +33,7 @@ RESULT = move_to_pose([p[0], p[1], p[2] + 0.02])
 ```
 
 終了はRelayをCtrl+Cで止めて保存し、その後launchをCtrl+Cで止める。自分たちの参照ノードは、ROSのsignal handlerで終了済みの場合も二重shutdownにせず正常終了する。
-**既知の制限：この構成のMoveIt 2.5.10では、Ctrl+C後のC++プロセス終了処理でexit -11になるケースを確認した。** launchコマンド自体のexit 0は全ノードの正常終了を意味しない。原因の切り分け・SDK修正は未完で、この参照版に残る制限として扱う。記録保存を先に完了する終了順を守り、実機向けの安定した構成とは扱わない。
+タグ`ros2-reference-20261102`のMoveIt 2.5.10では、Ctrl+C後にC++の終了処理がexit -11になるケースがあった。改良版の`moveit` Docker targetでは、ハッシュ固定した上流の実行入口を再ビルドし、capabilityライブラリを通常のリンク依存として保持する。3回の起動・実IK・実行・終了で全子プロセスの正常終了を確認した。**class_loaderの解放警告は残る**。上流SDK全般の修正や実機向け安定性を証明するものではない。[改良版の検証](verification/submission-polish-20261102.md)を参照。launch自体のexit 0だけで正常終了と判断しない。
 
 ## 一区切り前の確認
 

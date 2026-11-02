@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 
 from relay.ros2.model import ReferenceModel
 
-from .base import BackendCapabilities
+from .base import BackendCapabilities, PreflightRejectedError, PreflightTimeoutError
 from .joints import JointProfile
 from .ros2 import Ros2JointBackend
 
@@ -191,7 +191,10 @@ class Ros2MoveItBackend(Ros2JointBackend):
             pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w = map(
                 float, q
             )
-            response = self._rpc(self.ik_client, request, deadline)
+            try:
+                response = self._rpc(self.ik_client, request, deadline)
+            except TimeoutError as error:
+                raise PreflightTimeoutError(str(error)) from error
             if response.error_code.val != 1:
                 reason = f"MoveIt IK failed (error {response.error_code.val})"
                 continue
@@ -238,7 +241,7 @@ class Ros2MoveItBackend(Ros2JointBackend):
                 },
             }
             return action
-        raise ValueError(reason + "; no trajectory sent")
+        raise PreflightRejectedError(reason + "; no trajectory sent")
 
     def step_native(self, action):
         pending, self._pending_ik = self._pending_ik, None

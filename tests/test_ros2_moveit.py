@@ -131,6 +131,41 @@ def test_missing_moveit_service_has_bounded_wait_and_sends_no_command(moveit_env
     finally:b.ik_client=original;b.node.destroy_client(missing)
 
 
+def test_manual_mode_recovers_after_real_missing_service_without_repeated_calls(moveit_env, tmp_path):
+    from capx.extensions.hybrid.runner import HybridRunner
+    from moveit_msgs.srv import GetPositionIK
+    env = moveit_env
+    backend = env.backend
+    runner = HybridRunner(env, tmp_path, realtime=False, test_operator=True)
+    original = backend.ik_client
+    missing = backend.node.create_client(GetPositionIK, '/relay_reference/missing_recovery_ik')
+    try:
+        backend.ik_client = missing
+        runner.control.switch('HUMAN', client_id='recovery')
+        for sequence in range(3):
+            runner.control.submit_input(client_id='recovery', sequence=sequence, epoch=env.epoch,
+                                        keys=['KeyW'], speed=.5, deadman=True)
+            began = time.monotonic()
+            runner.tick()
+            if sequence:
+                assert time.monotonic() - began < .2  # No repeated service timeout.
+        assert env.applied_steps == 0 and runner.error is None
+        assert runner.control.mode == 'HUMAN'
+        assert runner.manual_rejection['code'] == 'preflight_timeout'
+        backend.ik_client = original
+        before = env.eef_pose()[0]
+        runner.control.submit_input(client_id='recovery', sequence=3, epoch=env.epoch,
+                                    keys=['KeyS'], speed=.5, deadman=True)
+        runner.tick()
+        assert runner.manual_rejection is None and env.applied_steps == 1
+        assert env.eef_pose()[0][0] < before[0]
+        assert env.trace[-1]['backend_diagnostics']['controller_outcome'] == 'succeeded'
+    finally:
+        backend.ik_client = original
+        backend.node.destroy_client(missing)
+        runner.close()
+
+
 def test_solver_failure_and_bad_increment_do_not_reuse_previous_solution(moveit_env,monkeypatch):
     from moveit_msgs.srv import GetPositionIK
     env=moveit_env;b=env.backend

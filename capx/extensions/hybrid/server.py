@@ -191,6 +191,7 @@ class Console:
             teleop=getattr(env,'metadata',{}).get('teleop', {}),
             joint_positions_rad=np.asarray(obs['robot_joint_pos']).tolist() if 'robot_joint_pos' in obs else None,
             feedback_fresh=obs.get('feedback_fresh'),
+            controller_outcome=env.trace[-1].get('backend_diagnostics',{}).get('controller_outcome') if env.trace else None,
             eef_position_m=obs["robot_cartesian_pos"][:3].tolist()
             if "robot_cartesian_pos" in obs
             else None,

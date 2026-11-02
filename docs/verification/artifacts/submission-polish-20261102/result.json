@@ -1,0 +1,224 @@
+{
+  "schema": "relay.pai-polish-evidence.v1",
+  "source_commit": "261bb5e73b0936a2a89017ea64d2f936d7d27c2b",
+  "original_submission": "pai-final-20261102",
+  "genesis": {
+    "model": "mlx-community/Qwen2.5-VL-7B-Instruct-4bit",
+    "generator": "llm_http",
+    "llm_actions": 60,
+    "llm_delta_m": [
+      0.0006151795387268066,
+      2.854404374375008e-05,
+      0.04555249214172363
+    ],
+    "manual_actions": 48,
+    "manual_delta_m": [
+      0.28597626090049744,
+      -7.935825487948023e-05,
+      -0.009695827960968018
+    ],
+    "original_route_steps": 108,
+    "fork_step": 60,
+    "repair_actions": 40,
+    "repair_delta_m": [
+      -1.424551010131836e-05,
+      0.15416566239582608,
+      -0.00020617246627807617
+    ],
+    "selected_steps": 100,
+    "selected_sources": {
+      "CODE": 60,
+      "TEST_OPERATOR": 40
+    },
+    "code_candidates": 1,
+    "training_admitted": false,
+    "restored_physics_vector_bitwise": true,
+    "compared_state_shape": [
+      32
+    ],
+    "code": "s = get_robot_state()\np = s['robot_cartesian_pos'][:3]\nRESULT = move_to_pose([p[0], p[1], p[2] + 0.05], max_actions=60)\n"
+  },
+  "shutdown": [
+    {
+      "cycle": 1,
+      "launch_exit": 0,
+      "clean_children": [
+        "robot_state_publisher-2",
+        "move_group-3",
+        "python3-1"
+      ],
+      "before_m": [
+        0.49182441685667105,
+        0.0,
+        0.5729944511350543
+      ],
+      "after_m": [
+        0.49282337304070123,
+        0.0,
+        0.572992229637476
+      ],
+      "loader_warning": true,
+      "log": "shutdown-1.log",
+      "wall_time_ns": 1793611419187953596
+    },
+    {
+      "cycle": 2,
+      "launch_exit": 0,
+      "clean_children": [
+        "robot_state_publisher-2",
+        "move_group-3",
+        "python3-1"
+      ],
+      "before_m": [
+        0.49182441685667105,
+        0.0,
+        0.5729944511350543
+      ],
+      "after_m": [
+        0.49282337304070123,
+        0.0,
+        0.572992229637476
+      ],
+      "loader_warning": true,
+      "log": "shutdown-2.log",
+      "wall_time_ns": 1793611420107306222
+    },
+    {
+      "cycle": 3,
+      "launch_exit": 0,
+      "clean_children": [
+        "robot_state_publisher-2",
+        "move_group-3",
+        "python3-1"
+      ],
+      "before_m": [
+        0.49182441685667105,
+        0.0,
+        0.5729944511350543
+      ],
+      "after_m": [
+        0.49282337304070123,
+        0.0,
+        0.572992229637476
+      ],
+      "loader_warning": true,
+      "log": "shutdown-3.log",
+      "wall_time_ns": 1793611421242723305
+    }
+  ],
+  "material_sha256": {
+    "output/vla-live-02/osc-vla.mp4": "a4432dbdd07617ffaf9d9434f48a2f30e912ba4df48c123ef64f76fc5cfc049f",
+    "output/submission-polish-20261102/genesis-demo-v2/trajectory/programs/15ac74a8478144ba901c6da0333a5b45/metadata.json": "513aa25e0a66c71de286c42d06c3d4eece219ea7cb45f5ef9e619e602a1cfb46",
+    "output/submission-polish-20261102/genesis-demo-v2/trajectory/programs/15ac74a8478144ba901c6da0333a5b45/code.py": "3300f2e4682af64acaf26630d1812044ffb96b2d36434c6f0b89cf66e20c4bd9",
+    "output/submission-polish-20261102/genesis-demo-v2/trajectory/steps.jsonl": "7fbfe7b2cb87932a08972e6cc5241e23c13b319399b2c21236d17ef1f4fe187b",
+    "output/submission-polish-20261102/genesis-demo-v2/branches/0002/trajectory/steps.jsonl": "af1e42559a0073099801793e7513726a94792cf95e4815a7f10acd3f68242d45",
+    "output/submission-polish-20261102/genesis-demo-v2/history/adoptions/ffec7b2b00954e899d60acad1da957e1/route.jsonl": "c63dcc99ac33d34fc00e183b8225b8206a6187e69e57b25b000ae8595d851600",
+    "output/submission-polish-20261102/genesis-demo-v2/history/adoptions/ffec7b2b00954e899d60acad1da957e1/vlm-code-candidates.jsonl": "6e123a6af57efa9beb7b694ce78c3be25712d7e9880cbae7953dac0ce42da425",
+    "output/submission-polish-20261102/shutdown/shutdown-results.json": "5ee9c3b7f91823ae52211f40b57f1bf47d35242f36927d391319d6a1f59cb7b5",
+    "output/submission-polish-20261102/genesis-adopted.png": "0e5a5d39d45cd70399942ee8d64cbe179c9078cf7e238b70dcd0f66fa1e2cca4",
+    "output/submission-polish-20261102/genesis-manual.png": "2f2738c338f2d67521ab9440d2b70125fe5a264dc1c6d03f9b4f0bf3a13e6ff6",
+    "output/submission-polish-20261102/genesis-rewind.png": "21a922180f85b356632239fc97fd11d5e8f802f6b18af34ed3ea63c1b31858dd",
+    "output/submission-polish-20261102/rviz-polished.png": "109de6902e6edb2727cd4830495d74f6b7c16b582c58d37eb8edb7ecba4ba30d",
+    "output/submission-polish-20261102/control-polished.png": "5b32139c19681877d0c534649f8c957e1af29a833ce2ba122e8906114f762da7"
+  },
+  "limitations": [
+    "No grasp/place success or policy performance claim",
+    "Genesis VLA uses a LIBERO-trained checkpoint; connection test only",
+    "ROS reference has no physics/collision model or rewind",
+    "class_loader warning remains at MoveIt teardown",
+    "Agent-operated keyboard inputs are TEST_OPERATOR, not HUMAN"
+  ],
+  "video_duration_s": 132.625,
+  "outputs_sha256": {
+    "output/pdf/polished/説明資料_PAI最終課題_takumiecd.pdf": "95250bd254ecf74533ffc676ff42952409a75df1fa23e7896e1b0af4ca153555",
+    "output/submission-polished-takumiecd/PAI最終課題_takumiecd.mp4": "6c4b39eaf3841706a5e09c240a9da01e7a3ee518a5c09e4580d0871913af4be7"
+  },
+  "verification": {
+    "ros2_moveit_passed": 22,
+    "genesis_cpu_passed": 82,
+    "runtime_passed": 111,
+    "runtime_skipped_genesis_only": 2,
+    "runtime_upstream_warnings": 15,
+    "web_js_passed": 12,
+    "llm_recovery_additional_passed": 18
+  },
+  "shipping_image": "sha256:a3fbaf4e41bf26294569cbcc5e7c1785536d9242f9c7b33fa115564eacdf1e21",
+  "shipping_shutdown": [
+    {
+      "cycle": 1,
+      "launch_exit": 0,
+      "clean_children": [
+        "robot_state_publisher-2",
+        "move_group-3",
+        "python3-1"
+      ],
+      "before_m": [
+        0.49182441685667105,
+        0.0,
+        0.5729944511350543
+      ],
+      "after_m": [
+        0.49282337304070123,
+        0.0,
+        0.572992229637476
+      ],
+      "loader_warning": true,
+      "log": "shutdown-1.log",
+      "wall_time_ns": 1793612341785797801
+    },
+    {
+      "cycle": 2,
+      "launch_exit": 0,
+      "clean_children": [
+        "robot_state_publisher-2",
+        "move_group-3",
+        "python3-1"
+      ],
+      "before_m": [
+        0.49182441685667105,
+        0.0,
+        0.5729944511350543
+      ],
+      "after_m": [
+        0.49282337304070123,
+        0.0,
+        0.572992229637476
+      ],
+      "loader_warning": true,
+      "log": "shutdown-2.log",
+      "wall_time_ns": 1793612342582988301
+    },
+    {
+      "cycle": 3,
+      "launch_exit": 0,
+      "clean_children": [
+        "robot_state_publisher-2",
+        "move_group-3",
+        "python3-1"
+      ],
+      "before_m": [
+        0.49182441685667105,
+        0.0,
+        0.5729944511350543
+      ],
+      "after_m": [
+        0.49282337304070123,
+        0.0,
+        0.572992229637476
+      ],
+      "loader_warning": true,
+      "log": "shutdown-3.log",
+      "wall_time_ns": 1793612343517863135
+    }
+  ],
+  "artifact_qa": {
+    "pdf_pages": 5,
+    "pdf_all_pages_visually_reviewed": true,
+    "video_segments_reviewed": 11,
+    "video_width": 1920,
+    "video_height": 1080,
+    "video_codec": "h264",
+    "video_audio": false,
+    "uploaded_this_turn": false
+  }
+}
