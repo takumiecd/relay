@@ -29,6 +29,7 @@ from reportlab.platypus import (
 ROOT = Path(__file__).resolve().parents[1]
 REPO = 'https://github.com/takumiecd/relay'
 ACCOUNT = 'takumiecd'
+REPORT_DATE = '2026-11-03'
 FONT = Path('/System/Library/Fonts/Supplemental/Arial Unicode.ttf')
 INK, BLUE, GREEN, MUTED, ORANGE = '#20344c', '#366bc0', '#398778', '#64758b', '#a67d42'
 WIDTH = 511
@@ -198,7 +199,7 @@ def make_report(path, assets, evidence, source_commit):
     add('Relay', 'title')
     add('自律操作の「ここだけ」を直し、経路を残す。', 'tagline')
     add('VLA・LLMのコード・キーボード操作を切り替え、途中へ戻って修正した経路を選ぶデータ収集ツール。今回の提出では、VLAの把持ミスを局所的に直し、VLAへ返す実演を示す。')
-    add('OmniCampus: takumiecd  /  2026-11-02 把持修正デモ版', 'small')
+    add(f'OmniCampus: takumiecd  /  {REPORT_DATE} 把持修正デモ版', 'small')
     pictures([('goal-agentview.png', '全体カメラ / VLA再開後のstep 106'),
               ('goal-wrist.png', '手首カメラ / LIBERO goal判定に到達')], 240)
     metrics = Table([[
@@ -268,8 +269,9 @@ def make_report(path, assets, evidence, source_commit):
     add('VLM／コード生成側は、LLMが生成して実際に実行したPythonを別の候補として記録する。VLAの数値軌道から作る再生コードは意味的なCode as Policyとは区別する。今回のLIBERO動画ではLLM生成コードを実行していない。')
     add('LLMとGPUの位置付け', 'h2')
     add('今回のL4はVLA推論用。実LLMの別試験にはMac MLXのQwen2.5-VL-7Bを使用した。LLMのHTTP接続口とCaP-X実行器を使うことで、API提供モデルやGPUサーバー上のモデルを差し替える構成にしている。', 'small')
-    add('今後の方針', 'h2')
-    add('人間による修正を複数例で収集し、採用理由と再現性を確認する。その後、Gazeboまたは実機を一つ選び、座標・単位・指令の意味・時刻・停止方法を検証する。GENIAC Prize等でのCode as Policy利用は開発動機と将来目標であり、特定の大会SDKへ対応済みとはしない。')
+    add('今回の到達点と残る検証', 'h2')
+    add('今回の到達点は、制御の切替・分岐・採用と、選定した1配置での局所修正・VLA再開を記録し、再実行できたこと。VLA用の操作データと、VLM／コード生成用の実行コードの候補を扱う基盤とした。人による修正の収集、学習への投入と効果の評価は未実施。追加する環境や実機、開発の順序は未決定。')
+    add('GENIAC Prize等でのCode as Policy利用は開発動機であり、特定の大会SDKへの対応済みという意味ではない。', 'small')
     add('状態復元は対応する同一scene／reset内の能力。ROS 2や実機に、シミュレータと同じ物理的な巻き戻しや即時安全停止を保証するものではない。', 'small')
 
     page('04  提出物、コード、再現情報')
@@ -312,7 +314,7 @@ def make_report(path, assets, evidence, source_commit):
         c.drawString(42, 817, 'RELAY / PAI FINAL PROJECT / GRASP REPAIR')
         c.setStrokeColor(colors.HexColor('#dce4ef'))
         c.line(42, 39, 553, 39)
-        c.drawString(42, 24, 'takumiecd  |  2026-11-02 改訂  |  実行記録に基づく資料')
+        c.drawString(42, 24, f'takumiecd  |  {REPORT_DATE} 改訂  |  実行記録に基づく資料')
         c.drawRightString(553, 24, f'{doc.page:02d} / 05')
 
     SimpleDocTemplate(str(path), pagesize=(595.276, 841.89), leftMargin=42, rightMargin=42,

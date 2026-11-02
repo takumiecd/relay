@@ -25,7 +25,8 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [CLI：状態確認・切替・停止・巻き戻し・経路採用](docs/cli.md)
 - [Runtime：構成・CaP-Xとの境界・独立配布](docs/runtime.md)
 - [デモ構成案：AI操作を途中から修正し、採用経路を残す](docs/demo-storyboard.md)
-- [実OpenVLAの介入・巻き戻し・記録デモ（93秒）と検証結果](docs/verification/repair-demo-20261102.md)
+- [今回の提出：把持の空振りを修正してVLAへ返す63秒デモ](docs/verification/grasp-screen-20261102.md)
+- [以前の93秒デモと検証結果（自律成功経路への介入）](docs/verification/repair-demo-20261102.md)
 - [Genesis：キーボード操作・記録・巻き戻し](docs/genesis.md)
 - [GenesisをLLMのPythonコードから操作する](docs/genesis-llm.md)
 - [GenesisでVLA・LLM・手動を切り替える](docs/genesis-vla.md)
@@ -36,11 +37,14 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [VLA／OSC接続](docs/vla-osc.md)
 - [記録とdatasetの方針](docs/dataset-design.md)
 - [LLMの引き継ぎ・修正・採用経路のデータ出力](docs/intervention-dataset.md)
-- [ROS 2・Gazebo・Genesisの接続位置（今後の拡張案）](docs/environment-adapters.md)
+- [LIBERO・Genesis・ROS 2の対応状況と、Gazebo・実機の接続位置](docs/environment-adapters.md)
 - [PAI最終課題：実装範囲・検証・提出方法](docs/pai-submission.md)
 
 提出・利用の基準は`main`です。操作UIはキーボード専用です。
-提出時の版は[`pai-final-20261102`](https://github.com/takumiecd/relay/tree/pai-final-20261102)で固定しています。
+今回の把持修正デモ版は[`pai-grasp-repair-20261103`](https://github.com/takumiecd/relay/tree/pai-grasp-repair-20261103)で固定します。
+初期の提出版[`pai-final-20261102`](https://github.com/takumiecd/relay/tree/pai-final-20261102)も保持しています。
+LIBEROの選定した1配置では、VLA 38 → 状態参照付き代理操作38 → VLA 30の106stepでgoal判定へ到達し、全stepの物理状態を独立再実行で照合しました。
+代理操作はTEST_OPERATORで記録し、人間の操作実演、学習効果、成功率向上の統計評価とは区別します。
 共通API分離はPR #1、Genesisのキーボード操作・記録はPR #2でmainへ取り込み済みです。
 CPUのGenesis状態復元・分岐はPR #3でmainへ取り込み済みです。
 PR #4〜#6でLLMコード生成・修正経路の出力・共通VLA接続をmainへ取り込み済みです。
