@@ -189,7 +189,7 @@ def create_video(output, account):
     ffmpeg(['-loop','1','-framerate','24','-i',bg,'-i',ROOT/'output/vla-live-02/osc-vla.mp4',
             '-filter_complex','[1:v]setpts=20*PTS,fps=24,scale=740:740,tpad=stop_mode=clone:stop_duration=2[v];[0:v][v]overlay=130:210:shortest=1[out]',
             '-map','[out]','-t','30',*encoding,segment]);segments.append(segment)
-    still('03-console','キーボードだけで、途中へ介入する。','ここからはUI・記録機能の動作確認です。\n\n試験providerとキー入力の再現を使用。\n実モデルの連続共同操作とは区別します。\n\nH：手動へ\nSpace＋WASD / RF：移動\nEsc：停止',12,frames/'console-start.jpg')
+    still('03-console','キーボードだけで、途中へ介入する。','ここからはUI・記録機能の動作確認です。\n各場面は別収録です。\n\n試験providerとキー入力の再現を使用。\n実モデルの連続共同操作とは区別します。\n\nH：手動へ\nSpace＋WASD / RF：移動\nEsc：停止',12,frames/'console-start.jpg')
     still('04-rewind','01  記録したstepへ戻る','分岐図のstepを選び、物理状態を復元。\n\n今回はstep 80へ巻き戻しました。\n位置だけでなく、グリッパーやOSCの状態も戻します。\n\n元の未来は消しません。',10,frames/'console-rewind.jpg')
     times=json.loads((frames/'capture-times.json').read_text())
     concat=[]
@@ -202,7 +202,7 @@ def create_video(output, account):
     concat += [f"file '{last.as_posix()}'",'duration 1.2',f"file '{last.as_posix()}'"]
     (assets/'motion.ffconcat').write_text('\n'.join(concat)+'\n')
     segment=assets/'05-manual.mp4'
-    ffmpeg(['-f','concat','-safe','0','-i',assets/'motion.ffconcat','-t','8.4',*encoding,segment]);segments.append(segment)
+    ffmpeg(['-f','concat','-safe','0','-i',assets/'motion.ffconcat','-vf','fps=24','-fps_mode','cfr','-t','8.4',*encoding,segment]);segments.append(segment)
     still('06-adoption','03  採用する経路を固定する','共通80step ＋ 修正27step\n＝ 107stepの経路を選択。\n\n観測・実行済み操作・コードの出所を対応付けます。\n\nその後に操作を続けても、採用範囲は自動で伸びません。',13,frames/'console-adopted.jpg')
     still('07-design','講義の課題から、今後も使う道具へ。','既存のCaP-X・LIBERO・OSC・OpenVLAを利用。\n追加：切替・状態復元・分岐・経路の選択。\n\nGENIAC Prizeなどへの再利用は将来目標。\nROS 2・Gazebo・Genesisは未実装。',10)
     still('08-limits','確認した範囲と、次の一歩。','実モデル接続と、切替・復元・分岐・経路選択を確認。\n実LLM・実ユーザーとの連続共同操作、タスク成功は未確認。\n\n採用データは学習投入前の候補。\n検証条件はPDFとコードに記載。',12)
