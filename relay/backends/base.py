@@ -1,12 +1,13 @@
 """Small backend interfaces, independent of CaP-X, LIBERO and ROS 2.
 
-These are the first extracted boundaries, not a complete environment interface.
-Authority, observation envelopes and checkpoint capabilities still live in the
-existing CaP-X integration. Implementing these methods alone does not port Relay.
+Adapters supply physics/control and observations; relay.environment owns command
+contexts and authority. CaP-X code execution and the console consume that runtime.
+Capabilities are explicit; restoring a real scene requires a backend implementation.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     import numpy as np
@@ -46,3 +47,81 @@ class SimulationClock(Protocol):
     def simulation_time(self) -> float:
         """Seconds on the simulation clock; may rewind when a state is restored."""
         ...
+
+
+@dataclass(frozen=True)
+class BackendCapabilities:
+    """Features that require explicit implementation and validation per adapter."""
+
+    checkpoints: bool = False
+    state_replay: bool = False
+    cartesian_control: bool = True
+    reset: bool = True
+
+
+@dataclass
+class BackendTransition:
+    reward: float
+    terminated: bool = False
+    truncated: bool = False
+    info: dict[str, Any] | None = None
+
+
+class EnvironmentBackend(CartesianBackend, SimulationClock, Protocol):
+    """Simulator adapter. Construct/use/close on one owner thread.
+
+    Relay owns command contexts, authority, recording and branch bookkeeping.
+    Native action shape, bounds, physics, camera conventions and snapshots belong
+    to this adapter. physics_state is a numeric diagnostic/replay vector, not an
+    implicit promise that it is sufficient to restore the environment.
+    """
+
+    backend_id: str
+    action_contract: str
+    instruction: str
+    control_freq: float
+    max_steps: int
+    gripper: float
+    metadata: dict[str, Any]
+    capabilities: BackendCapabilities
+
+    def reset(self, *, seed=None, options=None) -> None: ...
+    def get_observation(self) -> dict[str, Any]:
+        """Robot state; optional robot_cartesian_pos is XYZ meters + WXYZ."""
+        ...
+    def policy_observation(self) -> dict[str, Any]:
+        """images: named RGB arrays; state: JSON data; image_convention: str."""
+        ...
+    def code_observation(self) -> dict[str, Any]:
+        """VLM/code-generator images in rgb_top_left convention, with JSON state."""
+        ...
+    def display_images(self) -> dict[str, NDArray[np.uint8]]:
+        """1..32 display RGB arrays; names match [A-Za-z0-9_-]{1,80}."""
+        ...
+    def validate_chunk(self, actions: ArrayLike) -> NDArray[np.float64]: ...
+    def step_native(self, action: ArrayLike) -> BackendTransition: ...
+    def teleop_action(self, axes: ArrayLike, gripper_command: float) -> NDArray[np.float64]:
+        """Map six normalized operator axes to native commands, without execution.
+
+        XYZ and rotation axes are in the declared teleop frame. Adapter metadata
+        must state their units/gains; normalized axes are never assumed native.
+        """
+        ...
+    def physics_state(self) -> NDArray[np.float64]: ...
+    def task_completed(self) -> bool: ...
+    def compute_reward(self) -> float: ...
+    def stop(self) -> None:
+        """Hold/stop outstanding control on the owner thread, without a recorded step.
+
+        step_native must be bounded; continuously running transports need a
+        controller-side command timeout as well as this explicit hold operation.
+        """
+        ...
+    def close(self) -> None: ...
+
+
+class CheckpointBackend(Protocol):
+    """Optional numeric/JSON state scoped to one model/reset, never pickle."""
+
+    def capture_checkpoint(self) -> dict[str, Any]: ...
+    def restore_checkpoint(self, snapshot: dict[str, Any]) -> None: ...

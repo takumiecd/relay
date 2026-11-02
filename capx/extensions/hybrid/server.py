@@ -18,7 +18,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from PIL import Image
 
 from capx.extensions.vla.bridge import PolicyBridge
-from capx.extensions.vla.env import ACTION_CONTRACT, OscLiberoEnv, configure_libero
+from capx.extensions.vla.env import ACTION_CONTRACT, BackendEnv, configure_libero
+from relay.backends.loader import load_backend
 from capx.extensions.vla.recording import TrajectoryRecorder, write_json
 from .control import AuthorityLost
 from .llm import HttpCodeGenerator
@@ -26,15 +27,20 @@ from .runner import HybridRunner
 
 
 class TestVla:
+    __test__ = False
     is_test = True
     ready = True
+
+    def __init__(self, *, action_contract=ACTION_CONTRACT, native_action=None):
+        self.action_contract = action_contract
+        self.native_action = list(native_action) if native_action is not None else [0.12, 0, 0, 0, 0, 0, -1]
 
     def predict(self, observation, instruction, context):
         time.sleep(0.12)
         return dict(
             context=context,
-            action_contract=ACTION_CONTRACT,
-            native_actions=[[0.12, 0, 0, 0, 0, 0, -1]] * 5,
+            action_contract=self.action_contract,
+            native_actions=[self.native_action] * 5,
         )
 
 
@@ -156,7 +162,11 @@ class Console:
         self.thread = threading.Thread(target=self.http.serve_forever, daemon=True)
         self.thread.start()
         runner.on_service = self.publish
-        self.publish(force=True)
+        try:
+            self.publish(force=True)
+        except BaseException:
+            self.close()
+            raise
 
     def publish(self, force=False):
         now = time.monotonic()
@@ -166,17 +176,15 @@ class Console:
         env = self.runner.env
         obs = env.get_observation()
         images = {}
-        for name, pixels in [
-            ("wrist", obs["robot0_eye_in_hand"]["images"]["rgb"]),
-            ("agentview", env.render()),
-        ]:
+        for name, pixels in env.display_images().items():
             stream = io.BytesIO()
             Image.fromarray(pixels).save(stream, format="PNG", compress_level=1)
             images[name] = stream.getvalue()
         state = dict(
             self.runner.status(),
             instruction=env.instruction,
-            cameras=["wrist", "agentview"],
+            cameras=list(images),
+            camera_labels=env.metadata.get('camera_labels', {}) if hasattr(env, 'metadata') else {},
             context=env.context(),
             eef_position_m=obs["robot_cartesian_pos"][:3].tolist()
             if "robot_cartesian_pos" in obs
@@ -265,6 +273,8 @@ def main():
     parser.add_argument("--vla-port", type=int, default=8896)
     parser.add_argument("--vla-public-url")
     parser.add_argument("--libero-source", default="capx/third_party/LIBERO-PRO")
+    parser.add_argument('--backend', default='libero', help='libero, kinematic, or trusted module:Factory')
+    parser.add_argument('--backend-config', type=Path, help='JSON file of backend factory keyword arguments')
     parser.add_argument("--test-vla", action="store_true")
     parser.add_argument("--test-llm", action="store_true")
     parser.add_argument("--test-operator", action="store_true")
@@ -281,17 +291,25 @@ def main():
     if args.test_llm and args.llm_url:
         parser.error("Choose a real LLM endpoint or --test-llm")
     args.output.mkdir(parents=True, exist_ok=False)
-    configure_libero(args.libero_source, str(args.output / "libero-config"))
     stop = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, lambda *_: stop.set())
     env = runner = console = bridge = None
     try:
-        env = OscLiberoEnv(max_steps=10000)
+        config = json.loads(args.backend_config.read_text()) if args.backend_config else {}
+        if not isinstance(config, dict):
+            raise ValueError('Backend config must be a JSON object')
+        if args.backend in {'libero', 'kinematic'}:
+            config.setdefault('max_steps', 10000)
+        if args.backend == 'libero':
+            configure_libero(args.libero_source, str(args.output / 'libero-config'))
+        env = BackendEnv(load_backend(args.backend, config))
         if args.test_vla:
-            predictor = TestVla()
+            # Owner-thread conversion only. This fixed test action is NOT a model policy.
+            predictor = TestVla(action_contract=env.context()['action_contract'],
+                                native_action=env.teleop_action([.12, 0, 0, 0, 0, 0], -1))
         else:
-            bridge = PolicyBridge(port=args.vla_port)
+            bridge = PolicyBridge(port=args.vla_port, action_contract=env.context()['action_contract'])
             predictor = bridge
             connection = {"url": args.vla_public_url or bridge.url, "token": bridge.token}
             descriptor = os.open(

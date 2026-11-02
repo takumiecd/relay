@@ -4,7 +4,7 @@ VLA・コード・キーボード操作を切り替え、途中へ戻って修�
 
 **現在の実装は[CaP-X](https://github.com/capgym/cap-x)を拡張したforkです。**
 CaP-Xのコード実行器とLIBERO／MuJoCo／robosuite OSCを利用しています。
-手先指令の変換・記録時刻の接続口を`relay/backends/`へ切り出し始めています。
+共通実行部分は`relay/environment.py`、LIBERO固有処理は`relay/backends/libero.py`に分離しています。
 複数シミュレータやROS 2に接続する独立した共通基盤への分離は開発中です。
 
 ## 今回追加した機能
@@ -14,7 +14,7 @@ CaP-Xのコード実行器とLIBERO／MuJoCo／robosuite OSCを利用してい�
 - 制御器・グリッパーを含むcheckpointと、途中からの修正・分岐。
 - 分岐図、採用する経路の固定、観測・操作・出所をそろえた学習候補の書き出し。
 
-追加実装は`capx/extensions/vla/`と`capx/extensions/hybrid/`、切り出し中の共通契約は`relay/backends/`にあります。
+CaP-X連携は`capx/extensions/vla/`と`capx/extensions/hybrid/`、共通実行・backend契約は`relay/`にあります。
 CaP-X本体にも依存読込・API登録・実行器の小さな変更を加えています。
 事前学習済みモデル、物理エンジン、既存のOSCを新規開発した作品ではありません。
 
@@ -26,9 +26,11 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [ROS 2・Gazebo・Genesisの接続位置（今後の拡張案）](docs/environment-adapters.md)
 - [PAI最終課題：実装範囲・検証・提出方法](docs/pai-submission.md)
 
-提出・利用の基準は`main`です。現在の環境対応はLIBERO／OSCのみで、操作UIはキーボード専用です。
+提出・利用の基準は`main`です。実物理の環境対応はLIBERO／OSCのみで、操作UIはキーボード専用です。
 提出時の版は[`pai-final-20261102`](https://github.com/takumiecd/relay/tree/pai-final-20261102)で固定しています。
 提出後の共通API分離は`feat/environment-adapters`で進めます。
+このブランチでは外部`module:Factory`のbackend接続、任意のカメラ名・台数、巻き戻し非対応の環境を扱えます。
+付属の`kinematic`は8次元絶対手先指令を使う数値サンプルで、物理シミュレータではありません。
 実OpenVLAの接続確認と、試験providerによる切替・分岐機能の確認を区別しています。
 ROS 2・Gazebo・Genesis・ゲームパッドは未対応です。
 以下は上流CaP-Xの紹介とクレジットです。上流ベンチマークの結果を本拡張の性能とは扱いません。

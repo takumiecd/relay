@@ -10,12 +10,14 @@ import shutil
 from pathlib import Path
 import uuid
 
-from capx.extensions.vla.checkpoint import load_checkpoint, save_checkpoint
+from relay.checkpoints import load_checkpoint, save_checkpoint
 from capx.extensions.vla.recording import TrajectoryRecorder, export_views, write_json
 
 
 class Timeline:
     def __init__(self, env, trial_root):
+        if not env.capabilities.checkpoints:
+            raise ValueError('This backend does not support checkpoints/timeline seeking')
         self.env = env
         self.root = Path(trial_root).resolve()
         self.history = self.root / 'history'

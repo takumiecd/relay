@@ -112,8 +112,9 @@ def export_views(directory):
             stream.write(json.dumps(row, ensure_ascii=False, allow_nan=False)+'\n')
     initial = json.loads((root / episode['initial_observation']).read_text())
     # Longer recordings become a sequence of bounded replay calls.
-    programs = []
-    for offset in range(0, len(rows), 100):
+    replay_supported = episode['environment'].get('capabilities', {}).get('state_replay', True)
+    programs = [] if replay_supported else ['# This backend does not support verified numerical replay.\n']
+    for offset in range(0, len(rows) if replay_supported else 0, 100):
         block = rows[offset:offset+100]
         obs = json.loads((root / block[0]['observation']).read_text())
         state = np.load(root / obs['physics_state'], allow_pickle=False).tolist()
@@ -123,7 +124,9 @@ def export_views(directory):
     (root / 'replay.py').write_text('\n'.join(programs))
     write_json(root / 'code-candidate.json', {
         'instruction': episode['instruction'], 'observation': episode['initial_observation'],
-        'code': 'replay.py', 'target_kind': 'numerical_replay', 'semantic_policy': False,
+        'code': 'replay.py' if replay_supported else None,
+        'target_kind': 'numerical_replay' if replay_supported else 'unavailable',
+        'replay_supported': replay_supported, 'semantic_policy': False,
         'training_admitted': False, 'executed_steps': len(rows),
         'steps_sha256': hashlib.sha256((root / 'steps.jsonl').read_bytes()).hexdigest(),
     })

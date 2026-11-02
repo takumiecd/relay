@@ -1,4 +1,4 @@
-"""Owner-thread scheduler. Inference and generated Python never own MuJoCo."""
+"""Owner-thread scheduler. Inference and generated Python never own the backend."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from collections import deque
 import json
 import inspect
 from pathlib import Path
+from dataclasses import asdict
 import threading
 import time
 
@@ -115,7 +116,7 @@ class HybridRunner:
         self.seeking = False
         self.pending_adoption = None
         self.adopting = False
-        self.timeline = Timeline(env, self.output) if env.recorder is not None and hasattr(env, "capture_checkpoint") else None
+        self.timeline = self._make_timeline(self.output)
         self.env.before_action = self._before_action
         self.trial_index = 1
         self.trial_root = self.output
@@ -123,14 +124,25 @@ class HybridRunner:
         self.env.after_step = self._after_step
         self.service()
 
+    def _make_timeline(self, root):
+        capabilities = getattr(self.env, 'capabilities', None)
+        return Timeline(self.env, root) if (self.env.recorder is not None
+                                           and capabilities is not None
+                                           and capabilities.checkpoints) else None
+
     @property
     def api_docs(self):
         # Describe exactly the functions available in the code process.
         return "\n\n".join(
             f"{name}{inspect.signature(getattr(self.api, name))}\n"
             f"{inspect.getdoc(getattr(self.api, name)) or ''}"
-            for name in sorted(TOOLS)
+            for name in sorted(self.available_tools)
         )
+
+    @property
+    def available_tools(self):
+        capabilities = getattr(self.env, 'capabilities', None)
+        return TOOLS - {'move_to_pose'} if capabilities is not None and not capabilities.cartesian_control else TOOLS
 
     def request_mode(self, mode, *, client_id, sequence, expected_epoch):
         with self.pending_lock:
@@ -141,6 +153,8 @@ class HybridRunner:
             )
 
     def request_trial(self, *, client_id, sequence, expected_epoch):
+        if getattr(self.env, 'capabilities', None) is not None and not self.env.capabilities.reset:
+            raise ValueError('This backend does not support resetting trials')
         with self.pending_lock:
             if self.adopting:
                 raise ValueError("採用する経路を保存中です")
@@ -264,7 +278,7 @@ class HybridRunner:
         self.env.reset(seed=0)
         self.control.switch("STOPPED", reason="new_trial")
         self.env.attach_recorder(TrajectoryRecorder(self.trial_root / "trajectory", metadata))
-        self.timeline = Timeline(self.env, self.trial_root)
+        self.timeline = self._make_timeline(self.trial_root)
         self.program_root = self.env.recorder.root / "programs"
         self.program_root.mkdir()
         self.policy_metadata = None
@@ -300,6 +314,9 @@ class HybridRunner:
     def service(self):
         """Drain authority events and publish snapshots; creation thread only."""
         self.env._owner()
+        flush = getattr(self.env, 'flush_control', None)
+        if flush is not None:
+            flush()
         metadata = getattr(self.predictor, "ready", None)
         if isinstance(metadata, dict) and metadata != self.policy_metadata:
             self.policy_metadata = dict(metadata)
@@ -432,7 +449,7 @@ class HybridRunner:
                 result = self.env.get_observation()
             elif name == "__reward__":
                 result = self.env.compute_reward()
-            elif name in TOOLS:
+            elif name in self.available_tools:
                 result = getattr(self.api, name)(*message["args"], **message["kwargs"])
             else:
                 raise ValueError("Unknown code tool")
@@ -478,7 +495,8 @@ class HybridRunner:
         if mode == "HUMAN":
             item = self.control.human_action()
             if item:
-                action, lease, provenance = item
+                command, lease, provenance = item
+                action = self.env.teleop_action(command[:6], command[-1])
                 self.env.apply_native(
                     action,
                     context=self.env.context(),
@@ -489,6 +507,9 @@ class HybridRunner:
                 if self.control.valid(lease):
                     self.message = "操作を受付中"
             else:
+                hold = getattr(self.env, 'hold', None)
+                if hold is not None:
+                    hold()
                 self.message = "Spaceを押しながら操作"
         elif mode == "VLA":
             source = "TEST_VLA" if getattr(self.predictor, "is_test", False) else "VLA"
@@ -554,7 +575,7 @@ class HybridRunner:
             lease = Lease(self.env.epoch, "LLM", "CODE", None)
             self.llm_job = Job(
                 self.generator.generate,
-                (self.env.policy_observation(), self.env.instruction, self.api_docs),
+                (self.env.code_observation(), self.env.instruction, self.api_docs),
                 lease,
                 self.env.context(),
             )
@@ -570,6 +591,8 @@ class HybridRunner:
             seeking=self.seeking,
             adopting=self.adopting,
             timeline=self.timeline.status() if self.timeline else None,
+            backend_id=getattr(getattr(self.env, 'backend', None), 'backend_id', None),
+            capabilities=asdict(self.env.capabilities) if getattr(self.env, 'capabilities', None) else None,
             applied_steps=self.env.applied_steps,
             ended=self.env.ended,
             task_completed=self.env.task_completed(),

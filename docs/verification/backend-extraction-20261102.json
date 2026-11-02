@@ -1,0 +1,45 @@
+{
+  "reference_commit": "9a3d854e73c9852787d7f48d6e9ec5f05da99c45",
+  "actions": 20,
+  "compared_states": 21,
+  "integration_state_bitwise_equal": true,
+  "eef_pose_bitwise_equal": true,
+  "raw_camera_frames_compared": 42,
+  "raw_camera_bitwise_equal": true,
+  "real_vla_inference": false,
+  "new_physics_backends_tested": false,
+  "branch": "feat/environment-adapters",
+  "submitted_tag": "pai-final-20261102",
+  "python_tests": {
+    "passed": 63,
+    "skipped": 0,
+    "warnings": 15
+  },
+  "javascript_tests": {
+    "passed": 12
+  },
+  "browser": {
+    "single_camera": "reference_view",
+    "external_cameras": [
+      "front_test",
+      "inspection_test",
+      "side_test"
+    ],
+    "all_images_loaded": true,
+    "console_errors": []
+  },
+  "source_sha256": {
+    "relay/environment.py": "f61f02789a482846369179e5ada0bc92d2de885981ee38fe0fa626e675d3cc9e",
+    "relay/backends/base.py": "039598fb0fbfff2bd551d66e5a7372eab04f122960d8b05ffb1a58536f99f1ec",
+    "relay/backends/libero.py": "43c837d817ed634f178ec0c282f9288f69cdc2efd2d43ca4a531e6b0e6a2f456",
+    "relay/backends/kinematic.py": "95cb432f13429b2c688affd6817f40d6d079a8f2afff42019733b59c1722e0e0",
+    "relay/backends/loader.py": "55cba45f57e07e0857f04f7ce75d0c01d249dca11be40d3fe843d8ebbb4b0686",
+    "relay/checkpoints.py": "f4e7f15ca7eb64ef82051f404539ed9d2dc2e8c885a35a1a039257b291a1796c",
+    "capx/extensions/hybrid/runner.py": "3eb91ca6bf17cac36f05651c0f33f344f1e6c2fb76427a87eeecb4cba76c4be7",
+    "capx/extensions/hybrid/server.py": "1426728458d25ad1cdc66a94c55f0aa4f046c292dc9ab0baf37e4ce6168e34ca",
+    "capx/extensions/hybrid/llm.py": "9f22e43729e445a5f33f53afeeea7813c65d53a0abea57c66ceb3ef6506fb58f",
+    "capx/extensions/hybrid/console.js": "549a0d5ba97a62a62313a19dcd689bd8d23498d3a744828ac8686498fb5a4d31",
+    "capx/extensions/hybrid/console.css": "ff0c06f7369a302c7658a82a77299422133bce104556fa4287a38cb0e859c95e",
+    "capx/extensions/hybrid/web.html": "47493a036b4772cbdfa9c8b1c1f87a8c45bf15eb5dc597f21355531e32f417f0"
+  }
+}

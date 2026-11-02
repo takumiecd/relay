@@ -76,7 +76,8 @@ Escは編集欄にfocusがあっても停止を優先し、画面へ停止受付
 
 操作UIはキーボード専用。ゲームパッド接続は提出範囲に含めない。
 
-手首カメラが最初の主表示。主表示buttonまたはdragで全体カメラと並び替えられる。
+LIBEROでは手首カメラが最初の主表示。主表示buttonまたはdragで全体カメラと並び替えられる。
+カメラ名・台数・初期順序はbackendの`display_images()`から取得する。
 配置と速度はbrowser内に保持する。カメラの撮影位置／向きを変える機能ではない。
 
 ## 構成
@@ -88,11 +89,14 @@ flowchart LR
     C -->|API要求| S
     H[キーボード] --> A[mode・epoch・lease]
     A --> S
-    S --> E[単一のOSC環境]
+    S --> E[RelayEnvironment + 環境別backend]
     E --> R[実行済み記録]
 ```
 
 ## 新しい試行
+
+reset非対応のbackendではこの操作を拒否する。checkpoint非対応のbackendでは巻き戻しを表示しない。
+外部backendの追加と起動オプションは[共通API・backend実装](environment-adapters.md)を参照。
 
 タスク完了・エピソード終了時は終了bannerを表示し、現在の試行では操作を止める。
 headerの「新しい試行」で、今の記録を保存・exportして初期状態から次の試行を始める。

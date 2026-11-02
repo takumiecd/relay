@@ -26,7 +26,7 @@ class VlaApi(ApiBase):
     def get_robot_state(self):
         """Return current EEF pose (XYZ meters + WXYZ quaternion) and joint angles."""
         obs = self._env.get_observation()
-        return {k: obs[k] for k in ("robot_cartesian_pos", "robot_joint_pos", "gripper_qpos", "context")}
+        return {k: obs[k] for k in ("robot_cartesian_pos", "robot_joint_pos", "gripper_qpos", "context") if k in obs}
 
     def run_vla(self, instruction: str, max_actions: int = 20):
         """Delegate a bounded local motion to the connected VLA and return to Python.
@@ -91,6 +91,9 @@ class VlaApi(ApiBase):
         Sources remain CODE_REPLAY with original provenance, never fresh human input.
         """
         lease = self._lease("CODE_REPLAY")
+        capabilities = getattr(self._env, 'capabilities', None)
+        if capabilities is not None and not capabilities.state_replay:
+            raise NotImplementedError('This backend does not support verified state replay')
         if action_contract != self._env.context()["action_contract"]:
             raise ValueError("Replay action contract mismatch")
         chunk = self._env.validate_chunk(actions)
@@ -172,13 +175,13 @@ class VlaApi(ApiBase):
 
 
 class VlaCodeEnv(CodeExecutionEnvBase):
-    """Use CaP-X's actual Python executor and one existing OSC low-level env."""
+    """Use CaP-X's actual Python executor with one Relay environment."""
     def __init__(self, low_level, predictor):
         name = "VlaOscApi"
         # Runs in every worker that constructs this environment, not just its parent.
         register_api(name, lambda env: VlaApi(env, predictor))
         super().__init__(CodeExecEnvConfig(
             low_level=low_level, apis=[name], privileged=False,
-            prompt=f"{low_level.instruction}\nUse only the documented OSC APIs. "
+            prompt=f"{low_level.instruction}\nUse only the documented robot APIs. "
                    "All positions are WORLD-frame meters. Return executable Python.",
         ))

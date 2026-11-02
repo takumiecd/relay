@@ -189,3 +189,11 @@ input[type="range"] { width: 100%; accent-color: #4d647c; height: 15px; cursor: 
 .graph-node-button:focus-visible { outline:0; }
 input[type="range"] { accent-color:#5b86bc; }
 .button.primary:hover { background:#2b5caa; }
+.cameras[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 681px) {
+  .cameras[data-multi="true"] { grid-template-rows: repeat(var(--camera-rows), minmax(0, 1fr)); }
+  .cameras[data-multi="true"] .camera:first-child { grid-row: 1 / span var(--camera-rows); }
+  .cameras[data-multi="true"] .camera:nth-child(n+2) { grid-column: 2; margin-top: 0; max-height: none; align-self: stretch; }
+  .cameras[data-multi="true"] .camera:nth-child(n+2) .camera-head { flex-wrap: wrap; padding: 8px; gap: 5px; }
+  .cameras[data-multi="true"] .camera:nth-child(n+2) .viewport { min-height: 0; aspect-ratio: auto; }
+}
