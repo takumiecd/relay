@@ -1,0 +1,90 @@
+{
+  "standalone": {
+    "branches": [
+      {
+        "id": "0001",
+        "head": 15,
+        "parent": null,
+        "parent_step": null
+      },
+      {
+        "id": "0002",
+        "head": 17,
+        "parent": "0001",
+        "parent_step": 3
+      }
+    ],
+    "adopted_steps": 17,
+    "raw_steps": 15,
+    "route_sha256": "2350f7d7102ca28ad62973a05c036a779f9d73c748843490a09d90b7c4bfc6f7",
+    "training_admitted": false,
+    "code_ready": false,
+    "raw_steps_scope": "original branch only; repair is recorded separately"
+  },
+  "genesis": {
+    "branches": [
+      {
+        "id": "0001",
+        "head": 14,
+        "parent": null,
+        "parent_step": null
+      },
+      {
+        "id": "0002",
+        "head": 14,
+        "parent": "0001",
+        "parent_step": 0
+      }
+    ],
+    "adopted_steps": 14,
+    "raw_steps": 14,
+    "route_sha256": "9ff8a4c8961c443b0ff01f60daa80d86892f67359b144fe47338da360ddcda4d",
+    "training_admitted": false,
+    "code_ready": false,
+    "restored_physics_state_shape": [
+      32
+    ],
+    "restored_physics_state_exact": true,
+    "raw_steps_scope": "original branch only; repair is recorded separately"
+  },
+  "wheel": {
+    "sha256": "b57ce8ff5db31971432e5a60abda8125f7b53bcceb7ec0edfbff1d527cd26964",
+    "source_files": 51,
+    "source_matches": true
+  },
+  "source_commit": "fce04c31e3067ee9856cfe88826c975a0b21a3d1",
+  "base_commit": "c4bc7d6e5c9a3af6456abbbcb83216bd242b280f",
+  "schema": "relay.runtime-extraction-verification.v1",
+  "tests": {
+    "libero_runtime": {
+      "passed": 147,
+      "skipped": 3
+    },
+    "genesis": {
+      "passed": 88,
+      "skipped": 0
+    },
+    "ros_moveit": {
+      "passed": 22,
+      "skipped": 0
+    },
+    "web": {
+      "passed": 12,
+      "skipped": 0
+    }
+  },
+  "evidence_sha256": {
+    "libero-runtime.xml": "beb86ad23fe598a42e4bed0ef7fb4068ff6ed04bff9f699060ec064c6331bbac",
+    "genesis.xml": "e07e95159fea8e1c98091e2c8c189090afdfcb4351a98032acf14bc4c8f965b6",
+    "ros.xml": "b56fcb09cca0980d0471aba1c36e1fea2108d7eaaedfd2d60de1d0b3a0171271",
+    "genesis-no-capx-adopted.png": "51f3e8684f2fc7e5f955ebf888a1e0bca36f499e7c1b43a066303315de64fed0",
+    "standalone-adopted.png": "8a2a06919d9708f61497b1bc6d1bd72729281a994d02700936a0dc59c85e86c6"
+  },
+  "preservation": {
+    "operator_8883_mode": "HUMAN",
+    "operator_8883_epoch": 2,
+    "operator_8883_applied_steps": 15,
+    "qa_services_8889_8890_closed": true,
+    "genesis_capx_imported": false
+  }
+}
