@@ -2,7 +2,7 @@
 
 `ros2-moveit` backendは、前段の[関節操作](ros2.md)と[RViz表示](ros2-rviz.md)へMoveItのIKサービスを追加する。
 付属の6軸参照モデル用。MoveIt Servo、経路計画、衝突回避、物理シミュレータ、実機制御の実装ではない。
-同じ`feat/ros2-joint-backend`／PR #7で開発する。
+PR #7のROS 2参照機能の一部。[一区切りの範囲と検証](ros2-milestone.md)も参照。
 
 ## 何を誰が計算するか
 
@@ -73,6 +73,7 @@ ros2 launch /workspace/relay/ros2/reference_moveit.launch.py
 ```
 
 参照コントローラは特異姿勢を避けた`[0, .35, -.6, 0, .4, 0]`radから開始する。これは数値参照ノードの初期値で、既存セッションや実機をリセットする処理ではない。
+画面不要の通信テストでは、launchコマンド末尾に`start_rviz:=false`を付けてRVizだけを省略できる。既定値は表示あり。
 
 端末2：手先操作用のRelayを起動。
 
@@ -87,6 +88,7 @@ source /opt/ros/humble/setup.bash
 
 [操作画面8883](http://127.0.0.1:8883/)と[RViz 6084](http://127.0.0.1:6084/vnc.html?autoconnect=1&resize=scale)を並べる。キーは操作画面側で押す。
 終了時はRelayをCtrl+Cで止めて保存し、次にlaunchをCtrl+Cで終了する。他のGenesis／ROS 2コンテナは操作しない。
+MoveIt 2.5.10の終了処理でクラッシュするケースが残っているため、[参照版の既知制限](ros2-milestone.md)を参照。launchの終了コードだけで全プロセスの正常終了を判断しない。
 
 ```bash
 source /opt/ros/humble/setup.bash

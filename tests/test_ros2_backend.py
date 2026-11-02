@@ -4,6 +4,8 @@ import os
 import subprocess
 import sys
 import time
+import select
+import signal
 
 import numpy as np
 import pytest
@@ -128,3 +130,19 @@ def test_ros_result_timeout_is_recorded_as_uncertain_command(tmp_path):
     finally:
         if env:env.close()
         process.terminate();process.wait(timeout=5)
+
+
+def test_reference_controller_ctrl_c_exits_cleanly():
+    if os.environ.get('RELAY_TEST_ROS2')!='1':pytest.skip('Requires isolated ROS 2 container')
+    process=subprocess.Popen([sys.executable,'-m','relay.ros2.reference','--namespace','/relay_shutdown_check'],
+        stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
+        env={**os.environ,'ROS_DOMAIN_ID':'77'})
+    try:
+        assert select.select([process.stdout],[],[],5)[0], 'Reference controller did not become ready'
+        assert 'ros2_reference_ready' in process.stdout.readline()
+        process.send_signal(signal.SIGINT)
+        out,err=process.communicate(timeout=5)
+        assert process.returncode==0, (out,err)
+        assert 'Traceback' not in err
+    finally:
+        if process.poll() is None:process.kill();process.wait()

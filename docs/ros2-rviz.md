@@ -1,7 +1,7 @@
 # ROS 2：受信した関節角度をRVizで見る
 
 前段の[関節指令・フィードバック・記録](ros2.md)に、URDFと標準のrobot_state_publisher／RVizを追加する。
-同じ`feat/ros2-joint-backend`、PR #7で開発している。
+PR #7のROS 2参照機能の一部。[一区切りの範囲と検証](ros2-milestone.md)も参照。
 
 付属URDFはRelayの6関節＋グリッパーに合わせた簡単な表示用モデルで、Pandaのモデルではない。参照コントローラは引き続き数値補間のみ。物理・接触・実機・MoveIt／逆運動学はこの段階では含まない。
 

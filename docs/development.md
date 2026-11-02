@@ -1,5 +1,13 @@
 # Development Guide
 
+## Relay backend changes
+
+Relay's ROS 2 reference milestone, its opt-in runtime regressions and reproducible
+commands are documented in [ros2-milestone.md](ros2-milestone.md). ROS 2, Genesis
+and LIBERO tests use their own environments; a skipped runtime test does not
+establish that backend works. The upstream benchmark/oracle workflow below is
+for CaP-X benchmark development and is not a performance claim for these adapters.
+
 ## Testing
 
 ### Unit tests

@@ -4,6 +4,7 @@ Adapters supply physics/control and observations; relay.environment owns command
 contexts and authority. CaP-X code execution and the console consume that runtime.
 Capabilities are explicit; restoring a real scene requires a backend implementation.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -52,7 +53,9 @@ class SimulationClock(Protocol):
 class JointBackend(Protocol):
     """Optional absolute joint-position conversion; no command is sent here."""
 
-    def joint_position_action(self, positions_rad: ArrayLike, gripper_command: float) -> NDArray[np.float64]: ...
+    def joint_position_action(
+        self, positions_rad: ArrayLike, gripper_command: float
+    ) -> NDArray[np.float64]: ...
 
 
 @dataclass(frozen=True)
@@ -97,15 +100,19 @@ class EnvironmentBackend(CartesianBackend, SimulationClock, Protocol):
     def get_observation(self) -> dict[str, Any]:
         """Robot state; optional robot_cartesian_pos is XYZ meters + WXYZ."""
         ...
+
     def policy_observation(self) -> dict[str, Any]:
         """images: named RGB arrays; state: JSON data; image_convention: str."""
         ...
+
     def code_observation(self) -> dict[str, Any]:
         """VLM/code-generator images in rgb_top_left convention, with JSON state."""
         ...
+
     def display_images(self) -> dict[str, NDArray[np.uint8]]:
         """1..32 display RGB arrays; names match [A-Za-z0-9_-]{1,80}."""
         ...
+
     def validate_chunk(self, actions: ArrayLike) -> NDArray[np.float64]: ...
     def step_native(self, action: ArrayLike) -> BackendTransition: ...
     def teleop_action(self, axes: ArrayLike, gripper_command: float) -> NDArray[np.float64]:
@@ -115,6 +122,7 @@ class EnvironmentBackend(CartesianBackend, SimulationClock, Protocol):
         must state their units/gains; normalized axes are never assumed native.
         """
         ...
+
     def physics_state(self) -> NDArray[np.float64]: ...
     def task_completed(self) -> bool: ...
     def compute_reward(self) -> float: ...
@@ -125,6 +133,7 @@ class EnvironmentBackend(CartesianBackend, SimulationClock, Protocol):
         controller-side command timeout as well as this explicit hold operation.
         """
         ...
+
     def close(self) -> None: ...
 
 

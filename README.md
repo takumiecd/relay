@@ -27,6 +27,7 @@ CaP-X本体にも依存読込・API登録・実行器の小さな変更を加え
 - [ROS 2：関節指令・状態受信・記録（参照コントローラ）](docs/ros2.md)
 - [ROS 2：URDFとRVizで関節の動きを見る](docs/ros2-rviz.md)
 - [MoveIt：手先指令をIKで関節指令へ変換する](docs/ros2-moveit.md)
+- [ROS 2参照版の一区切り・実装範囲・再現方法](docs/ros2-milestone.md)
 - [VLA／OSC接続](docs/vla-osc.md)
 - [記録とdatasetの方針](docs/dataset-design.md)
 - [LLMの引き継ぎ・修正・採用経路のデータ出力](docs/intervention-dataset.md)
@@ -41,16 +42,18 @@ PR #4〜#6でLLMコード生成・修正経路の出力・共通VLA接続をmain
 外部`module:Factory`のbackend接続、任意のカメラ名・台数、巻き戻し非対応の環境を扱えます。
 付属の`kinematic`は8次元絶対手先指令を使う数値サンプルで、物理シミュレータではありません。
 Genesis backendはPandaのキーボード操作・画像／指令の記録に対応します。
-このブランチでは、同じ稼働中のCPU scene/reset内での巻き戻し・分岐・採用経路選択にも対応します。
+Genesisでは、同じ稼働中のCPU scene/reset内での巻き戻し・分岐・採用経路選択にも対応します。
 Genesisの保存セッションの再起動後の復元は未対応です。
 WORLD変位を介した共通VLA接続を追加し、LIBERO用OpenVLAの短い実モデル接続試験を行っています。
 これはGenesisに適応した把持policyの評価ではありません。
 LLMはHTTP API経由で接続し、GPU上のモデルや商用APIを差し替えられます。
 実OpenVLAの接続確認と、試験providerによる切替・分岐機能の確認を区別しています。
-`feat/ros2-joint-backend`ではROS 2標準action／JointStateを使う関節操作・記録を追加しています。
+PR #7でROS 2標準action／JointStateを使う関節操作・記録を追加しています。
 受信したJointStateをURDF／robot_state_publisher経由でRVizへ表示する構成も追加しています。
 `ros2-moveit` backendではMoveItのIKサービスを介した手先操作・記録も追加しています。
 付属controllerは数値補間のみで、MoveIt接続も表示用6軸モデルのIK検証です。Gazebo・物理／衝突・実機・ゲームパッドは未対応です。
+ROS 2参照版は`ros2-reference-20261102`タグで固定し、ここを一区切りとします。次の物理／実機対応は別の変更として扱います。
+MoveIt 2.5.10の終了時クラッシュを含む既知の制限は[一区切りの記録](docs/ros2-milestone.md)を参照してください。
 以下は上流CaP-Xの紹介とクレジットです。上流ベンチマークの結果を本拡張の性能とは扱いません。
 
 ## Upstream CaP-X

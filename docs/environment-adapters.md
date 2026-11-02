@@ -5,7 +5,7 @@ LIBERO／OSCに加え、PR #2でGenesis Pandaのキーボード操作・記録�
 PR #3で、同じ稼働中CPU scene/reset内のGenesis巻き戻し・分岐を追加した。
 続くLLM・採用経路のコード出力に加え、`feat/genesis-vla`ではWORLD変位を介したVLA接続を追加した。
 [Genesisの三者接続](genesis-vla.md)ではLIBERO用OpenVLAの短い実接続を確認したが、Genesisでのタスク成功評価ではない。
-`feat/ros2-joint-backend`では[ROS 2標準action／JointStateによる関節操作・記録](ros2.md)を追加した。
+PR #7で[ROS 2標準action／JointStateによる関節操作・記録](ros2.md)を追加した。
 付属ノードは数値参照実装で、[URDF／robot_state_publisher／RVizでの表示](ros2-rviz.md)に対応する。[MoveItのIKによる手先操作](ros2-moveit.md)も`ros2-moveit` backendで追加した。物理・衝突・実機・Gazebo、Genesisの再起動後の保存セッション復元は未実装。
 提出版は`pai-final-20261102`に固定し、共通化はPR #1でmainへ取り込み済み。
 Genesisの起動と現在の範囲は[専用ガイド](genesis.md)を参照。

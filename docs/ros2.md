@@ -1,6 +1,6 @@
 # ROS 2：関節指令・フィードバック・記録
 
-`feat/ros2-joint-backend`の最初の接続です。RelayをROS 2 Humble環境で実行し、標準の`control_msgs/action/FollowJointTrajectory`へ目標角度を送ります。`sensor_msgs/msg/JointState`から測定角度と時刻を読み、指令・結果・出所を記録します。
+PR #7で追加した関節接続です。RelayをROS 2 Humble環境で実行し、標準の`control_msgs/action/FollowJointTrajectory`へ目標角度を送ります。`sensor_msgs/msg/JointState`から測定角度と時刻を読み、指令・結果・出所を記録します。[参照版の一区切り](ros2-milestone.md)に範囲と検証をまとめています。
 
 付属ノードは**数値の参照コントローラ**です。物理、接触、実カメラ、MoveIt／IKはありません。画面の棒グラフは受信したJointStateの模式表示です。[URDF／RVizでロボット形状を表示する構成](ros2-rviz.md)も追加しています。既存のGenesis／LIBERO画面やROS 2学習用コンテナとは別に起動します。
 
