@@ -16,7 +16,9 @@ def main():
              "capx/extensions/vla/gpu_setup.py", "capx/extensions/vla/requirements-openvla.txt", "capx/extensions/vla/adapters.py",
              "capx/extensions/vla/codec.py", "capx/extensions/vla/contracts.py",
              "capx/extensions/vla/models/__init__.py", "capx/extensions/vla/models/openvla.py",
-             "capx/extensions/vla/models/openvla_action.py", "configs/relay/openvla-genesis.json"]
+             "capx/extensions/vla/models/openvla_action.py", "configs/relay/openvla-genesis.json",
+             "relay/__init__.py", "relay/policy/__init__.py", "relay/policy/codec.py",
+             "relay/policy/contracts.py"]
     manifest = {name: hashlib.sha256((root/name).read_bytes()).hexdigest() for name in paths}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(args.output, "x", compression=zipfile.ZIP_DEFLATED) as archive:

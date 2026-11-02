@@ -1,3 +1,5 @@
-"""Explicit controller conventions shared by compatible model/environment adapters."""
-LIBERO_OSC = "libero.osc_pose.relative.fixed.7.v1"
-WORLD_DELTA = "relay.cartesian.world_delta.xyz_rotvec_m_rad.grip.7.v1"
+"""Compatibility alias for relay.policy.contracts; implementation lives in Relay."""
+import sys
+from importlib import import_module
+
+sys.modules[__name__] = import_module("relay.policy.contracts")

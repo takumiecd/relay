@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="capx-token" content="__TOKEN__" />
+    <title>Relay</title>
+    <link rel="stylesheet" href="/assets/console.css" />
+    <script type="module" src="/assets/console.js"></script>
+  </head>
+  <body tabindex="-1" aria-label="ロボット操作画面">
+    <header class="topbar">
+      <div class="identity">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h12m-4-4 4 4-4 4M20 16H8m4-4-4 4 4 4"/></svg></div>
+        <strong>Relay</strong>
+        <span class="brand-divider"></span><span class="brand-description">操作と、自律のあいだ。</span>
+      </div>
+      <div class="top-actions">
+        <span id="connection" class="connection"><i></i>接続中</span>
+        <span id="test" class="test-tag" hidden>動作確認モード</span>
+        <button id="new-trial" class="button subtle">新しい試行 <span aria-hidden="true">＋</span></button>
+        <button id="stop" class="button stop"><span aria-hidden="true">■</span> 停止 <kbd>Esc</kbd></button>
+      </div>
+    </header>
+    <main>
+      <section class="workspace">
+        <div class="task-line">
+          <div class="task-description"><div class="eyebrow">実行中のタスク <span id="trial">· TRIAL 01</span></div><h1 id="instruction">環境を読み込んでいます</h1></div>
+          <span id="mode-chip" class="mode-chip">停止中</span>
+        </div>
+        <div id="episode-banner" class="episode-banner" hidden>
+          <div><strong id="episode-title">この試行は終了しました</strong><p id="episode-help">履歴から途中へ戻るか、新しい試行を始められます。</p></div>
+          <button id="next-trial" class="button primary">新しい試行を始める</button>
+        </div>
+        <div id="cameras" class="cameras" aria-label="環境のカメラ映像"></div>
+        <section id="history-panel" class="timeline" aria-label="記録の巻き戻し">
+          <div class="timeline-heading">
+            <div class="history-title"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5v10m0-7c0 4 10 0 10 4"/><circle cx="5" cy="4" r="2"/><circle cx="5" cy="16" r="2"/><circle cx="15" cy="14" r="2"/></svg><h2>操作の履歴</h2></div>
+            <select id="history-branch" aria-label="記録の経路"></select>
+            <span id="history-status">記録を準備しています</span>
+            <button id="toggle-history" aria-expanded="true" aria-controls="history-body" aria-label="履歴を折りたたむ" title="履歴を折りたたむ"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 12 5-5 5 5"/></svg></button>
+          </div>
+          <div id="history-body">
+            <div class="graph-titlebar"><span>経路を選択 <small>BRANCHES</small></span><div class="graph-legend"><i class="vla"></i>VLA <i class="human"></i>手動 <i class="code"></i>コード <i class="replay"></i>再生</div></div>
+            <div id="branch-graph" class="branch-graph" aria-label="操作経路の分岐図"></div>
+            <div class="graph-caption"><span id="graph-hint">点・線をクリックして、そのstepへ戻れます</span><span><b>▼</b> 現在位置 <i></i> 採用経路</span></div>
+            <div class="timeline-controls">
+              <button id="step-back" class="button icon-button" title="1step戻る" aria-label="1step戻る">‹</button>
+              <input id="history-step" type="range" min="0" max="0" value="0" step="1" aria-label="記録ステップを選択" />
+              <button id="step-forward" class="button icon-button" title="1step進む" aria-label="1step進む">›</button>
+              <input id="step-number" type="number" min="0" max="0" value="0" step="1" aria-label="移動先のstep" />
+              <button id="history-head" class="button subtle">末尾へ <span aria-hidden="true">→</span></button>
+            </div>
+            <div class="timeline-caption"><span id="history-hint">バーを離すとその状態へ移動・停止します。</span><button id="resume-here">ここから手動再開 <span aria-hidden="true">↗</span></button></div>
+            <div class="adoption-row"><div><span class="adoption-label">採用した経路</span><strong id="adopted-route">まだ経路を採用していません</strong></div><button id="adopt-route" class="button primary">この経路を採用</button></div>
+          </div>
+        </section>
+        <div class="workspace-footer">
+          <div class="metric"><span id="step-label">記録済み指令</span><strong id="steps">0</strong></div>
+          <div class="metric position"><span id="position-label">手先 XYZ <small>m</small></span><strong id="position">— <em>/</em> — <em>/</em> —</strong></div>
+          <div class="camera-hint"><i></i>操作・画像・コードを記録中</div>
+        </div>
+        <div id="notice" class="notice" role="status" aria-live="polite"></div>
+        <details id="diagnostic-details" class="diagnostic-details" hidden><summary>実行・接続の詳細</summary><pre id="diagnostic-error"></pre></details>
+      </section>
+      <aside>
+        <section class="panel modes-panel">
+          <div class="panel-title"><h2>操作を引き継ぐ</h2><span class="eyebrow">CONTROL</span></div>
+          <div class="modes">
+            <button data-mode="VLA"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></svg><span>VLA <kbd>P</kbd></span><small id="vla-provider">接続待ち</small></button>
+            <button data-mode="LLM"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-14-2 16"/></svg><span>LLM <kbd>L</kbd></span><small id="llm-provider">未接続</small></button>
+            <button data-mode="HUMAN"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10V5a2 2 0 0 1 4 0v6-3a2 2 0 0 1 4 0v4-1a2 2 0 0 1 4 0v6l-4 5H9l-5-8a2 2 0 0 1 3-2l3 3"/></svg><span>手動 <kbd>H</kbd></span><small>キーボード</small></button>
+          </div>
+          <div class="status-line"><i id="status-dot"></i><span id="message">停止中</span></div>
+        </section>
+        <section class="panel llm-panel">
+          <div class="panel-title"><h2>操作指示</h2><span id="llm-model" class="owner">未設定</span></div>
+          <label class="small" for="llm-instruction">次に行う短い操作</label>
+          <textarea id="llm-instruction" maxlength="2000" rows="3" placeholder="例：現在位置から手先を上に2cm動かして、グリッパーを閉じてください。"></textarea>
+          <p class="small">VLAはP／VLAボタン、LLMは下の「指示を実行」で開始します。</p>
+          <button id="generate-code" class="button primary">指示を実行 <kbd>L</kbd></button>
+          <p id="generation-status" class="small" role="status">画像と状態からPythonコードを生成します。Escで停止できます。</p>
+          <details id="generation-details"><summary>生成コードと実行結果</summary><p id="generation-instruction" class="small"></p><pre id="generated-code">まだ生成していません</pre></details>
+        </section>
+        <section class="panel manual-panel">
+          <div class="panel-title"><h2>手動操作</h2><span id="owner" class="owner">Hで開始</span></div>
+          <button id="control-focus" class="deadman"><span class="space-key">SPACE</span><span id="deadman-text">押している間だけ動きます</span></button>
+          <div class="speed-label"><label for="speed">操作速度</label><output id="speed-value" for="speed">25<span>%</span></output></div>
+          <input id="speed" type="range" min="2" max="100" value="25" aria-label="操作速度" />
+          <div class="range-labels"><span>精密</span><span>高速</span></div>
+          <div class="keyboard-guide">
+            <div class="wasd"><div></div><kbd data-key="KeyW">W</kbd><div></div><kbd data-key="KeyA">A</kbd><kbd data-key="KeyS">S</kbd><kbd data-key="KeyD">D</kbd></div>
+            <div class="key-pairs"><div><kbd data-key="KeyR">R</kbd><kbd data-key="KeyF">F</kbd><span id="rf-label">上下</span></div><div><kbd data-key="KeyQ">Q</kbd><kbd data-key="KeyE">E</kbd><span id="qe-label">回転</span></div><div><kbd data-key="KeyC">C</kbd><kbd data-key="KeyV">V</kbd><span>閉 / 開</span></div></div>
+          </div>
+          <p class="precision"><kbd>Shift</kbd> を押すと速度が1/5</p>
+          <p id="control-space" class="small">WORLD座標の手先操作</p>
+          <div class="input-state"><span id="input-state">入力を待っています</span><span id="last-key">キー：—</span></div>
+        </section>
+        <details class="panel code-panel"><summary><span>Pythonコード</span><span class="details-plus" aria-hidden="true">＋</span></summary><textarea id="code" spellcheck="false" aria-label="Pythonコード">s = get_robot_state()
+p = s['robot_cartesian_pos'][:3]
+RESULT = move_to_pose([p[0], p[1], p[2] + 0.02])</textarea><button id="run-code" class="button primary">このコードを実行 <span aria-hidden="true">↗</span></button><p class="small">入力したコードとLLM生成コードは区別して記録します。</p></details>
+        <details class="panel help-panel"><summary><span>操作ガイド</span><span class="details-plus" aria-hidden="true">＋</span></summary><p>Hで手動操作へ。Spaceを押している間は静止中もstepが進みます。Cで閉じ、Vで開きます。Escで停止します。</p><p id="motion-help">W/S ±X、A/D ±Y、R/F ±Z。カメラを変えても操作の座標系は変わりません。</p></details>
+        <div class="recording-note"><i></i><span id="recording-note-text">すべての経路を残しながら操作できます。</span></div>
+      </aside>
+    </main>
+  </body>
+</html>
