@@ -324,6 +324,9 @@ def video(path, capture, assets, info, parent, repaired):
                  'CODE / 60指令 / 3mm以内の目標到達・タスク成功は未確認')
     captured('05-manual', capture / 'manual-capture', '手動へ引き継ぐ：Space＋W → Escで停止',
              '壁時計0.5倍スロー / X方向へ約28.6cm移動')
+    observations('05b-manual-detail', demo / 'trajectory', parent[60:],
+                 '引き継ぎ区間の動きを、2つの記録カメラで見る',
+                 'TEST_OPERATOR / 48指令 / X方向へ約28.6cm / 画面収録と同じ操作')
     still('06-rewind', 'step 60へ戻る。元の108stepは残す。',
           '分岐図のstepをクリック。\n手先・物理状態を復元し、停止。\n復元前後のphysics_state 32要素がbitwise一致。', 8,
           capture / 'genesis-rewind.png')
