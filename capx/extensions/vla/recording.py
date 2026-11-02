@@ -140,10 +140,11 @@ def export_views(directory):
                 continue
             metadata = json.loads(metadata_path.read_text())
             result = json.loads((metadata_path.parent/'result.json').read_text())
-            candidate = dict(program_id=program_id, instruction=episode['instruction'],
+            candidate = dict(program_id=program_id, instruction=metadata.get('instruction', episode['instruction']),
                              observation=metadata['observation'],
                              code=f'programs/{program_id}/code.py', target_kind='executed_program',
                              first_step=steps[0], last_step=steps[-1], generator=metadata['generator'],
+                             model=metadata.get('model'),
                              result=result['reason'], training_admitted=False)
             stream.write(json.dumps(candidate,ensure_ascii=False)+'\n')
     return {'steps': len(rows), 'training_admitted': False, 'semantic_policy': False}

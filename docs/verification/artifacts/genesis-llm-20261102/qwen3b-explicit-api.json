@@ -1,0 +1,25 @@
+{
+  "job_id": "l4job-0b29d72776c948bf840e237eba4f9780",
+  "generations": [
+    {
+      "instruction": "Move the end effector 2 centimeters upwards from its current position, then close the gripper for 10 actions. Use max_actions=40 for the motion.",
+      "code_response": "```python\nRESULT = move_to_pose([s['eef_pose_xyz_wxyz'][0], s['eef_pose_xyz_wxyz'][1], s['eef_pose_xyz_wxyz'][2] + 0.02], max_actions=40)\nRESULT = close_gripper(steps=10)\n```",
+      "seconds": 6.610599934999982
+    },
+    {
+      "instruction": "Open the gripper for 10 actions, then move the end effector 2 centimeters along negative world X. Use max_actions=40 for the motion.",
+      "code_response": "```python\nRESULT = open_gripper(10)\nRESULT = move_to_pose([-0.02, 0, 0], max_actions=40)\n```",
+      "seconds": 1.750417083000002
+    }
+  ],
+  "runtime": {
+    "model": "Qwen/Qwen2.5-VL-3B-Instruct",
+    "revision": "66285546d2b821cf421d4f5eb2576359d3770cd3",
+    "gpu": "NVIDIA L4",
+    "torch": "2.11.0+cu130",
+    "transformers": "4.57.1",
+    "dtype": "bfloat16",
+    "images_per_request": 2
+  },
+  "source_sha256": "568baf51b18a4e7eaabc09e9be563bd281f4238a3618574a5f42e65aff9a7c9d"
+}
