@@ -141,3 +141,13 @@ HTTP起動CLIに任意の未検証モジュールをロードする新機能は�
 
 検証範囲と実測は[分離の確認記録](verification/runtime-extraction-20261102.md)を参照。
 機能を使った映像案と、追加開発の候補は[デモ構成案](demo-storyboard.md)にまとめる。
+
+## LIBEROの手動位置・姿勢保持
+
+LIBEROのbackend設定に `"manual_pose_control": true` を加えると、手動操作を位置・姿勢の目標への追従に切り替える。既定値はfalseで、既存のnative OSC入力は維持する。独自のLIBERO派生adapterは、robotとsimulatorの初期化後に `enable_manual_pose_control()` を呼び、native stepの完了時に `manual_step_applied(action)` を呼ぶ。
+
+WASDは選択したカメラ基準に従い、R/Fはワールドの高さを操作する。入力していない位置・姿勢の目標は保持し、実測速度で減速する。変換は別のMuJoCoデータ上の関節制約付きIKで計算し、物理を進めない。実行は従来の権限確認付き `apply_native()` を使う。計算された目標は、対応するnative actionの実行後に確定する。
+
+関節限界付近では平行移動と、さらに限界へ押す回転を拒否する。Spaceを離して反対方向へ回転するか、回転前の履歴へ戻る。停止・巻き戻し後は現在の手先から目標を取り直す。VLA・コード・記録再生のnative actionにはこの変換を適用しない。追加した目標状態をcheckpointに保存し、追加状態がない旧checkpointも復元できる。
+
+IKは局所的な到達性と関節制約の確認であり、物体との衝突回避経路を計画する機能ではない。物体との接触や、移動中から制御を引き継いだ際の制動距離までゼロにする保証はない。
