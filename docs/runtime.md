@@ -32,6 +32,14 @@ flowchart TD
 ブラウザは映像・キー入力・分岐図を、CLIは状態確認・切替・停止・復元・経路採用を提供する。
 CLIを起動しても新しいシミュレータは起動しない。端末でのWASD入力は現CLIの範囲外。
 
+手動入力の`reference`は省略時`world`。追加の操作基準に対応するbackendは
+`metadata['teleop']['reference_frames']`に`id`・`label`・`description`の一覧を宣言し、
+`teleop_action_in_frame(axes, gripper_command, reference)`を実装する。
+`default_reference`はブラウザの初期選択だけを指定する。
+変換はowner threadで現在の姿勢から行い、物理を進めない。
+HTTP入力threadは基準名と操作権・sequenceを検証するだけで、simulatorへアクセスしない。
+各stepの`provenance.teleop_reference`と`native_action`で、選択と実行結果を追跡できる。
+
 環境はサーバー起動時に一つ選ぶ。複数backendの同時進行や稼働session内の環境差し替えは、
 今回実装した機能ではない。共通化したのは接続契約と操作・記録の仕組み。
 モデル自体は外部worker/APIで稼働するため、Relayの起動だけでは実VLAや実LLMが接続済みにはならない。

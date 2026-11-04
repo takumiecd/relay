@@ -156,7 +156,8 @@ class ControlSession:
             self._event("program_started", **self.program_metadata)
             return self.begin("CODE")
 
-    def submit_input(self, *, client_id, sequence, epoch, keys, speed, deadman, axes=None):
+    def submit_input(self, *, client_id, sequence, epoch, keys, speed, deadman, axes=None,
+                     reference='world'):
         if (
             type(sequence) is not int
             or type(epoch) is not int
@@ -168,6 +169,9 @@ class ControlSession:
             raise ValueError("Invalid keyboard input")
         if type(speed) not in (int, float) or not math.isfinite(speed) or not 0.02 <= speed <= 1:
             raise ValueError("Speed must be in [0.02,1]")
+        frames = getattr(self.env, 'teleop_reference_frames', [{'id': 'world'}])
+        if not isinstance(reference, str) or reference not in {item['id'] for item in frames}:
+            raise ValueError('Unsupported teleop reference')
         axes = axes or [0.0] * 6
         if (
             not isinstance(axes, list)
@@ -183,6 +187,10 @@ class ControlSession:
                 or sequence <= self.last_sequence
             ):
                 return False
+            if (self.input is not None and self.input['reference'] != reference and deadman
+                    and self.input['deadman']
+                    and self.clock() - self.input['received'] <= self.input_timeout):
+                raise ValueError('Release Space before changing the teleop reference')
             self.last_sequence = sequence
             # Selecting a target does not move physics until the deadman is held.
             if "KeyC" in keys:
@@ -195,6 +203,7 @@ class ControlSession:
                 deadman=deadman,
                 axes=list(axes),
                 received=self.clock(),
+                reference=reference,
             )
             return True
 
@@ -236,6 +245,7 @@ class ControlSession:
                     input_sequence=self.last_sequence,
                     input_device="browser",
                     speed=item["speed"],
+                    teleop_reference=item['reference'],
                 ),
             )
 
@@ -251,6 +261,7 @@ class ControlSession:
                 program_id=self.program_id,
                 input_fresh=fresh,
                 deadman=bool(fresh and item["deadman"]),
+                teleop_reference=item['reference'] if item else 'world',
                 test_operator=self.test_operator,
             )
 

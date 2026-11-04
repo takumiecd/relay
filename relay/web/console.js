@@ -37,6 +37,34 @@ let flashMessage = null,
 const frameURLs = Object.create(null);
 let seekPreview = null, draggingHistory = false;
 const owned = () => state.mode === "HUMAN" && state.client_id === client;
+let teleopReference = "world", referenceCatalog = null;
+function referenceFrames() {
+  return state.teleop?.reference_frames?.length ? state.teleop.reference_frames : [
+    { id: "world", label: state.teleop?.control_space === "joint" ? "関節（固定）" : "ワールド",
+      description: "W/S ±X、A/D ±Y、R/F 上下" },
+  ];
+}
+function syncReferenceFrames() {
+  const frames = referenceFrames(), catalog = JSON.stringify(frames);
+  const selector = $("teleop-reference");
+  if (catalog !== referenceCatalog) {
+    const stored = localStorage.getItem("relay.teleop-reference");
+    teleopReference = frames.some((frame) => frame.id === stored) ? stored
+      : frames.some((frame) => frame.id === state.teleop?.default_reference)
+        ? state.teleop.default_reference : "world";
+    selector.replaceChildren(...frames.map((frame) => {
+      const option = document.createElement("option");
+      option.value = frame.id;
+      option.textContent = frame.label;
+      return option;
+    }));
+    referenceCatalog = catalog;
+  }
+  selector.value = teleopReference;
+  selector.disabled = frames.length < 2 || !connected || pendingCommand !== null
+    || !!state.resetting || !!state.seeking || !!state.adopting
+    || keyboard.held.has("Space") || (owned() && !!state.deadman);
+}
 function focusWorkspace() {
   document.body.focus({ preventScroll: true });
   keyboard.focused = true;
@@ -365,6 +393,7 @@ async function sendInput(forceRelease = false) {
               .concat(gripKeys)
           : gripKeys,
         axes: [0, 0, 0, 0, 0, 0],
+        reference: teleopReference,
         speed: Number($("speed").value) / 100,
         deadman: enabled,
       },
@@ -378,13 +407,27 @@ async function sendInput(forceRelease = false) {
   }
 }
 setInterval(() => sendInput(), 50);
+$("teleop-reference").onchange = () => {
+  if (keyboard.held.has("Space") || (owned() && state.deadman)) {
+    $("teleop-reference").value = teleopReference;
+    flash("Spaceを離してから操作の基準を選んでください");
+    return;
+  }
+  teleopReference = $("teleop-reference").value;
+  localStorage.setItem("relay.teleop-reference", teleopReference);
+  keyboard.release(); // A release packet also invalidates older in-flight inputs.
+  focusWorkspace();
+  render();
+};
 function render() {
+  syncReferenceFrames();
   const jointControl = state.teleop?.control_space === "joint";
+  const frame = referenceFrames().find((item) => item.id === teleopReference);
   $("position-label").textContent = jointControl ? "J1 / J2 / J3 [rad]" : "手先 XYZ [m]";
-  $("control-space").textContent = jointControl ? "関節操作：W/S=J1、A/D=J2、R/F=J3、Z/X=J4、Q/E=J6" : "WORLD座標の手先操作";
+  $("control-space").textContent = jointControl ? "関節操作：W/S=J1、A/D=J2、R/F=J3、Z/X=J4、Q/E=J6" : frame.description;
   $("rf-label").textContent = jointControl ? "J3" : "上下";
   $("qe-label").textContent = jointControl ? "J6" : "回転";
-  $("motion-help").textContent = jointControl ? "キーは関節角を変更します。手先XYZやIKの指令ではありません。J5はコードのmove_jointsで操作できます。" : "W/S ±X、A/D ±Y、R/F ±Z。カメラを変えても操作の座標系は変わりません。";
+  $("motion-help").textContent = jointControl ? "キーは関節角を変更します。手先XYZやIKの指令ではありません。J5はコードのmove_jointsで操作できます。" : frame.description + "。回転はワールド基準。";
   $("llm-instruction").placeholder = jointControl ? "例：関節1を現在位置から0.04rad動かしてください。" : "例：現在位置から手先を上に2cm動かして、グリッパーを閉じてください。";
   if (jointControl && !$("code").dataset.initialized && !$("code").dataset.userEdited) {
     $("code").value = "s = get_robot_state()\nq = s['robot_joint_pos'][:]\nq[0] += 0.04\nRESULT = move_joints(q)";

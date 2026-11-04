@@ -160,6 +160,8 @@ kbd { display: inline-flex; align-items: center; justify-content: center; font-f
 .status-line i { width: 5px; height: 5px; background: #9da5ae; border-radius: 50%; flex-shrink: 0; }.status-line i.active { background: #58718b; box-shadow: 0 0 0 3px #ecf0f4; }
 .owner { font-size: 10px; color: #5b6570; }.owner.active { color: #42586f; }
 .deadman { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid #d2d8de; border-radius: 7px; background: #eef1f4; color: #525e6b; padding: 14px 6px; font-size: 10px; }
+#teleop-reference { width: 100%; margin: 5px 0 10px; padding: 7px 9px; border: 1px solid #d2d8de; border-radius: 7px; color: var(--ink); background: #fff; }
+#teleop-reference:disabled { opacity: .6; }
 .space-key { padding: 6px 9px; border: 1px solid #c8cfd6; border-bottom-width: 3px; background: #fff; border-radius: 4px; color: #5d6d7d; font-size: 10px; letter-spacing: .07em; font-weight: 650; }
 .deadman.on { background: #d8e0e7; border-color: #99a8b7; color: #415569; }.deadman.on .space-key { border-color: #a2b0bd; color: #3e546a; }
 .speed-label { display: flex; align-items: center; justify-content: space-between; margin: 20px 0 8px; }

@@ -70,6 +70,20 @@ class JointBackend(Protocol):
     ) -> NDArray[np.float64]: ...
 
 
+class TeleopReferenceBackend(Protocol):
+    """Optional manual reference frames advertised in metadata['teleop'].
+
+    reference_frames is a list of {id, label, description}; 'world' always uses
+    the existing teleop_action method. Other frames require this conversion.
+    Conversion reads live poses on the owner thread, without advancing physics.
+    Policy and code actions never pass through it.
+    """
+
+    def teleop_action_in_frame(
+        self, axes: ArrayLike, gripper_command: float, reference: str
+    ) -> NDArray[np.float64]: ...
+
+
 @dataclass(frozen=True)
 class BackendCapabilities:
     """Features that require explicit implementation and validation per adapter."""

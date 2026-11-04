@@ -386,6 +386,34 @@ def test_real_backend_preserves_distinct_policy_display_and_code_image_conventio
     np.testing.assert_array_equal(display['agentview'], env.raw_obs['agentview_image'][::-1, ::-1])
 
 
+def test_real_camera_reference_conversion_is_read_only_and_tracks_the_wrist(real_osc):
+    env = real_osc
+    env.reset(seed=0)
+    sim = env.handle.env.env.sim
+    first_wrist = None
+    for pose in range(2):
+        before = env.physics_state().copy()
+        images = {k: v.copy() for k, v in env.policy_observation()['images'].items()}
+        for reference, camera in [('agentview', 'agentview'), ('wrist', 'robot0_eye_in_hand')]:
+            camera_id = sim.model.camera_name2id(camera)
+            rotation = sim.data.cam_xmat[camera_id].reshape(3, 3).copy()
+            action = env.teleop_action([0, -.2, 0, 0, 0, 0], -1, reference=reference)
+            # Displayed right is native X with the overview's column flip.
+            assert np.dot(action[:3], rotation[:, 0]) * (-1 if reference == 'agentview' else 1) > 0
+            if reference == 'agentview':
+                assert action[2] == 0
+            elif pose == 0:
+                first_wrist = action
+            else:
+                assert not np.allclose(action[:3], first_wrist[:3], atol=1e-5)
+        np.testing.assert_array_equal(env.physics_state(), before)
+        for name, image in images.items():
+            np.testing.assert_array_equal(env.policy_observation()['images'][name], image)
+        if pose == 0:
+            for _ in range(4):
+                env.apply_native([0, 0, 0, 0, 0, .2, -1], context=env.context(), source='TEST')
+
+
 @pytest.mark.parametrize('translation,rotation,gripper', [
     ([0, 0], [0, 0, 0], -1),
     ([float('nan'), 0, 0], [0, 0, 0], -1),

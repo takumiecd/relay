@@ -66,6 +66,9 @@ def load_backend(name, config=None):
             methods += ["joint_position_action"]
         if backend.capabilities.checkpoints:
             methods += ["capture_checkpoint", "restore_checkpoint"]
+        frames = backend.metadata.get('teleop', {}).get('reference_frames', [])
+        if any(item['id'] != 'world' for item in frames):
+            methods += ['teleop_action_in_frame']
         for name in methods:
             if not callable(getattr(backend, name, None)):
                 raise TypeError(f"Backend requires {name}()")
