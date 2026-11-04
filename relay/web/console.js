@@ -10,8 +10,12 @@ function executionNotice(value) {
     const ik = /MoveIt|IK solution|IK failed/.test(raw);
     return { message: ik ? "手先の位置・姿勢を計算できず停止しました。目標を近づけるか、Hで手動へ戻して逆方向を試してください。" : "実行を停止しました。詳細を確認し、コードまたは接続先を確認してください。", details: raw, error: true };
   }
-  if (value.manual_rejection)
-    return { message: value.manual_rejection.message, details: value.manual_rejection.details, error: false };
+  if (value.manual_rejection) {
+    const detail = String(value.manual_rejection.details || "");
+    const actionable = /^(関節\d+|手先の追従誤差|逆運動学)/.test(detail);
+    return { message: actionable ? detail : value.manual_rejection.message,
+      details: actionable ? "" : detail, error: false };
+  }
   if (value.feedback_fresh === false)
     return { message: "関節状態の更新が止まっています。新しい指令は送れません。接続先を確認してください。", details: "JointState feedback is stale", error: true };
   if (value.controller_outcome && value.controller_outcome !== "succeeded")
