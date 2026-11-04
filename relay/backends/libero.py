@@ -164,6 +164,23 @@ class LiberoBackend:
         if jog is not None:
             jog.applied(np.asarray(action))
 
+    def note_native_source(self, source, provenance):
+        """Retain manual origin through verified session reconstruction.
+
+        This changes no physics/controller target. Ordinary native policy/code
+        actions retain clear(), while an executed manual trajectory can resume
+        after restoring its physical cursor without a spurious native handoff.
+        """
+        jog = getattr(self, '_manual_jog', None)
+        if jog is None or jog.state is not None:
+            return
+        for _ in range(32):
+            if source != 'CODE_REPLAY' or not isinstance(provenance, dict):
+                break
+            source, provenance = provenance.get('original_source'), provenance.get('original_provenance')
+        if isinstance(source, str) and source in {'HUMAN', 'TEST_OPERATOR'}:
+            jog.manual_resume = True
+
     def policy_image(self):
         self._owner()
         # Raw simulator convention. The pinned worker applies the official crop/rotation.

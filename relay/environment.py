@@ -246,6 +246,9 @@ class RelayEnvironment:
                 self.recorder.before_step(self)
             before = self.backend.get_observation().get('robot_cartesian_pos')
             transition = self.backend.step_native(native)
+            note_source = getattr(self.backend, 'note_native_source', None)
+            if note_source is not None:
+                note_source(source, provenance)
             self._held = False
             self.gripper = float(self.backend.gripper)
             self.applied_steps += 1

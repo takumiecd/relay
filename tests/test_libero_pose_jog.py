@@ -191,6 +191,7 @@ def test_native_handoff_retains_stabilization_but_manual_release_does_not():
     jog, feedback = jog_fixture(); feedback['v'][0] = .1
     a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
     assert jog.state['braking']
+
     jog.release()
     a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
     assert not jog.state['braking']
@@ -198,3 +199,21 @@ def test_native_handoff_retains_stabilization_but_manual_release_does_not():
     assert not jog.manual_resume and jog.state is None
     a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
     assert jog.state['braking']
+
+
+def test_reconstructed_manual_origin_survives_stop_but_native_policy_does_not():
+    jog, feedback = jog_fixture()
+    backend = SimpleNamespace(_manual_jog=jog)
+    origin = dict(original_source='CODE_REPLAY', original_provenance=dict(
+        original_source='HUMAN', original_provenance={}))
+    LiberoBackend.note_native_source(backend, 'CODE_REPLAY', origin)
+    jog.release()
+    assert jog.manual_resume and jog.state is None
+    feedback['v'][0] = .1
+    a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
+    assert not jog.state['braking']
+    jog.applied(np.zeros(7))
+    LiberoBackend.note_native_source(backend, 'CODE_REPLAY', dict(original_source='VLA'))
+    assert not jog.manual_resume
+    LiberoBackend.note_native_source(backend, 'CODE_REPLAY', dict(original_source={}))
+    assert not jog.manual_resume
