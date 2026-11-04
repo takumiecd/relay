@@ -109,6 +109,41 @@ def test_no_windup_changes_uncommanded_coordinates():
     assert np.linalg.norm(result - current) <= .008
 
 
+def test_same_direction_clutch_resumes_on_first_action():
+    jog, feedback = jog_fixture()
+    feedback['v'][2] = -.08
+    a = jog.propose([0, 0, -.5, 0, 0, 0], -1); jog.applied(a)
+    assert not jog.state['braking']
+    assert jog.state['p'][2] < feedback['p'][2]
+    np.testing.assert_array_equal(jog.state['p'][:2], feedback['p'][:2])
+
+
+def test_space_only_packet_does_not_latch_braking_before_motion_arrives():
+    jog, feedback = jog_fixture()
+    feedback['v'][2] = -.08
+    a = jog.propose([0]*6, -1); jog.applied(a)
+    assert jog.state['braking']
+    a = jog.propose([0, 0, -.5, 0, 0, 0], -1); jog.applied(a)
+    assert not jog.state['braking']
+    assert jog.state['p'][2] < feedback['p'][2]
+
+
+def test_reversal_still_brakes_incoming_motion():
+    jog, feedback = jog_fixture()
+    feedback['v'][2] = .08
+    a = jog.propose([0, 0, -.5, 0, 0, 0], -1); jog.applied(a)
+    assert jog.state['braking']
+    np.testing.assert_array_equal(jog.state['p'], feedback['p'])
+
+
+def test_same_rotation_clutch_resumes_without_stopping():
+    jog, feedback = jog_fixture()
+    feedback['w'][2] = .4
+    a = jog.propose([0, 0, 0, 0, 0, .3], -1); jog.applied(a)
+    assert not jog.state['braking']
+    assert jog.state['R'][1, 0] > 0
+
+
 @pytest.mark.parametrize('axes,gripper', [([float('nan')]*6, -1), ([2.]*6, -1), ([0.]*6, 2)])
 def test_invalid_input_is_refused(axes, gripper):
     jog, _ = jog_fixture()

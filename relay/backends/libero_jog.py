@@ -127,6 +127,26 @@ class LiberoPoseJog:
                 high = mid
         return old + low * increment
 
+    @staticmethod
+    def _continuation(velocity, requested, rest, transverse):
+        speed = np.linalg.norm(velocity)
+        if speed < rest:
+            return True
+        requested_speed = np.linalg.norm(requested)
+        if requested_speed < 1e-9 or speed > 2 * requested_speed:
+            return False
+        direction = requested / requested_speed
+        along = float(velocity @ direction)
+        return along > 0 and np.linalg.norm(velocity - along * direction) <= transverse
+
+    @staticmethod
+    def _project_velocity(velocity, requested):
+        speed = np.linalg.norm(requested)
+        if speed < 1e-9:
+            return np.zeros(3)
+        direction = requested / speed
+        return direction * max(0.0, float(velocity @ direction))
+
     def propose(self, axes, gripper):
         axes = np.asarray(axes, dtype=float)
         if (
@@ -177,6 +197,19 @@ class LiberoPoseJog:
                 and np.linalg.norm(error_r) < 0.01
             ):
                 state["braking"] = False
+            elif (
+                np.any(axes)
+                and np.linalg.norm(state["p"] - p) < 0.003
+                and np.linalg.norm(error_r) < 0.03
+                and self._continuation(v, axes[:3] * 0.2, 0.004, 0.006)
+                and self._continuation(w, axes[3:] * 2.0, 0.05, 0.08)
+            ):
+                # A deadman clutch must not force a full stop before resuming
+                # the same motion. Reversals and transverse momentum still brake.
+                state["braking"] = False
+                state["v"] = self._project_velocity(v, axes[:3] * 0.2)
+                state["w"] = self._project_velocity(w, axes[3:] * 2.0)
+        if state["braking"]:
             desired_v = np.zeros(3)
             desired_w = np.zeros(3)
         else:

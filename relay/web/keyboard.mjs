@@ -95,8 +95,9 @@ export class KeyboardController {
     const code = keyCode(event);
     if (code === "Space" && (!isEditing(event.target) || this.held.has(code)))
       this.prevent(event);
-    this.held.delete(code);
-    if (code === "Space") this.change();
+    const wasHeld = this.held.delete(code);
+    if (code === "Space") this.change(true);
+    else if (wasHeld && MOVEMENT_KEYS.has(code)) this.change();
   }
   release() {
     this.held.clear();
@@ -105,5 +106,35 @@ export class KeyboardController {
   blur() {
     this.focused = false;
     this.release();
+  }
+}
+
+// One ordinary packet in flight, with changed intent coalesced to its latest
+// value. Release bypasses that queue; sequence numbers reject older packets.
+// Nothing retries a failed request or queues a past movement for later replay.
+export class InputPump {
+  constructor(send, onError = () => {}) {
+    this.send = send;
+    this.onError = onError;
+    this.inFlight = 0;
+    this.changed = false;
+  }
+  request(release = false, changed = false) {
+    if (this.inFlight && !release) {
+      this.changed ||= changed;
+      return;
+    }
+    if (!release) this.changed = false;
+    this.inFlight++;
+    return Promise.resolve()
+      .then(() => this.send(release))
+      .catch((error) => this.onError(error))
+      .finally(() => {
+        this.inFlight--;
+        if (!this.inFlight && this.changed) {
+          this.changed = false;
+          void this.request(false, true);
+        }
+      });
   }
 }
