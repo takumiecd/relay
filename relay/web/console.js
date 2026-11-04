@@ -1,4 +1,4 @@
-import { KeyboardController, MOVEMENT_KEYS, isEditing } from "./keyboard.mjs";
+import { KeyboardController, MOVEMENT_KEYS, isEditing, InputPump } from "./keyboard.mjs";
 import { BranchGraph, branchName } from "./graph.mjs";
 const $ = (id) => document.getElementById(id);
 const token = document.querySelector('meta[name="capx-token"]').content;
@@ -10,8 +10,12 @@ function executionNotice(value) {
     const ik = /MoveIt|IK solution|IK failed/.test(raw);
     return { message: ik ? "手先の位置・姿勢を計算できず停止しました。目標を近づけるか、Hで手動へ戻して逆方向を試してください。" : "実行を停止しました。詳細を確認し、コードまたは接続先を確認してください。", details: raw, error: true };
   }
-  if (value.manual_rejection)
-    return { message: value.manual_rejection.message, details: value.manual_rejection.details, error: false };
+  if (value.manual_rejection) {
+    const detail = String(value.manual_rejection.details || "");
+    const actionable = /^(関節\d+|手先の追従誤差|逆運動学)/.test(detail);
+    return { message: actionable ? detail : value.manual_rejection.message,
+      details: actionable ? "" : detail, error: false };
+  }
   if (value.feedback_fresh === false)
     return { message: "関節状態の更新が止まっています。新しい指令は送れません。接続先を確認してください。", details: "JointState feedback is stale", error: true };
   if (value.controller_outcome && value.controller_outcome !== "succeeded")
@@ -27,8 +31,7 @@ let state = {
 };
 let commandSequence = 0,
   pendingCommand = null,
-  inputSequence = 0,
-  inputRequests = 0;
+  inputSequence = 0;
 let lastKey = "—",
   frameBusy = false;
 let flashMessage = null,
@@ -133,7 +136,7 @@ async function command(path, body, { preserveKeys = false, message } = {}) {
   } finally {
     if (pendingCommand === id) pendingCommand = null;
     render();
-    if (preserveKeys) sendInput();
+    if (preserveKeys) sendInput(false, true);
   }
 }
 function mode(value, options = {}) {
@@ -175,7 +178,7 @@ const keyboard = new KeyboardController({
     }),
   change: (force) => {
     render();
-    if (force || !keyboard?.held.has("Space")) sendInput(!!force);
+    sendInput(!!force, true);
   },
   hint: (text) => flash(text),
   key: (value) => {
@@ -354,11 +357,14 @@ function updateSpeed() {
 }
 $("speed").oninput = updateSpeed;
 updateSpeed();
-async function sendInput(forceRelease = false) {
+const inputPump = new InputPump(transmitInput);
+function sendInput(forceRelease = false, changed = false) {
+  return inputPump.request(forceRelease, changed);
+}
+async function transmitInput(forceRelease = false) {
   if (
     !owned() ||
-    ((pendingCommand !== null || state.seeking || state.adopting) && !forceRelease) ||
-    (inputRequests > 0 && !forceRelease)
+    ((pendingCommand !== null || state.seeking || state.adopting) && !forceRelease)
   )
     return;
   const enabled =
@@ -376,7 +382,6 @@ async function sendInput(forceRelease = false) {
   const gripKeys =
     selecting && keyboard.gripperKey ? [keyboard.gripperKey] : [];
   const sequence = ++inputSequence;
-  inputRequests++;
   try {
     await api(
       "/api/input",
@@ -402,8 +407,6 @@ async function sendInput(forceRelease = false) {
   } catch (error) {
     if (enabled)
       flash("入力の通信を確認しています。手動モードは継続します", true);
-  } finally {
-    inputRequests--;
   }
 }
 setInterval(() => sendInput(), 50);

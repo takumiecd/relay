@@ -68,12 +68,14 @@ class LiberoBackend:
     capabilities = BackendCapabilities(checkpoints=True, state_replay=True)
 
     def __init__(self, suite_name="libero_spatial", task_id=0, max_steps=1000,
-                 control_freq=20, camera_size=256, settle_steps=10):
+                 control_freq=20, camera_size=256, settle_steps=10, manual_pose_control=False):
         self.owner_thread = threading.get_ident()
         self.max_steps = int(max_steps)
         self.control_freq = int(control_freq)
         self.settle_steps = int(settle_steps)
         self.closed = False
+        self._manual_pose_control = bool(manual_pose_control)
+        self._manual_jog = None
         self.gripper = -1.0
         import_mujoco()
         from .libero_task import load_libero_task
@@ -145,6 +147,39 @@ class LiberoBackend:
             self.handle.step([0.0] * 6 + [-1.0])
         self._refresh()
         self.gripper = -1.0
+        if getattr(self, '_manual_pose_control', False):
+            self.enable_manual_pose_control()
+
+    def enable_manual_pose_control(self):
+        """Opt in after a custom adapter has installed its simulator/robot."""
+        from .libero_jog import LiberoPoseJog
+        self._manual_pose_control = True
+        self._manual_jog = LiberoPoseJog(self)
+        self.metadata['teleop'].update(manual_controller=LiberoPoseJog.schema,
+            control_space='cartesian', translation_m_s=0.2, rotation_rad_s=2.,
+            preflight='bounded pose IK and joint limits; not collision planning')
+
+    def manual_step_applied(self, action):
+        jog = getattr(self, '_manual_jog', None)
+        if jog is not None:
+            jog.applied(np.asarray(action))
+
+    def note_native_source(self, source, provenance):
+        """Retain manual origin through verified session reconstruction.
+
+        This changes no physics/controller target. Ordinary native policy/code
+        actions retain clear(), while an executed manual trajectory can resume
+        after restoring its physical cursor without a spurious native handoff.
+        """
+        jog = getattr(self, '_manual_jog', None)
+        if jog is None or jog.state is not None:
+            return
+        for _ in range(32):
+            if source != 'CODE_REPLAY' or not isinstance(provenance, dict):
+                break
+            source, provenance = provenance.get('original_source'), provenance.get('original_provenance')
+        if isinstance(source, str) and source in {'HUMAN', 'TEST_OPERATOR'}:
+            jog.manual_resume = True
 
     def policy_image(self):
         self._owner()
@@ -236,7 +271,7 @@ class LiberoBackend:
         mask = mj.mjtState.mjSTATE_INTEGRATION
         physical = np.empty(mj.mj_stateSize(base.sim.model._model, mask))
         mj.mj_getState(base.sim.model._model, base.sim.data._data, physical, mask)
-        return copy.deepcopy(dict(
+        result = copy.deepcopy(dict(
             schema="capx.osc-checkpoint.v1", model_generation=self.model_generation,
             physical=physical, controller={k: v for k, v in vars(self.controller).items() if k != "sim"},
             gripper_action=self.robot.gripper.current_action,
@@ -249,6 +284,10 @@ class LiberoBackend:
             numpy_rng=np.random.get_state(), python_rng=random.getstate(),
             gripper=self.gripper,
         ))
+        jog = getattr(self, '_manual_jog', None)
+        if jog is not None:
+            result['manual_pose_jog'] = jog.snapshot()
+        return result
 
     def restore_checkpoint(self, snapshot):
         """Restore physical/controller state after validating this model/reset."""
@@ -278,6 +317,9 @@ class LiberoBackend:
         random.setstate(snapshot["python_rng"])
         self.raw_obs = copy.deepcopy(snapshot["raw_obs"])
         self.gripper = snapshot["gripper"]
+        jog = getattr(self, '_manual_jog', None)
+        if jog is not None:
+            jog.restore(snapshot.get('manual_pose_jog'))
 
     @staticmethod
     def validate_chunk(actions):
@@ -312,6 +354,9 @@ class LiberoBackend:
     def stop(self):
         """Synchronous LIBERO advances only in step_native; no pending motion."""
         self._owner()
+        jog = getattr(self, '_manual_jog', None)
+        if jog is not None:
+            jog.release()
 
     def display_images(self):
         obs = self.get_observation()
@@ -319,6 +364,10 @@ class LiberoBackend:
                 "agentview": self.render()}
 
     def teleop_action(self, axes, gripper_command):
+        jog = getattr(self, '_manual_jog', None)
+        if jog is not None:
+            self._owner()
+            return jog.propose(axes, gripper_command)
         # Preserve the submitted keyboard gain: normalized axes are native OSC.
         axes = np.asarray(axes, dtype=float)
         if axes.shape != (6,):
@@ -350,4 +399,5 @@ class LiberoBackend:
         _, reward, done, info = self.handle.step(np.asarray(action).tolist())
         self.gripper = float(action[-1])
         self._refresh()
+        self.manual_step_applied(action)
         return BackendTransition(float(reward), bool(done), info=info)
