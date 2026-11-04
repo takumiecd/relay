@@ -95,11 +95,12 @@ def test_checkpoint_roundtrip_and_stop_discard_targets_without_motion():
     assert jog.state is None
 
 
-def test_large_incoming_velocity_brakes_before_advancing_requested_target():
+def test_transverse_velocity_is_opposed_while_requested_target_advances():
     jog, feedback = jog_fixture(); feedback['v'][0] = .1
     a = jog.propose([0, 0, -.15, 0, 0, 0], -1); jog.applied(a)
-    assert jog.state['braking'] and a[0] < 0
-    np.testing.assert_array_equal(jog.state['p'], feedback['p'])
+    assert not jog.state['braking'] and a[0] < 0
+    np.testing.assert_array_equal(jog.state['p'][:2], feedback['p'][:2])
+    assert jog.state['p'][2] < feedback['p'][2]
 
 
 def test_no_windup_changes_uncommanded_coordinates():
@@ -122,18 +123,18 @@ def test_space_only_packet_does_not_latch_braking_before_motion_arrives():
     jog, feedback = jog_fixture()
     feedback['v'][2] = -.08
     a = jog.propose([0]*6, -1); jog.applied(a)
-    assert jog.state['braking']
+    assert not jog.state['braking']
     a = jog.propose([0, 0, -.5, 0, 0, 0], -1); jog.applied(a)
     assert not jog.state['braking']
     assert jog.state['p'][2] < feedback['p'][2]
 
 
-def test_reversal_still_brakes_incoming_motion():
+def test_reversal_opposes_incoming_motion_without_a_full_stop_gate():
     jog, feedback = jog_fixture()
     feedback['v'][2] = .08
     a = jog.propose([0, 0, -.5, 0, 0, 0], -1); jog.applied(a)
-    assert jog.state['braking']
-    np.testing.assert_array_equal(jog.state['p'], feedback['p'])
+    assert not jog.state['braking'] and a[2] < 0
+    assert jog.state['p'][2] < feedback['p'][2]
 
 
 def test_same_rotation_clutch_resumes_without_stopping():
@@ -148,3 +149,30 @@ def test_same_rotation_clutch_resumes_without_stopping():
 def test_invalid_input_is_refused(axes, gripper):
     jog, _ = jog_fixture()
     with pytest.raises(ValueError): jog.propose(axes, gripper)
+
+
+def test_legacy_braking_checkpoint_cannot_latch_new_motion():
+    jog, feedback = jog_fixture()
+    a = jog.propose([0]*6, -1); jog.applied(a)
+    jog.state['braking'] = True
+    feedback['v'][0] = .1
+    a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
+    assert not jog.state['braking'] and jog.state['p'][2] < feedback['p'][2]
+    assert a[0] < 0
+
+
+def test_rotation_lead_limit_partially_advances_instead_of_dropping_motion():
+    from scipy.spatial.transform import Rotation
+    old = Rotation.from_rotvec([0,0,.05]).as_matrix()
+    target, fraction = LiberoPoseJog._advance_rotation(old, np.eye(3), np.array([0,0,.025]))
+    angle = Rotation.from_matrix(target).as_rotvec()[2]
+    assert .05999 < angle <= .06
+    assert .39 < fraction < .41
+
+
+def test_rotation_begins_while_unrequested_translation_is_held():
+    jog, feedback = jog_fixture()
+    feedback['v'][0] = .1
+    a = jog.propose([0,0,0,0,0,.3], -1); jog.applied(a)
+    assert jog.state['R'][1, 0] > 0 and a[0] < 0
+    np.testing.assert_array_equal(jog.state['p'], feedback['p'])
