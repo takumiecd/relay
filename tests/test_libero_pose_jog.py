@@ -29,10 +29,13 @@ def jog_fixture():
 
 def test_conversion_does_not_commit_and_commits_only_the_applied_native_action():
     jog, feedback = jog_fixture()
+    jog.manual_resume = True
     a = jog.propose([0, 0, -.15, 0, 0, 0], -1)
     assert jog.state is None
+    assert jog.manual_resume  # Preflight must not consume the clutch marker.
     np.testing.assert_array_equal(a, jog.propose([0, 0, -.15, 0, 0, 0], -1))
     jog.applied(a)
+    assert not jog.manual_resume
     np.testing.assert_allclose(jog.state['p'], [.1, .2, .9985])
     jog.propose([0, 0, -.15, 0, 0, 0], -1)
     jog.applied(np.zeros(7))  # Native policy/code action, not the proposed action.

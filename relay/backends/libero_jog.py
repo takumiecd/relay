@@ -195,6 +195,7 @@ class LiberoPoseJog:
             raise ValueError("Expected six normalized manual axes and bounded gripper")
         self.pending = None
         p, R, v, w = self.feedback()
+        resume = self.manual_resume
         initial = {
             "p": p.copy(),
             "R": R.copy(),
@@ -262,7 +263,10 @@ class LiberoPoseJog:
             # Begin rotation gently while holding unrequested translation,
             # without requiring a full stop of a preceding manual movement.
             unrequested_speed = np.linalg.norm(v[axes[:3] == 0])
-            desired_w *= max(0.2, 1.0 - unrequested_speed / 0.05)
+            if resume:
+                desired_w *= max(0.2, 1.0 - unrequested_speed / 0.05)
+                if unrequested_speed < 0.004:
+                    resume = False
             state["R"], fraction = self._advance_rotation(state["R"], R, desired_w * self.dt)
             desired_w *= fraction
         if np.any(axes) and not state["braking"]:
@@ -283,12 +287,13 @@ class LiberoPoseJog:
             native[3] = 1e-10  # Recapture an exactly matching orientation goal.
         action = np.r_[native, float(gripper)]
         self.backend.validate_chunk([action])
-        self.pending = (action.copy(), state)
+        self.pending = (action.copy(), state, resume)
         return action
 
     def applied(self, action):
         if self.pending is not None and np.array_equal(action, self.pending[0]):
             self.state = self.pending[1]
+            self.manual_resume = self.pending[2]
             self.pending = None
         else:
             self.clear()  # Native VLA/code/replay actions keep their contract.
