@@ -31,12 +31,22 @@ class LiberoPoseJog:
         self.limits = self.model.jnt_range[backend.robot._ref_joint_indexes].copy()
         self.dt = 1.0 / backend.control_freq
         self.state = self.pending = None
+        self.manual_resume = False
 
     def clear(self):
         self.state = self.pending = None
+        self.manual_resume = False
+
+    def release(self):
+        # Space release freezes synchronous physics. Discard old targets but
+        # remember that the frozen velocity came from this manual controller.
+        manual = self.state is not None or self.manual_resume
+        self.clear()
+        self.manual_resume = manual
 
     def snapshot(self):
-        return copy.deepcopy({"schema": self.schema, "state": self.state})
+        return copy.deepcopy({"schema": self.schema, "state": self.state,
+                              "manual_resume": self.manual_resume})
 
     def restore(self, value):
         self.clear()
@@ -44,6 +54,10 @@ class LiberoPoseJog:
             return
         if value.get("schema") != self.schema:
             raise ValueError("Unsupported manual pose checkpoint")
+        resume = value.get("manual_resume", False)
+        if type(resume) is not bool:
+            raise ValueError("Invalid manual resume checkpoint")
+        self.manual_resume = resume
         state = copy.deepcopy(value.get("state"))
         if state is not None:
             for key, shape in [("p", (3,)), ("R", (3, 3)), ("v", (3,)), ("w", (3,))]:
@@ -149,6 +163,26 @@ class LiberoPoseJog:
                 high = mid
         return candidate(low), low
 
+    @staticmethod
+    def _continuation(velocity, requested, rest, transverse):
+        speed = np.linalg.norm(velocity)
+        if speed < rest:
+            return True
+        requested_speed = np.linalg.norm(requested)
+        if requested_speed < 1e-9 or speed > 2 * requested_speed:
+            return False
+        direction = requested / requested_speed
+        along = float(velocity @ direction)
+        return along > 0 and np.linalg.norm(velocity - along * direction) <= transverse
+
+    @staticmethod
+    def _project_velocity(velocity, requested):
+        speed = np.linalg.norm(requested)
+        if speed < 1e-9:
+            return np.zeros(3)
+        direction = requested / speed
+        return direction * max(0.0, float(velocity @ direction))
+
     def propose(self, axes, gripper):
         axes = np.asarray(axes, dtype=float)
         if (
@@ -166,7 +200,8 @@ class LiberoPoseJog:
             "R": R.copy(),
             "v": np.zeros(3),
             "w": np.zeros(3),
-            "braking": False,
+            "braking": bool(not self.manual_resume and
+                            (np.linalg.norm(v) > 0.015 or np.linalg.norm(w) > 0.3)),
         }
         state = copy.deepcopy(self.state if self.state is not None else initial)
         q = self.data.qpos[self.qpos]
@@ -191,27 +226,46 @@ class LiberoPoseJog:
             raise PreflightRejectedError(
                 "手先の追従誤差が大きいため停止しました。Spaceを離して再開してください。"
             )
-        # Do not latch motion behind a full-stop gate on deadman re-entry.
-        # The feedback below opposes residual velocity while the bounded target
-        # starts advancing immediately. Keep the old checkpoint field readable.
-        state["braking"] = False
-        desired_v = axes[:3] * 0.2
-        desired_w = axes[3:] * 2.0
-        # Ramp requested motion, while a released axis stops advancing its
-        # target immediately. Feedback brakes the measured velocity.
-        desired_v = state["v"] + np.clip(desired_v - state["v"], -0.05, 0.05)
-        desired_w = state["w"] + np.clip(desired_w - state["w"], -0.12, 0.12)
-        desired_v[axes[:3] == 0] = 0
-        desired_w[axes[3:] == 0] = 0
-        # Blend rotation into a translating wrist without pausing either
-        # controller. Unrequested translation remains actively held by feedback.
-        unrequested_speed = np.linalg.norm(v[axes[:3] == 0])
-        rotation_blend = max(0.2, 1.0 - unrequested_speed / 0.05)
-        desired_w *= rotation_blend
-        state["p"] = self._advance_position(state["p"], p, desired_v * self.dt)
-        state["R"], fraction = self._advance_rotation(state["R"], R, desired_w * self.dt)
-        desired_w *= fraction
-        if np.any(axes):
+        if state["braking"]:
+            if (
+                np.linalg.norm(v) < 0.004
+                and np.linalg.norm(w) < 0.05
+                and np.linalg.norm(state["p"] - p) < 0.0006
+                and np.linalg.norm(error_r) < 0.01
+            ):
+                state["braking"] = False
+            elif (
+                np.any(axes)
+                and np.linalg.norm(state["p"] - p) < 0.003
+                and np.linalg.norm(error_r) < 0.03
+                and self._continuation(v, axes[:3] * 0.2, 0.004, 0.006)
+                and self._continuation(w, axes[3:] * 2.0, 0.05, 0.08)
+            ):
+                # A deadman clutch must not force a full stop before resuming
+                # the same motion. Reversals and transverse momentum still brake.
+                state["braking"] = False
+                state["v"] = self._project_velocity(v, axes[:3] * 0.2)
+                state["w"] = self._project_velocity(w, axes[3:] * 2.0)
+        if state["braking"]:
+            desired_v = np.zeros(3)
+            desired_w = np.zeros(3)
+        else:
+            desired_v = axes[:3] * 0.2
+            desired_w = axes[3:] * 2.0
+            # Ramp requested motion, while a released axis stops advancing its
+            # target immediately. Feedback brakes the measured velocity.
+            desired_v = state["v"] + np.clip(desired_v - state["v"], -0.05, 0.05)
+            desired_w = state["w"] + np.clip(desired_w - state["w"], -0.12, 0.12)
+            desired_v[axes[:3] == 0] = 0
+            desired_w[axes[3:] == 0] = 0
+            state["p"] = self._advance_position(state["p"], p, desired_v * self.dt)
+            # Begin rotation gently while holding unrequested translation,
+            # without requiring a full stop of a preceding manual movement.
+            unrequested_speed = np.linalg.norm(v[axes[:3] == 0])
+            desired_w *= max(0.2, 1.0 - unrequested_speed / 0.05)
+            state["R"], fraction = self._advance_rotation(state["R"], R, desired_w * self.dt)
+            desired_w *= fraction
+        if np.any(axes) and not state["braking"]:
             self._check_ik(state["p"], state["R"])
         state["v"], state["w"] = desired_v.copy(), desired_w.copy()
         dp = 3.0 * (state["p"] - p) + 0.15 * (desired_v - v)

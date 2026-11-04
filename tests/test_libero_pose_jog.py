@@ -15,6 +15,7 @@ def jog_fixture():
     jog = LiberoPoseJog.__new__(LiberoPoseJog)
     jog.backend = backend
     jog.state = jog.pending = None
+    jog.manual_resume = False
     jog.dt = .05
     jog.qpos = np.arange(7)
     jog.data = SimpleNamespace(qpos=np.zeros(7))
@@ -97,6 +98,7 @@ def test_checkpoint_roundtrip_and_stop_discard_targets_without_motion():
 
 def test_transverse_velocity_is_opposed_while_requested_target_advances():
     jog, feedback = jog_fixture(); feedback['v'][0] = .1
+    jog.manual_resume = True
     a = jog.propose([0, 0, -.15, 0, 0, 0], -1); jog.applied(a)
     assert not jog.state['braking'] and a[0] < 0
     np.testing.assert_array_equal(jog.state['p'][:2], feedback['p'][:2])
@@ -123,7 +125,8 @@ def test_space_only_packet_does_not_latch_braking_before_motion_arrives():
     jog, feedback = jog_fixture()
     feedback['v'][2] = -.08
     a = jog.propose([0]*6, -1); jog.applied(a)
-    assert not jog.state['braking']
+    assert jog.state['braking']
+    jog.release()
     a = jog.propose([0, 0, -.5, 0, 0, 0], -1); jog.applied(a)
     assert not jog.state['braking']
     assert jog.state['p'][2] < feedback['p'][2]
@@ -131,6 +134,7 @@ def test_space_only_packet_does_not_latch_braking_before_motion_arrives():
 
 def test_reversal_opposes_incoming_motion_without_a_full_stop_gate():
     jog, feedback = jog_fixture()
+    jog.manual_resume = True
     feedback['v'][2] = .08
     a = jog.propose([0, 0, -.5, 0, 0, 0], -1); jog.applied(a)
     assert not jog.state['braking'] and a[2] < 0
@@ -155,6 +159,7 @@ def test_legacy_braking_checkpoint_cannot_latch_new_motion():
     jog, feedback = jog_fixture()
     a = jog.propose([0]*6, -1); jog.applied(a)
     jog.state['braking'] = True
+    jog.release()
     feedback['v'][0] = .1
     a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
     assert not jog.state['braking'] and jog.state['p'][2] < feedback['p'][2]
@@ -172,7 +177,21 @@ def test_rotation_lead_limit_partially_advances_instead_of_dropping_motion():
 
 def test_rotation_begins_while_unrequested_translation_is_held():
     jog, feedback = jog_fixture()
+    jog.manual_resume = True
     feedback['v'][0] = .1
     a = jog.propose([0,0,0,0,0,.3], -1); jog.applied(a)
     assert jog.state['R'][1, 0] > 0 and a[0] < 0
     np.testing.assert_array_equal(jog.state['p'], feedback['p'])
+
+
+def test_native_handoff_retains_stabilization_but_manual_release_does_not():
+    jog, feedback = jog_fixture(); feedback['v'][0] = .1
+    a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
+    assert jog.state['braking']
+    jog.release()
+    a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
+    assert not jog.state['braking']
+    jog.applied(np.zeros(7))
+    assert not jog.manual_resume and jog.state is None
+    a = jog.propose([0,0,-.15,0,0,0], -1); jog.applied(a)
+    assert jog.state['braking']

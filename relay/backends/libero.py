@@ -339,7 +339,7 @@ class LiberoBackend:
         self._owner()
         jog = getattr(self, '_manual_jog', None)
         if jog is not None:
-            jog.clear()
+            jog.release()
 
     def display_images(self):
         obs = self.get_observation()
