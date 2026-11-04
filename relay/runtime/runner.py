@@ -555,11 +555,15 @@ class RelayRuntime:
             item = self.control.human_action()
             if item:
                 command, lease, provenance = item
-                signature = (lease.epoch, provenance.get('client_id'), tuple(command))
+                reference = provenance.get('teleop_reference', 'world')
+                signature = (lease.epoch, provenance.get('client_id'), reference, tuple(command))
                 if signature == self._blocked_manual_signature:
                     return  # Do not repeat a refused computation on every heartbeat.
                 try:
-                    action = self.env.teleop_action(command[:6], command[-1])
+                    if reference == 'world':
+                        action = self.env.teleop_action(command[:6], command[-1])
+                    else:
+                        action = self.env.teleop_action(command[:6], command[-1], reference=reference)
                 except (PreflightRejectedError, PreflightTimeoutError) as error:
                     self.env.hold()
                     with self.control.lock:

@@ -16,6 +16,7 @@ from scipy.spatial.transform import Rotation
 
 from relay.backends.base import BackendCapabilities, BackendTransition
 from relay.policy.contracts import LIBERO_OSC
+from relay.teleop import LIBERO_REFERENCE_FRAMES, camera_translation_axes
 
 ACTION_CONTRACT = LIBERO_OSC
 
@@ -100,7 +101,8 @@ class LiberoBackend:
                 "kd": np.asarray(self.controller.kd).tolist(),
                 "rotation": "world-frame axis-angle delta", "gripper": "-1=open,+1=close",
                 "episode_mode": "finite interactive smoke, not official evaluation",
-                "teleop": {"frame": "WORLD", "axes": "normalized native OSC increments per step"},
+                "teleop": {"frame": "WORLD", "axes": "normalized native OSC increments per step",
+                           "reference_frames": LIBERO_REFERENCE_FRAMES, "default_reference": "agentview"},
                 "camera_labels": {"wrist": "手首カメラ", "agentview": "全体カメラ"},
             }
         except BaseException:
@@ -324,6 +326,23 @@ class LiberoBackend:
         native = np.r_[axes, gripper_command]
         self.validate_chunk([native])
         return native
+
+    def teleop_action_in_frame(self, axes, gripper_command, reference):
+        self._owner()
+        if reference == 'world':
+            return self.teleop_action(axes, gripper_command)
+        cameras = {'agentview': 'agentview', 'wrist': 'robot0_eye_in_hand'}
+        if reference not in cameras:
+            raise ValueError('Unsupported teleop reference')
+        sim = self.handle.env.env.sim
+        camera_id = sim.model.camera_name2id(cameras[reference])
+        rotation = sim.data.cam_xmat[camera_id].reshape(3, 3)
+        # Native MuJoCo X is image-right, Y image-up. display_images flips
+        # framebuffer rows for both views and ALSO columns for agentview.
+        right = rotation[:, 0] * (-1 if reference == 'agentview' else 1)
+        mapped = camera_translation_axes(axes, right, rotation[:, 1],
+                                         planar=reference == 'agentview')
+        return self.teleop_action(mapped, gripper_command)
 
     def step_native(self, action):
         self._owner()

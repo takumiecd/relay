@@ -84,6 +84,8 @@
         </section>
         <section class="panel manual-panel">
           <div class="panel-title"><h2>手動操作</h2><span id="owner" class="owner">Hで開始</span></div>
+          <label class="small" for="teleop-reference">操作の基準</label>
+          <select id="teleop-reference" aria-describedby="control-space"><option value="world">ワールド</option></select>
           <button id="control-focus" class="deadman"><span class="space-key">SPACE</span><span id="deadman-text">押している間だけ動きます</span></button>
           <div class="speed-label"><label for="speed">操作速度</label><output id="speed-value" for="speed">25<span>%</span></output></div>
           <input id="speed" type="range" min="2" max="100" value="25" aria-label="操作速度" />
@@ -99,7 +101,7 @@
         <details class="panel code-panel"><summary><span>Pythonコード</span><span class="details-plus" aria-hidden="true">＋</span></summary><textarea id="code" spellcheck="false" aria-label="Pythonコード">s = get_robot_state()
 p = s['robot_cartesian_pos'][:3]
 RESULT = move_to_pose([p[0], p[1], p[2] + 0.02])</textarea><button id="run-code" class="button primary">このコードを実行 <span aria-hidden="true">↗</span></button><p class="small">入力したコードとLLM生成コードは区別して記録します。</p></details>
-        <details class="panel help-panel"><summary><span>操作ガイド</span><span class="details-plus" aria-hidden="true">＋</span></summary><p>Hで手動操作へ。Spaceを押している間は静止中もstepが進みます。Cで閉じ、Vで開きます。Escで停止します。</p><p id="motion-help">W/S ±X、A/D ±Y、R/F ±Z。カメラを変えても操作の座標系は変わりません。</p></details>
+        <details class="panel help-panel"><summary><span>操作ガイド</span><span class="details-plus" aria-hidden="true">＋</span></summary><p>Hで手動操作へ。Spaceを押している間は静止中もstepが進みます。Cで閉じ、Vで開きます。Escで停止します。</p><p id="motion-help">W/S ±X、A/D ±Y、R/F ±Z。</p><p>操作の基準はSpaceを離して選びます。カメラの表示順とは独立です。Q/E・Z/Xの回転はワールド基準です。</p></details>
         <div class="recording-note"><i></i><span id="recording-note-text">すべての経路を残しながら操作できます。</span></div>
       </aside>
     </main>

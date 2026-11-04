@@ -155,9 +155,22 @@ class RelayEnvironment:
         self._owner()
         return self.backend.gripper_action(command)
 
-    def teleop_action(self, axes, gripper_command):
+    @property
+    def teleop_reference_frames(self):
+        teleop = self.metadata.get('teleop', {})
+        frames = teleop.get('reference_frames')
+        if not frames and teleop.get('control_space') == 'joint':
+            return [dict(id='world', label='関節（固定）', description='関節軸の操作')]
+        return frames or [dict(id='world', label='ワールド',
+                               description='W/S ±X、A/D ±Y、R/F 上下')]
+
+    def teleop_action(self, axes, gripper_command, *, reference='world'):
         self._owner()
-        return self.backend.teleop_action(axes, gripper_command)
+        if reference == 'world':
+            return self.backend.teleop_action(axes, gripper_command)
+        if reference not in {item['id'] for item in self.teleop_reference_frames}:
+            raise ValueError('Unsupported teleop reference')
+        return self.backend.teleop_action_in_frame(axes, gripper_command, reference)
 
     def simulation_time(self):
         self._owner()
